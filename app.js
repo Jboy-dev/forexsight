@@ -16658,13 +16658,17 @@ document.addEventListener('DOMContentLoaded', () => {
 const _ccExpanded = new Set();
 
 function _ccMakeCollapsible(el, headerHTML) {
-  if (!el || el.dataset.collapsible === 'true') return;
+  if (!el) return;
   el.dataset.collapsible = 'true';
-  // Inject header as first child
-  const header = document.createElement('div');
-  header.className = 'collapsible-header';
+  // v389 — if the card re-rendered (innerHTML wiped), the header is gone
+  // even though data-collapsible is still there. Re-inject rather than skip.
+  let header = el.querySelector(':scope > .collapsible-header');
+  if (!header) {
+    header = document.createElement('div');
+    header.className = 'collapsible-header';
+    el.insertBefore(header, el.firstChild);
+  }
   header.innerHTML = headerHTML || '';
-  el.insertBefore(header, el.firstChild);
 }
 
 function _ccExtractPreview(el) {
@@ -16731,10 +16735,7 @@ function _ccApplyToAll() {
     document.querySelectorAll(sel).forEach(el => {
       if (el.hidden) return;   // don't decorate hidden cards
       const preview = _ccExtractPreview(el);
-      _ccMakeCollapsible(el, preview);
-      // Update existing header preview (in case content changed since last apply)
-      const h = el.querySelector(':scope > .collapsible-header');
-      if (h) h.innerHTML = preview;
+      _ccMakeCollapsible(el, preview);   // v389 — this now re-injects if header missing
     });
   }
 }
