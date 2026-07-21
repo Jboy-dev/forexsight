@@ -5551,7 +5551,70 @@ function renderProPickBanner(allSignals) {
     </div>`;
 }
 
+// v390 — detect newly-appeared signals and trigger visibility triple
+// (title bump + audio chime + toast). Tracks known keys across renders.
+const _v390SeenKeys = new Set();
+let _v390SeededInitial = false;
+function _v390CheckNewSignals(sigs) {
+  if (!Array.isArray(sigs)) return;
+  const currentKeys = new Set();
+  for (const s of sigs) {
+    if (!s || !s.pair || !s.direction) continue;
+    // Key by pair+direction+entry so re-fires of the same setup don't retrigger
+    const key = `${s.pair}_${s.direction}_${s.entry ?? '?'}`;
+    currentKeys.add(key);
+  }
+  // First render after page load — seed known set silently; no alerts for
+  // existing signals (they're not "new" from user's perspective).
+  if (!_v390SeededInitial) {
+    for (const k of currentKeys) _v390SeenKeys.add(k);
+    _v390SeededInitial = true;
+    return;
+  }
+  const brandNew = [...currentKeys].filter(k => !_v390SeenKeys.has(k));
+  for (const k of brandNew) _v390SeenKeys.add(k);
+  if (brandNew.length === 0) return;
+  // Fire the triple
+  try { state.unreadCount = (state.unreadCount || 0) + brandNew.length; updateTitle(); } catch {}
+  try { if (typeof playChime === 'function' && !document.hidden) playChime(); } catch {}
+  try { _v390ShowNewSignalToast(brandNew, sigs); } catch {}
+}
+function _v390ShowNewSignalToast(brandNewKeys, allSigs) {
+  const matched = allSigs.filter(s => brandNewKeys.includes(`${s.pair}_${s.direction}_${s.entry ?? '?'}`));
+  if (matched.length === 0) return;
+  let host = document.getElementById('v390-toast');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'v390-toast';
+    host.className = 'v390-toast';
+    document.body.appendChild(host);
+  }
+  const summary = matched.slice(0, 3).map(s => {
+    const arrow = s.direction === 'BUY' ? '▲' : '▼';
+    return `<span class="v390-toast-sig ${s.direction === 'BUY' ? 'buy' : 'sell'}">${arrow} ${s.pair} ${s.direction} · ${s.confidence || '?'}%</span>`;
+  }).join('');
+  const more = matched.length > 3 ? `<span class="v390-toast-more">+${matched.length - 3} more</span>` : '';
+  host.innerHTML = `
+    <div class="v390-toast-head">🔔 New signal${matched.length > 1 ? 's' : ''} · tap to view</div>
+    <div class="v390-toast-body">${summary}${more}</div>
+  `;
+  host.classList.remove('v390-hide');
+  host.classList.add('v390-show');
+  host.onclick = () => {
+    const signalsTab = document.querySelector('.tab[data-tab="signals"]');
+    if (signalsTab) signalsTab.click();
+    host.classList.remove('v390-show');
+    host.classList.add('v390-hide');
+  };
+  clearTimeout(host._v390Timer);
+  host._v390Timer = setTimeout(() => {
+    host.classList.remove('v390-show');
+    host.classList.add('v390-hide');
+  }, 8000);
+}
+
 function renderSignals() {
+  try { _v390CheckNewSignals(state.signals); } catch {}
   const grid = $('#signals-grid');
   let pool;
   if (state.filterMode === 'extreme') {

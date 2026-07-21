@@ -9243,3 +9243,66 @@ body.light-theme .tb-head.tb-very-low .tb-label  { color: #991b1b; }
 }
 .tb-empty { grid-column: 1 / -1; font-size: 11px; opacity: 0.5; }
 /* v380 end ─────────────────────────────────────────────────────────── */
+
+/* v390 — New signal toast ─────────────────────────────────────── */
+.v390-toast {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translate(-50%, -140%);
+  z-index: 2000;
+  max-width: 92vw;
+  min-width: 260px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.95) 0%, rgba(59, 130, 246, 0.95) 100%);
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(8px);
+  cursor: pointer;
+  opacity: 0;
+  transition: transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1), opacity 200ms;
+  font-family: inherit;
+}
+.v390-toast.v390-show {
+  transform: translate(-50%, 0);
+  opacity: 1;
+  animation: v390-pulse 1.8s ease-in-out infinite;
+}
+.v390-toast.v390-hide {
+  transform: translate(-50%, -140%);
+  opacity: 0;
+  animation: none;
+}
+.v390-toast-head {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.25);
+}
+.v390-toast-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.v390-toast-sig {
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  letter-spacing: 0.02em;
+}
+.v390-toast-sig.buy  { box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.5); }
+.v390-toast-sig.sell { box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.5); }
+.v390-toast-more {
+  opacity: 0.75;
+  font-size: 11px;
+  align-self: center;
+}
+@keyframes v390-pulse {
+  0%, 100% { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 0 0 rgba(52, 211, 153, 0.4); }
+  50%      { box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.15), 0 0 0 12px rgba(52, 211, 153, 0);   }
+}
+/* v390 end ─────────────────────────────────────────────────────── */
