@@ -4169,6 +4169,20 @@ async function _checkSignalsInner(context) {
       if (tp3Dist < slDist * 2.0) errs.push(`tp3-below-2R (${(tp3Dist/slDist).toFixed(2)}R)`);
     }
 
+    // v398 — SL sanity ceiling. Defense-in-depth against any code path
+    // that could produce a nonsense stop-loss. Per-pair max as % of entry:
+    //   BTC/ETH:  4%  (crypto genuinely swings this much)
+    //   Indices:  1.5% (US30/NAS100/SPX500)
+    //   FX/gold:  2%   (already generous — real setups rarely need > 1%)
+    // Anything above the ceiling is a code bug or bad data — reject it.
+    const slPct = s.entry > 0 ? (slDist / s.entry) * 100 : 999;
+    const slCeilingPct = ['BTC/USD','ETH/USD'].includes(s.pair) ? 4.0
+      : ['US30','NAS100','SPX500','GER40','UK100','JPN225'].includes(s.pair) ? 1.5
+      : 2.0;
+    if (slPct > slCeilingPct) {
+      errs.push(`sl-too-wide (${slPct.toFixed(2)}% of entry, max ${slCeilingPct}%)`);
+    }
+
     // 4. Per-pair minimum pip potential (v298 floors, v316 BTC lowered)
     const minTp3Pips = s.pair === 'XAU/USD' ? 80
       : s.pair === 'XAG/USD' ? 40

@@ -136,7 +136,7 @@ export async function onRequest(context) {
   return new Response(JSON.stringify({
     status: allGreen ? 'GREEN' : 'YELLOW',
     timestamp: new Date().toISOString(),
-    version: 'v397-tradingview-robustness',
+    version: 'v398-sl-sanity-ceiling',
     summary: allGreen ? 'All systems operational' : 'Some checks need attention',
     checks,
   }, null, 2), {
