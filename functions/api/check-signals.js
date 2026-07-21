@@ -1535,9 +1535,13 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   //   TP1  1.5×ATR  → decent first target
   //   TP2  3.0×ATR standard  / 4.5×ATR bigMove  / 6.0×ATR hunt
   //   TP3  5.0×ATR standard  / 7.5×ATR bigMove  / 10.0×ATR hunt
-  const tp1Mult = 1.5;
-  const tp2Mult = bigMoveHunt ? 6.0 : (bigMove ? 4.5 : 3.0);
-  const tp3Mult = bigMoveHunt ? 10.0 : (bigMove ? 7.5 : 5.0);
+  // v395 — TP multipliers boosted for higher-pip targets.
+  //   normal: TP1 1.5→2, TP2 3→4, TP3 5→7  (40% more pips on TP3)
+  //   bigMove: TP2 4.5→6, TP3 7.5→10.5     (40% more pips)
+  //   bigMoveHunt: TP2 6→8, TP3 10→14      (40% more pips)
+  const tp1Mult = 2.0;
+  const tp2Mult = bigMoveHunt ? 8.0 : (bigMove ? 6.0 : 4.0);
+  const tp3Mult = bigMoveHunt ? 14.0 : (bigMove ? 10.5 : 7.0);
 
   const pipSize = isGold ? 0.1
     : pair === 'BTC/USD' ? 1

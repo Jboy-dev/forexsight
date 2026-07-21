@@ -320,9 +320,10 @@ export async function onRequest(context) {
     const sl = finalDirection === 'BUY' ? entry - slDist : entry + slDist;
     // v322b — TPs stay at ATR-based absolute pips (HIGH targets), decoupled
     // from SL. When SL is tight (structure-based), R:R becomes amazing.
-    const tp1Dist = atr * 1.5;
-    const tp2Dist = atr * 3.0;
-    const tp3Dist = atr * 5.0;
+    // v395 — TP multipliers boosted to match check-signals (higher pips)
+    const tp1Dist = atr * 2.0;
+    const tp2Dist = atr * 4.0;
+    const tp3Dist = atr * 7.0;
     const tp1 = finalDirection === 'BUY' ? entry + tp1Dist : entry - tp1Dist;
     const tp2 = finalDirection === 'BUY' ? entry + tp2Dist : entry - tp2Dist;
     const tp3 = finalDirection === 'BUY' ? entry + tp3Dist : entry - tp3Dist;

@@ -7114,36 +7114,9 @@ async function renderSignalModal(s, options = {}) {
 }
 $('.close-btn').addEventListener('click', () => $('#modal').classList.add('hidden'));
 
-// Mobile swipe-down-to-close on modal — mirrors native iOS sheet behavior.
-// Only triggers on touch starting at the very top of the modal-content.
-(function setupModalSwipeClose() {
-  let startY = 0, startScroll = 0, dragging = false;
-  const mc = document.querySelector('.modal-content');
-  if (!mc) return;
-  mc.addEventListener('touchstart', (e) => {
-    if (mc.scrollTop > 5) return; // only swipe when at top of scroll
-    startY = e.touches[0].clientY;
-    startScroll = mc.scrollTop;
-    dragging = true;
-  }, { passive: true });
-  mc.addEventListener('touchmove', (e) => {
-    if (!dragging) return;
-    const dy = e.touches[0].clientY - startY;
-    if (dy > 0 && mc.scrollTop <= 0) {
-      mc.style.transform = `translateY(${Math.min(dy, 200)}px)`;
-      mc.style.opacity = String(Math.max(0.4, 1 - dy / 400));
-    }
-  }, { passive: true });
-  mc.addEventListener('touchend', (e) => {
-    if (!dragging) return;
-    dragging = false;
-    const finalDy = (e.changedTouches[0]?.clientY || 0) - startY;
-    if (finalDy > 120) {
-      $('#modal').classList.add('hidden');
-    }
-    mc.style.transform = ''; mc.style.opacity = '';
-  }, { passive: true });
-})();
+// v395 — Modal now ONLY closes via the × button. Swipe-down-to-close
+// and backdrop-tap were causing accidental dismissals ("twitching").
+// User request: signal modal stays open until they explicitly hit ×.
 
 // Smooth scroll to top of tab-content area when switching tabs (helpful on
 // mobile if user has scrolled deep into one tab and switches to another)
@@ -7156,7 +7129,8 @@ document.querySelectorAll('.tab').forEach(t => {
     }, 50);
   });
 });
-$('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') $('#modal').classList.add('hidden'); });
+// v395 — Backdrop-click no longer closes modal. Only the × button does.
+// (Was the second cause of "twitching" — a stray tap outside would dismiss.)
 
 // Position size calculator (legacy — in Forex Wisdom tab)
 const pairList = Object.keys(PAIRS);
