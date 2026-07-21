@@ -15247,6 +15247,7 @@ async function _lcMountTradingView() {
   const studies = LC_STATE.indicators.map(i => LC_TV_INDICATORS[i]).filter(Boolean);
   const isDark = !document.body.classList.contains('light-theme');
   try {
+    const isNarrow = window.innerWidth < 640;
     LC_STATE.tvWidget = new window.TradingView.widget({
       autosize: true,
       symbol: tvSym,
@@ -15256,42 +15257,29 @@ async function _lcMountTradingView() {
       style: '1',                  // 1 = candles
       locale: 'en',
       enable_publishing: false,
-      hide_side_toolbar: false,
-      allow_symbol_change: true,
+      // v397 — safer defaults. allow_symbol_change was causing our pair
+      // dropdown to drift from the actual chart; users could set an
+      // unmapped symbol via the search bar and confuse the sync. Turning
+      // it off means the pair dropdown is the single source of truth.
+      allow_symbol_change: false,
+      // v397 — mobile: hide side toolbar (drawing tools) — barely usable
+      // on a phone and eats horizontal space. Desktop still shows it.
+      hide_side_toolbar: isNarrow,
+      hide_top_toolbar: false,
       withdateranges: true,
       studies,
       container_id: 'lc-tv-container',
-      // Visual polish — keep the widget UI minimal but functional
-      hide_top_toolbar: false,
       backgroundColor: isDark ? '#0b1220' : '#ffffff',
       gridColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+      // v397 — disable heavy features that slow init on low-end phones
+      disabled_features: isNarrow
+        ? ['header_indicators', 'header_compare', 'header_saveload', 'left_toolbar']
+        : [],
     });
-    // v376 — Subscribe to TradingView's internal symbol changes so
-    // LC_STATE.pair tracks what the user is ACTUALLY looking at, not
-    // just what they picked in our dropdown.
-    if (LC_STATE.tvWidget && typeof LC_STATE.tvWidget.onChartReady === 'function') {
-      LC_STATE.tvWidget.onChartReady(() => {
-        try {
-          const chart = LC_STATE.tvWidget.activeChart();
-          if (chart && typeof chart.onSymbolChanged === 'function') {
-            chart.onSymbolChanged().subscribe(null, () => {
-              const newTvSym = chart.symbol();
-              const newPair = _lcTvSymToPair(newTvSym);
-              if (newPair && newPair !== LC_STATE.pair) {
-                LC_STATE.pair = newPair;
-                try { localStorage.setItem('forexsight_lc_pair', newPair); } catch {}
-                // Sync the pair input if visible
-                const pairEl = document.getElementById('lc-pair');
-                if (pairEl) pairEl.value = newPair;
-                // Update quote panel + broadcast to other tabs
-                _lcFetch();
-                _lcBroadcastPair(newPair);
-              }
-            });
-          }
-        } catch (e) { /* onSymbolChanged may not exist on older widget versions */ }
-      });
-    }
+    // v397 — since allow_symbol_change is now off, we don't need the
+    // symbol-sync subscription. Kept commented out for reference.
+    // (v376 subscribed to onSymbolChanged, but that was only needed
+    // when users could change the symbol from inside TradingView.)
   } catch (e) {
     container.innerHTML = `<div style="padding:20px;color:#fca5a5;font-size:13px;">TradingView widget init failed: ${e.message || e}</div>`;
   }
