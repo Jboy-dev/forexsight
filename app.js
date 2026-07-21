@@ -16294,16 +16294,29 @@ async function _refreshEliteAndStandAside() {
     cs = cr;
   } catch { return; }
 
-  // ─── STAND ASIDE banner (higher priority than elite in UX) ────
-  if (cs && typeof cs.score === 'number' && cs.score < 50) {
+  // ─── STAND ASIDE banner ─── v396: threshold 50 → 30 (was too eager,
+  // fired for moderate conditions), + dismissable × button that persists
+  // for the session so it stops nagging once you've seen it.
+  const dismissed = sessionStorage.getItem('_v396_sa_dismissed') === '1';
+  if (cs && typeof cs.score === 'number' && cs.score < 30 && !dismissed) {
     standEl.innerHTML = `
+      <button class="stand-aside-dismiss" aria-label="Dismiss">×</button>
       <div class="stand-aside-icon">🛑</div>
       <div class="stand-aside-body">
-        <div class="stand-aside-title">Stand Aside · Conditions ${cs.score}/100</div>
-        <div class="stand-aside-msg">${_cdEsc(cs.action || 'Poor trading conditions — do NOT force trades right now. Wait for score above 60.')}</div>
+        <div class="stand-aside-title">Caution · Conditions ${cs.score}/100</div>
+        <div class="stand-aside-msg">${_cdEsc(cs.action || 'Weak conditions right now — use smaller size or wait.')}</div>
       </div>
     `;
     standEl.hidden = false;
+    const dismissBtn = standEl.querySelector('.stand-aside-dismiss');
+    if (dismissBtn) {
+      dismissBtn.onclick = (e) => {
+        e.stopPropagation();
+        sessionStorage.setItem('_v396_sa_dismissed', '1');
+        standEl.hidden = true;
+        standEl.innerHTML = '';
+      };
+    }
   } else {
     standEl.hidden = true;
     standEl.innerHTML = '';
