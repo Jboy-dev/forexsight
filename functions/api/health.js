@@ -136,7 +136,7 @@ export async function onRequest(context) {
   return new Response(JSON.stringify({
     status: allGreen ? 'GREEN' : 'YELLOW',
     timestamp: new Date().toISOString(),
-    version: 'v398-sl-sanity-ceiling',
+    version: 'v399-tv-visible-mount',
     summary: allGreen ? 'All systems operational' : 'Some checks need attention',
     checks,
   }, null, 2), {

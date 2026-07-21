@@ -15229,11 +15229,32 @@ function _lcLoadTradingViewScript() {
 }
 
 // Mount (or remount) the TradingView Advanced Chart widget into our container.
-// The widget itself fetches its own live price feed from TradingView's CDN —
-// the displayed chart is the genuine TradingView chart, with all their tools.
+// v399 — Widget MUST NOT mount while its container has 0×0 dimensions
+// (hidden tab, unmounted DOM). autosize:true on a 0px container produces
+// an invisible chart with no error, which is why "TradingView not showing"
+// keeps recurring. We wait until the container reports real width/height.
 async function _lcMountTradingView() {
   const container = document.getElementById('lc-tv-container');
   if (!container) return;
+  // v399 — defer if container is not measurable (tab hidden, layout not settled)
+  const rect = container.getBoundingClientRect();
+  if (rect.width < 50 || rect.height < 50) {
+    // Retry when the tab becomes visible or on next paint
+    const retryOnce = () => {
+      const r2 = container.getBoundingClientRect();
+      if (r2.width >= 50 && r2.height >= 50) {
+        _lcMountTradingView();
+      } else {
+        // still hidden — try again in 500ms up to 10 attempts
+        if (!container._tvMountAttempts) container._tvMountAttempts = 0;
+        container._tvMountAttempts += 1;
+        if (container._tvMountAttempts < 10) setTimeout(retryOnce, 500);
+      }
+    };
+    requestAnimationFrame(retryOnce);
+    return;
+  }
+  container._tvMountAttempts = 0;
   try {
     await _lcLoadTradingViewScript();
   } catch (e) {
