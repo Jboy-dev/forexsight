@@ -5986,7 +5986,9 @@ function _autoAnalyseRenderedSignals(signals) {
   // strongest signals — the user always sees an AI verdict on what
   // actually matters. Every card still gets an immediate cache hit if we
   // have one; only NEW top-3 fires an actual LLM call.
-  const MAX_FRESH_CALLS = 3;
+  // v387 — on cold load fire only 1 (was 3) to prevent browser choke.
+  // User can tap remaining to analyse on demand.
+  const MAX_FRESH_CALLS = 1;
   // First pass: paint cached verdicts on every card immediately (no wait)
   const cache = _loadAiCache();
   const toAnalyse = [];
@@ -6004,8 +6006,9 @@ function _autoAnalyseRenderedSignals(signals) {
     if (aGold !== bGold) return bGold - aGold;
     return (b.s.confidence || 0) - (a.s.confidence || 0);
   });
-  const interval = 300;
-  let delay = 0;
+  // v387 — start analysing after 2.5s (let UI paint first) instead of 0ms
+  const interval = 500;
+  let delay = 2500;
   for (let i = 0; i < Math.min(MAX_FRESH_CALLS, toAnalyse.length); i++) {
     const { s, el } = toAnalyse[i];
     setTimeout(() => _analyseSingleSignal(s, el), delay);
@@ -15791,25 +15794,44 @@ document.addEventListener('click', (e) => {
 // v377 — Also force a FRESH SCAN via /api/check-signals whenever the app
 // becomes visible or the Signals tab is opened. The preview URL doesn't
 // have autonomous cron so this is the only way to guarantee fresh KV.
-async function _forceFreshScan() {
+async function _forceFreshScan(opts = {}) {
   try {
-    // v381 — Full cycle: scan → shadow-track (resolves open outcomes,
-    // stamps tier onto new signals) → tp-monitor → read fresh feed.
-    // Without shadow-tracker being pinged, open signals never resolve →
-    // trust score never climbs → gate stays tight → user sees no signals.
-    await fetch('/api/check-signals', { cache: 'no-store' }).catch(() => {});
-    // Fire shadow + tp-monitor in parallel — they don't depend on each other
-    await Promise.all([
-      fetch('/api/shadow-tracker', { cache: 'no-store' }).catch(() => {}),
-      fetch('/api/tp-monitor', { cache: 'no-store' }).catch(() => {}),
-    ]);
-    const res = await fetch('/api/latest-signals', { cache: 'no-store' });
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data && Array.isArray(data.signals)) {
-      state.signals = data.signals;
-      if (typeof renderSignals === 'function') renderSignals();
+    // v387 — INSTANT PAINT FIRST. Show whatever's already in KV before
+    // starting any expensive work. User sees signals immediately instead
+    // of a blank card during the 5-6s scan.
+    try {
+      const cached = await fetch('/api/latest-signals', { cache: 'no-store' });
+      if (cached.ok) {
+        const d = await cached.json();
+        if (d && Array.isArray(d.signals)) {
+          state.signals = d.signals;
+          if (typeof renderSignals === 'function') renderSignals();
+        }
+      }
+    } catch {}
+
+    // Fire scan in the background; don't block user
+    fetch('/api/check-signals', { cache: 'no-store' }).catch(() => {});
+    // Skip shadow + tp-monitor on the first load — they run 3s later via
+    // the heartbeat. Only fire them on explicit rescans (opts.full=true).
+    if (opts.full) {
+      Promise.all([
+        fetch('/api/shadow-tracker', { cache: 'no-store' }).catch(() => {}),
+        fetch('/api/tp-monitor', { cache: 'no-store' }).catch(() => {}),
+      ]).catch(() => {});
     }
+    // Refresh the UI ~4s later with any new signals the scan produced
+    setTimeout(async () => {
+      try {
+        const res = await fetch('/api/latest-signals', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data && Array.isArray(data.signals)) {
+          state.signals = data.signals;
+          if (typeof renderSignals === 'function') renderSignals();
+        }
+      } catch {}
+    }, 4500);
   } catch {}
 }
 window._forceFreshScan = _forceFreshScan;
@@ -15833,9 +15855,9 @@ document.addEventListener('click', (e) => {
   setTimeout(_forceFreshScan, 100);
 });
 
-// v377 — Force fresh scan on app load
+// v377 — Force fresh scan on app load — v387 delayed 1.5s so the UI paints first
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(_forceFreshScan, 200);
+  setTimeout(() => _forceFreshScan({ full: false }), 1500);
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -15866,7 +15888,8 @@ document.addEventListener('visibilitychange', () => {
   else { _startHeartbeat(); _heartbeatTick(); }
 });
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => { _startHeartbeat(); }, 3000);
+  // v387 — heartbeat starts 8s after load (was 3s) so cold-load isn't choked
+  setTimeout(() => { _startHeartbeat(); }, 8000);
 });
 window.addEventListener('beforeunload', _stopHeartbeat);
 window._heartbeatTick = _heartbeatTick;
@@ -16794,7 +16817,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'signals') _startAlgoTimer();
-  }, 1800);
+  }, 4500);  // v387 — was 1800, staggered to un-choke cold load
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -16887,7 +16910,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'signals') _startSetupRadarTimer();
-  }, 2000);
+  }, 6000);  // v387 — was 2000, staggered to un-choke cold load
 });
 window._refreshSetupRadar = _refreshSetupRadar;
 
@@ -16969,7 +16992,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'signals') _startTrustBadgeTimer();
-  }, 2200);
+  }, 7500);  // v387 — was 2200, staggered to un-choke cold load
 });
 
 // ═══════════════════════════════════════════════════════════════════════
