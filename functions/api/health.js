@@ -136,7 +136,7 @@ export async function onRequest(context) {
   return new Response(JSON.stringify({
     status: allGreen ? 'GREEN' : 'YELLOW',
     timestamp: new Date().toISOString(),
-    version: 'v390-signal-visibility',
+    version: 'v391-server-first-load',
     summary: allGreen ? 'All systems operational' : 'Some checks need attention',
     checks,
   }, null, 2), {

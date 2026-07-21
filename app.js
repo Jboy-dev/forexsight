@@ -5216,6 +5216,36 @@ async function loadSignals(force = false) {
   if (force) saveCache({});
   $('#signals-status').textContent = 'Loading signals…';
   showWeekendBannerIfNeeded();
+
+  // v391 — CRITICAL cold-load fix. Try server signals FIRST. If they're
+  // fresh (< 5 min), use them directly and skip the 16-parallel-fetch
+  // client re-computation. This was the actual choke that made the app
+  // appear frozen on cold load. Client re-analysis still runs — but
+  // in the background AFTER the server signals paint.
+  try {
+    const r = await fetch('/api/latest-signals', { cache: 'no-store' });
+    if (r.ok) {
+      const d = await r.json();
+      const ts = d && d.ts;
+      const ageMin = ts ? (Date.now() - ts) / 60000 : Infinity;
+      const sigs = Array.isArray(d && d.signals) ? d.signals : [];
+      if (ageMin < 5 && sigs.length > 0) {
+        state.signals = sigs;
+        if (typeof renderSignals === 'function') renderSignals();
+        $('#signals-status').textContent = `${sigs.length} signal${sigs.length===1?'':'s'} · server (${Math.round(ageMin*60)}s ago)`;
+        // Fire the heavy client-side scan AFTER 6s so it doesn't choke cold load.
+        // Result: server signals visible in <500ms, client scan catches any
+        // extras 6s later, no blank screen.
+        setTimeout(() => { _loadSignalsHeavyScan(force).catch(() => {}); }, 6000);
+        return;
+      }
+    }
+  } catch {}
+  // Fallback: no fresh server signals — do the heavy client scan now.
+  return _loadSignalsHeavyScan(force);
+}
+
+async function _loadSignalsHeavyScan(force = false) {
   // v213 — kick off learning brain backtest update (non-blocking)
   loadBrainStatus().catch(() => {});
   // v214 — refresh the shadow signal feed (would-have outcomes)
