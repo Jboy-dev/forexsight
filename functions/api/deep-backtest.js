@@ -14,9 +14,12 @@
 // Result stored in Cache API (unlimited writes). Cheap re-fetch for the
 // UI's self-trust panel.
 
+// v400 — expanded to full 15-pair universe matching check-signals.js.
+// Brain now learns historical WR for every instrument the scanner watches.
 const PAIRS = {
   'XAU/USD': 'GC=F',
   'BTC/USD': 'BTC-USD',
+  'ETH/USD': 'ETH-USD',
   'EUR/USD': 'EURUSD=X',
   'GBP/USD': 'GBPUSD=X',
   'USD/JPY': 'USDJPY=X',
@@ -24,6 +27,11 @@ const PAIRS = {
   'NZD/USD': 'NZDUSD=X',
   'USD/CAD': 'USDCAD=X',
   'USD/CHF': 'USDCHF=X',
+  'EUR/JPY': 'EURJPY=X',
+  'GBP/JPY': 'GBPJPY=X',
+  'US30':    '^DJI',
+  'NAS100':  '^NDX',
+  'SPX500':  '^GSPC',
 };
 
 // ── Indicators ────────────────────────────────────────────────────────────
