@@ -16696,12 +16696,30 @@ function _ccExtractPreview(el) {
     const title = el.querySelector('.cheat-title')?.textContent?.trim() || '';
     return `<span class="collapsible-badge">${tech}</span><span>${title.slice(0, 60)}</span>`;
   }
+  // v388 — added covers for the newer cards
+  if (id === 'trust-badge-card') {
+    const score = el.querySelector('.tb-score')?.textContent?.trim() || '—';
+    const label = el.querySelector('.tb-label')?.textContent?.trim() || '';
+    return `<span class="collapsible-badge">🛡️ Trust</span><span>${score}/100</span><span class="collapsible-preview">${label}</span>`;
+  }
+  if (id === 'setup-radar-card') {
+    const badge = el.querySelector('.sr-badge')?.textContent?.trim() || 'Radar';
+    return `<span class="collapsible-badge">🎯 Radar</span><span class="collapsible-preview">${badge.slice(0, 80)}</span>`;
+  }
+  if (id === 'algo-read-card') {
+    const bias = el.querySelector('.algo-summary-value.buy')?.textContent?.trim() || '?';
+    const bias2 = el.querySelector('.algo-summary-value.sell')?.textContent?.trim() || '?';
+    return `<span class="collapsible-badge">🤖 Algo</span><span>Buy ${bias}</span><span class="collapsible-preview">Sell ${bias2}</span>`;
+  }
   return `<span class="collapsible-badge">Info</span><span>Tap to expand</span>`;
 }
 
 function _ccApplyToAll() {
-  // Every card on Signals tab we want collapsed
+  // v388 — every card on Signals tab is collapsed by default now
   const selectors = [
+    '#trust-badge-card',
+    '#setup-radar-card',
+    '#algo-read-card',
     '#conditions-card',
     '#track-record-card',
     '#elite-banner',
