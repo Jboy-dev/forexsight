@@ -9797,7 +9797,28 @@ async function strategyHealthCheck() {
 strategyHealthCheck();
 
 // ========== PWA / Service Worker ==========
+// v394 — HARD KILL. The service worker has been the persistent cause of
+// stale-JS bugs across v387/v388/v389/v390/v391/v391b. Every fix I ship
+// gets blocked from reaching the user because the SW keeps serving the
+// old app.js from cache. Removing it entirely is more reliable than
+// trying to patch cache logic. All future loads go direct-to-network.
 if ('serviceWorker' in navigator) {
+  // Unregister every existing SW and purge every cache, on every load,
+  // until we're sure everyone's clean. Cheap to keep — costs ~5ms.
+  (async () => {
+    try {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const r of regs) { try { await r.unregister(); } catch {} }
+      if (window.caches) {
+        const keys = await caches.keys();
+        for (const k of keys) { try { await caches.delete(k); } catch {} }
+      }
+    } catch {}
+  })();
+}
+// Historical SW-related code below is inert now that no SW is registered
+// but kept intact so any legacy notifiation handlers don't reference-error.
+if (false && 'serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
       const reg = await navigator.serviceWorker.register('/service-worker.js');
