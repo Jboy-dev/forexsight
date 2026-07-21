@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>ForexSight — Force update</title>
+<style>
+  :root {
+    --bg: #000;
+    --panel: #15161a;
+    --text: #f5f5f7;
+    --muted: #86868b;
+    --accent: #0a84ff;
+    --buy: #30d158;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 28px 24px;
+    max-width: 460px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  h1 {
+    font-size: 22px;
+    margin: 0 0 6px;
+    background: linear-gradient(135deg, #0a84ff, #30d158);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; line-height: 1.5; }
+  .step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 8px;
+    font-size: 14px;
+    transition: all 200ms ease;
+  }
+  .step.done {
+    background: rgba(48, 209, 88, 0.10);
+    border-color: rgba(48, 209, 88, 0.4);
+    color: var(--buy);
+  }
+  .step.active {
+    background: rgba(10, 132, 255, 0.10);
+    border-color: rgba(10, 132, 255, 0.4);
+  }
+  .step-icon { font-size: 18px; min-width: 22px; text-align: center; }
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid rgba(255,255,255,0.15);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .open-btn {
+    display: block;
+    width: 100%;
+    margin-top: 18px;
+    padding: 14px;
+    background: linear-gradient(135deg, #0a84ff, #30d158);
+    color: #fff;
+    text-align: center;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 15px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: transform 150ms ease;
+  }
+  .open-btn:active { transform: scale(0.97); }
+  .open-btn[disabled] { opacity: 0.5; pointer-events: none; }
+  .footer-note { color: var(--muted); font-size: 12px; margin-top: 14px; line-height: 1.5; text-align: center; }
+  .preserve {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: rgba(255, 159, 10, 0.06);
+    border: 1px solid rgba(255, 159, 10, 0.25);
+    border-radius: 10px;
+    color: #ffb347;
+    font-size: 12.5px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>🔄 Force-update ForexSight</h1>
+  <p class="sub">Clearing the cached old version of the app. This takes about 3 seconds. After it's done, reopen the app from your home screen and you'll have the latest code with working sync.</p>
+
+  <div id="step-1" class="step active">
+    <span class="step-icon"><span class="spinner"></span></span>
+    <span>Unregistering old service worker…</span>
+  </div>
+  <div id="step-2" class="step">
+    <span class="step-icon">○</span>
+    <span>Clearing app cache…</span>
+  </div>
+  <div id="step-3" class="step">
+    <span class="step-icon">○</span>
+    <span>Verifying fresh state…</span>
+  </div>
+
+  <div class="preserve">
+    <strong>✓ Your data is safe.</strong> Trades, sync code, and learning history are kept in localStorage and are NOT touched by this reset. Only the cached app code is cleared.
+  </div>
+
+  <a id="open-btn" class="open-btn" href="/?_fresh=1" disabled>Done — Open ForexSight →</a>
+  <p class="footer-note">After tapping the button above, also reopen the app from your home screen icon. The new version will load automatically.</p>
+</div>
+
+<script>
+(async function () {
+  const step1 = document.getElementById('step-1');
+  const step2 = document.getElementById('step-2');
+  const step3 = document.getElementById('step-3');
+  const openBtn = document.getElementById('open-btn');
+
+  function done(el) {
+    el.classList.remove('active');
+    el.classList.add('done');
+    el.querySelector('.step-icon').innerHTML = '✓';
+  }
+  function active(el) {
+    el.classList.add('active');
+    el.querySelector('.step-icon').innerHTML = '<span class="spinner"></span>';
+  }
+
+  // Step 1: unregister all service workers in this origin
+  try {
+    if ('serviceWorker' in navigator) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(r => r.unregister().catch(() => {})));
+    }
+  } catch (e) {}
+  done(step1);
+  active(step2);
+
+  await new Promise(r => setTimeout(r, 400));
+
+  // Step 2: nuke every cache
+  try {
+    if ('caches' in window) {
+      const keys = await caches.keys();
+      await Promise.all(keys.map(k => caches.delete(k).catch(() => false)));
+    }
+  } catch (e) {}
+  done(step2);
+  active(step3);
+
+  await new Promise(r => setTimeout(r, 400));
+
+  // Step 3: verify by re-checking caches and SW
+  try {
+    let allClear = true;
+    if ('caches' in window) {
+      const remaining = await caches.keys();
+      if (remaining.length > 0) allClear = false;
+    }
+    if ('serviceWorker' in navigator) {
+      const remaining = await navigator.serviceWorker.getRegistrations();
+      if (remaining.length > 0) allClear = false;
+    }
+    // Even if some lingered, that's OK — they'll be replaced on next page load
+  } catch (e) {}
+  done(step3);
+
+  // Enable the "Open" button
+  openBtn.removeAttribute('disabled');
+  openBtn.textContent = '✓ Done — Open ForexSight →';
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+name = "forexsight-preview-cron"
+main = "index.js"
+compatibility_date = "2025-01-01"
+# No public URL needed — cron fires on schedule. If you want to manually
+# hit it for testing, flip workers_dev = true and use the assigned subdomain.
+workers_dev = false
+
+[triggers]
+crons = ["*/5 * * * *"]   # every 5 minutes
+
+[vars]
+TARGET_BASE = "https://forexsight-preview.pages.dev"

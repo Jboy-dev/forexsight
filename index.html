@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ForexSight — Live Signal Analytics</title>
+<link rel="manifest" href="/manifest.json" />
+<meta name="theme-color" content="#000000" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="ForexSight" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+<!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
+<link rel="preconnect" href="https://rsms.me/" crossorigin>
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">
+      <svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="lg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0a84ff"/>
+            <stop offset="50%" stop-color="#5fd5ff"/>
+            <stop offset="100%" stop-color="#30d158"/>
+          </linearGradient>
+          <linearGradient id="lg-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#0a84ff" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#30d158" stop-opacity="0.4"/>
+          </linearGradient>
+        </defs>
+        <rect x="2" y="2" width="36" height="36" rx="10" fill="url(#lg-glow)" opacity="0.18"/>
+        <path d="M8 28 L14 18 L20 24 L32 8" fill="none" stroke="url(#lg-grad)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="32" cy="8" r="2.4" fill="#30d158"/>
+        <circle cx="20" cy="24" r="2" fill="#5fd5ff" opacity="0.85"/>
+        <circle cx="14" cy="18" r="1.7" fill="#0a84ff" opacity="0.85"/>
+      </svg>
+    </span>
+    <div class="brand-text">
+      <h1>ForexSight <span class="scan-pulse" id="scan-pulse" title="Live scanning every minute · brain learning continuously"></span></h1>
+      <span class="tag">Multi-indicator confluence · Live data · News-aware</span>
+    </div>
+  </div>
+  <div class="controls">
+    <label class="ctrl">Min confidence
+      <input type="range" id="conf-slider" min="0" max="100" step="5" />
+      <span id="conf-val">—</span>
+    </label>
+    <button id="best-only-btn" class="best-btn" title="Show only the highest-probability setups (multi-strategy + HTF aligned + ≥70% confluence)">⭐ Best only</button>
+    <button id="notify-btn" class="notify-btn" title="Get notifications when a strategy confirms a signal (silent-mode friendly with unique vibration per strategy)">🔕 Alerts OFF</button>
+    <button id="vibe-legend-btn" class="vibe-legend-btn" title="Show vibration pattern legend">📳 Vibes</button>
+    <button id="refresh-btn" title="Tap to refresh data — hold for hard refresh (clears cache & pulls latest version)">↻ Refresh</button>
+    <label class="ctrl inline">
+      <input type="checkbox" id="auto-refresh" checked /> Auto (3 min)
+    </label>
+    <span id="last-updated" class="muted"></span>
+  </div>
+</header>
+
+<div class="market-bar">
+  <span id="live-clock" class="clock">—</span>
+  <span class="clock-sep">·</span>
+  <span id="active-sessions" class="sessions">—</span>
+  <span class="clock-sep">·</span>
+  <span id="next-hour" class="next-candle">—</span>
+</div>
+
+<!-- v345 — disclaimer moved to bottom (was here — kept above tabs for
+     regulatory visibility, but user asked for it to be less prominent).
+     Now placed just above the footer at the end of the page. -->
+
+<!-- v209 — Dropdown menu MOVED OUTSIDE the .tabs nav because .tabs has
+     backdrop-filter which creates a containing block for position:fixed
+     children (causing the clipping). The button stays in nav for layout
+     but the menu lives at body level. -->
+<nav class="tabs">
+  <button class="tab active" data-tab="signals">Signals</button>
+  <button class="tab" data-tab="trades">My Trades</button>
+  <button class="tab" data-tab="history">History</button>
+  <button class="tab" data-tab="calendar">Calendar</button>
+  <button class="tab" data-tab="news">News</button>
+  <button class="tab" data-tab="calculator">Calculator</button>
+  <button class="tab" data-tab="chart-bot">Chart Bot</button>
+  <button class="tab" data-tab="live-chart">Live Chart</button>
+  <button class="tab" data-tab="trade-doctor">Trade Doctor</button>
+  <button class="tab" id="more-tab-btn">More ▾</button>
+</nav>
+<!-- Menu rendered at body level so backdrop-filter on .tabs doesn't clip it -->
+<div class="tab-more-menu" id="more-menu" hidden>
+  <button class="tab" data-tab="strategies">Strategies</button>
+  <button class="tab" data-tab="performance">Learning</button>
+  <button class="tab" data-tab="wisdom">Forex Wisdom</button>
+  <button class="tab" data-tab="platforms">Platforms</button>
+</div>
+
+<main>
+  <section id="signals" class="tab-content active">
+    <!-- v375 — ALGO READ card. Institutional/HFT footprints per pair:
+         VWAP position, absorption bars, wick rejections, round-number
+         gravity, algo time windows, range compression. Directional
+         bias per pair + market-wide summary. -->
+    <div id="algo-read-card" class="algo-read-card" hidden></div>
+
+    <!-- v379 — SETUP RADAR. Scans EVERY pair via /api/predict-next and lists
+         every setup with meaningful directional bias, ranked by strength.
+         Includes setups the strict main gate held back (with reason), so
+         you never miss a valid setup. -->
+    <div id="setup-radar-card" class="setup-radar-card" hidden></div>
+
+    <!-- v373 — CHEAT CODES banner. Four web-verified professional
+         techniques (Silver Bullet, Liquidity Sweep+Reversal, ORB,
+         Wyckoff Spring). Each fires only in its documented window with
+         its exact trigger. Sources cited on each signal. -->
+    <div id="cheat-codes-container" class="cheat-codes-container" hidden></div>
+
+    <!-- v372 — PRO signal banner. The highest-conviction tier: price
+         reacting at a daily key level with candle trigger + HTF bias +
+         news catalyst + session appropriate + R:R≥3. Expected 0-2/day.
+         When present, THIS is the trade to take. -->
+    <div id="pro-banner" class="pro-banner" hidden></div>
+
+    <!-- v366 — ELITE signal banner. Passes 10-gate system-level filters.
+         Fires more often than PRO but is still selective. -->
+    <div id="elite-banner" class="elite-banner" hidden></div>
+
+    <!-- v366 — STAND ASIDE banner. Only visible when Conditions Score < 50.
+         Overrides everything else — tells user not to trade regardless of
+         what signals show. This is the "consistent wins" filter. -->
+    <div id="stand-aside-banner" class="stand-aside-banner" hidden></div>
+
+    <!-- v380 — TRUST BADGE. Single-glance system trust score (0-100).
+         Tap to expand into full breakdown: filtered-tier WR, live setup
+         quality, calibration accuracy, filter selectivity. -->
+    <div id="trust-badge-card" class="trust-badge-card" hidden></div>
+
+    <!-- v367 — Honest track record card. Shows real wins/losses per tier
+         so you can see EXACTLY how the system is performing right now.
+         Trustworthiness comes from showing your work, not from claims. -->
+    <div id="track-record-card" class="track-record-card" hidden></div>
+
+    <!-- v364 — Trading Conditions Score. Single 0-100 that tells you if you
+         should be trading at all right now. Retail's biggest cause of losses
+         is taking bad trades in bad conditions — this is the first filter. -->
+    <div id="conditions-card" class="conditions-card" hidden>
+      <div class="conditions-header">
+        <div class="conditions-score-wrap">
+          <div class="conditions-score" id="conditions-score-num">—</div>
+          <div class="conditions-max">/ 100</div>
+        </div>
+        <div class="conditions-verdict-wrap">
+          <div class="conditions-verdict" id="conditions-verdict">…</div>
+          <div class="conditions-action" id="conditions-action">Loading conditions…</div>
+        </div>
+        <button type="button" class="conditions-toggle" id="conditions-toggle" aria-label="Show breakdown">▼</button>
+      </div>
+      <div class="conditions-breakdown" id="conditions-breakdown" hidden></div>
+    </div>
+
+    <div class="signals-status-row">
+      <div class="status" id="signals-status">Loading live signals…</div>
+      <button type="button" id="signals-rescan-btn" class="signals-rescan-btn"
+              title="Force a fresh scan of all pairs right now">🔄 Rescan now</button>
+    </div>
+    <div id="signals-grid" class="grid"></div>
+  </section>
+
+  <section id="trades" class="tab-content">
+    <!-- v219 — live trade monitor pulse — confirms the 10s real-time check is running -->
+    <div id="trade-monitor-pulse" class="trade-monitor-pulse mon-ok" title="Open trades are checked every 10 seconds against the latest price. The instant any trade hits SL/TP it's closed and you get a notification.">● Live monitor · initializing…</div>
+    <p class="muted">Active trades you're currently tracking. They progress through TP1 → TP2 → TP3 automatically; SL trails to entry after TP1 hits so winners can't turn into losers. Closed trades move to the History tab.</p>
+    <div id="trades-view"></div>
+  </section>
+
+  <section id="history" class="tab-content">
+    <p class="muted">Every closed trade you've ever taken — won, lost, or manually closed. Sorted by grade so your best (and worst) setups are easy to review.</p>
+    <div id="history-view"></div>
+  </section>
+
+  <section id="strategies" class="tab-content">
+    <p class="muted">Per-strategy tracking — total trades, currently open, won, lost, win rate, and grade breakdown. Each strategy's stats are independent so you can see which is performing best.</p>
+    <div id="strategies-view"></div>
+  </section>
+
+  <section id="news" class="tab-content">
+    <!-- v215 — Pro Consensus moved here from the home/signals tab -->
+    <div id="pro-consensus-container"></div>
+    <div class="status" id="news-status">Loading news…</div>
+    <div id="news-list" class="news-list"></div>
+  </section>
+
+  <section id="calendar" class="tab-content">
+    <p class="muted">High-impact events from ForexFactory this week. Avoid entering trades 30 min before/after.</p>
+    <div id="calendar-list"></div>
+  </section>
+
+  <section id="performance" class="tab-content">
+    <p class="muted">Each signal is tracked and measured against whether price hit TP1 or SL first. Indicator weights adapt based on hit-rate. Per-pair and per-hour stats also feed a context boost so signals generated during times/pairs that historically win get a small confidence bump.</p>
+    <div id="performance-view"></div>
+  </section>
+
+  <section id="wisdom" class="tab-content">
+    <h2>Forex trading principles</h2>
+    <div class="wisdom-grid">
+      <div class="wisdom-card">
+        <h3>💰 Risk management (the #1 thing)</h3>
+        <ul>
+          <li>Never risk more than <strong>1–2% per trade</strong>. Even 10 losses in a row only drops you 10–20%.</li>
+          <li>Always set a stop loss <em>before</em> entering. No exceptions.</li>
+          <li>Minimum 1:2 risk-to-reward — the app's TP2 is designed for this.</li>
+          <li>If you break a rule, close the trade. Discipline &gt; analysis.</li>
+        </ul>
+      </div>
+      <div class="wisdom-card">
+        <h3>⏰ Session timing</h3>
+        <ul>
+          <li><strong>London/NY overlap (13:00–16:00 UTC)</strong>: highest liquidity, tightest spreads — best for scalping and breakouts.</li>
+          <li><strong>Asian session</strong>: slower, more ranging — better for mean-reversion plays on JPY pairs.</li>
+          <li><strong>Avoid Friday close & Sunday open</strong>: thin liquidity, gap risk.</li>
+          <li><strong>Avoid red-folder news ± 30 min</strong>: spreads widen, stops get hunted. Check Calendar tab.</li>
+        </ul>
+      </div>
+      <div class="wisdom-card">
+        <h3>📈 What the indicators actually tell you</h3>
+        <ul>
+          <li><strong>RSI</strong> — overbought/oversold. Best in ranges; lies in strong trends (stays pinned &gt;70 or &lt;30).</li>
+          <li><strong>MACD</strong> — momentum shifts. Lag behind price by design.</li>
+          <li><strong>EMA stack (20/50/200)</strong> — trend direction. If all three align, trend is your friend.</li>
+          <li><strong>Bollinger Bands</strong> — volatility. Squeezes → breakouts. Tags of outer bands → mean reversion.</li>
+          <li><strong>ADX</strong> — trend strength. &gt;25 = trade with trend. &lt;20 = range-trade.</li>
+          <li><strong>Candlestick patterns</strong> — only reliable at support/resistance or after extended moves.</li>
+        </ul>
+      </div>
+      <div class="wisdom-card">
+        <h3>🎯 The "high-probability" setup checklist</h3>
+        <ul>
+          <li>Higher timeframe trend aligned with your entry direction</li>
+          <li>Price at a clear support or resistance level</li>
+          <li>Confirmation candle (engulfing, pin bar, etc.)</li>
+          <li>Momentum oscillator (RSI/Stoch) diverging or at extreme</li>
+          <li>Entering during London or NY session, not Asian doldrums</li>
+          <li>No red-folder news in the next 30 min</li>
+          <li>Pre-planned stop loss and target — before you click the button</li>
+        </ul>
+      </div>
+      <div class="wisdom-card">
+        <h3>🧠 Psychology — the silent killer</h3>
+        <ul>
+          <li><strong>Revenge trading</strong> (doubling up after a loss) destroys more accounts than bad analysis.</li>
+          <li>If you're on tilt, walk away — markets are open 24/5, the opportunity will come back.</li>
+          <li>Keep a journal (the My Trades tab is one). Review losses without judgment.</li>
+          <li>Your win rate doesn't have to be high. 40% win rate with 1:2 R:R is still profitable.</li>
+        </ul>
+      </div>
+      <div class="wisdom-card">
+        <h3>🚫 The mistakes that blow accounts</h3>
+        <ul>
+          <li>No stop loss "because the trade will come back"</li>
+          <li>Moving stop losses further away</li>
+          <li>Overleveraging — anything above 5:1 effective leverage is roulette</li>
+          <li>Trading every signal instead of the best ones</li>
+          <li>Trading news events without understanding spreads + slippage</li>
+          <li>Copying signals blindly without understanding the setup</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card" style="grid-column: 1 / -1;">
+        <h3>🧠 Smart Money Concepts (ICT) — the institutional framework</h3>
+        <p class="muted" style="margin-bottom:10px;">Distilled from Inner Circle Trader research and modern price-action literature. These are the highest-probability setups professional retail traders actually use:</p>
+        <ul>
+          <li><strong>Liquidity Sweep / Stop Hunt</strong> (65–75% historical win rate). Price wicks above an obvious swing high (or below a swing low) to trigger clustered stops, then closes back inside the range. The sweep itself is the entry trigger — go opposite the wick, stop just beyond it. Best at session opens (London sweeps Asian high/low; NY sweeps London's extremes).</li>
+          <li><strong>Order Block</strong>. The last opposing candle before a strong impulse move. Bullish order block = last bearish candle before a rally; price often returns to that zone for a re-entry. Combine with a Fair Value Gap above/below for highest probability.</li>
+          <li><strong>Fair Value Gap (FVG)</strong>. A 3-candle imbalance where candle 1's wick doesn't overlap candle 3's wick — price moved too fast to fill orders. Fresh (unmitigated) FVGs are high-probability magnets; price typically returns to fill them.</li>
+          <li><strong>Break of Structure (BOS)</strong>. Price breaks the most recent swing high in an uptrend (or low in a downtrend) — confirms trend continuation. Trade pullbacks back toward the broken level.</li>
+          <li><strong>Change of Character (CHoCH)</strong>. The first counter-trend break — a downtrend's first higher high, or uptrend's first lower low. Earlier signal than BOS for catching reversals at the start of a new leg.</li>
+          <li><strong>Premium / Discount</strong>. Mark the most recent significant range. The lower 33% (discount) is the institutional buying zone — only buy here. The upper 33% (premium) is the institutional selling zone — only sell here. Avoid the middle 33%.</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card">
+        <h3>⏰ ICT Killzones — when institutional flow concentrates</h3>
+        <ul>
+          <li><strong>London Killzone (07:00–10:00 UTC)</strong>: best for EUR/USD, GBP/USD, EUR/GBP, EUR/CHF. London opens hunt the Asian high or low first.</li>
+          <li><strong>New York Killzone (12:00–15:00 UTC)</strong>: best for all majors + indices. NY often hunts London's extremes before the real move.</li>
+          <li><strong>Outside killzones</strong>: lower liquidity, more noise, more whipsaws. Trade smaller or sit out.</li>
+          <li>Avoid the <strong>Asian session</strong> for breakout strategies — slow ranges, false breaks. Better for mean reversion on JPY pairs.</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card">
+        <h3>🎯 The institutional confluence stack</h3>
+        <p class="muted" style="margin-bottom:8px;">Pro confluence = at least 3-4 INDEPENDENT factors agreeing. Stack these:</p>
+        <ul>
+          <li><strong>Higher-timeframe trend</strong> (Daily) — only trade in its direction</li>
+          <li><strong>Mid-timeframe structure</strong> (4H) — pullback or continuation pattern</li>
+          <li><strong>Entry-timeframe trigger</strong> (1H) — engulfing, pin bar, or structure shift</li>
+          <li><strong>Premium/Discount zone</strong> — only buy in lower third, sell in upper third</li>
+          <li><strong>Liquidity zone</strong> — fresh order block, FVG, or sweep just completed</li>
+          <li><strong>Killzone window</strong> — London or NY institutional hours</li>
+          <li><strong>No high-impact news</strong> in the next 30–60 min (red folder calendar)</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card">
+        <h3>📊 Why retail traders actually lose (research consensus)</h3>
+        <ul>
+          <li><strong>Misuse of leverage</strong> — 1:500 leverage = 1 bad trade kills the account</li>
+          <li><strong>No risk management</strong> — risking 5–10% per trade ensures eventual ruin</li>
+          <li><strong>Emotional execution</strong> — moving stops, revenge trading, FOMO entries</li>
+          <li><strong>Overtrading</strong> — taking 20 mediocre setups instead of 3 great ones</li>
+          <li><strong>No edge</strong> — trading without statistical proof the strategy wins</li>
+          <li><strong>Wrong session</strong> — trading low-liquidity hours, getting whipsawed</li>
+          <li><strong>Fighting the trend</strong> — counter-trend trades fail 60–70% of the time</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card" style="grid-column: 1 / -1;">
+        <h3>📺 FXAlexG "Set and Forget" — what's in it (and an honest caveat)</h3>
+        <p class="muted" style="margin-bottom:8px;"><em>Caveat: Alex Gonzalez (FXAlexG) was investigated by Coffeezilla in August 2025 and confirmed making about $7.5M from selling courses. The strategy itself, summarized below, is a sound classical multi-timeframe price-action method — but the "9/10 wins" testimonials around it are course marketing, not trading reality. We've implemented the strategy mechanics as a labeled signal source.</em></p>
+        <ol>
+          <li><strong>Areas of Interest (AOIs)</strong> are identified <em>only</em> on Daily and Weekly timeframes — never on lower TFs. These are zones where price has previously reversed and is likely to react again.</li>
+          <li><strong>Multi-timeframe trend agreement</strong> — Weekly direction, Daily direction, and 4H structure must all align before any trade is considered.</li>
+          <li><strong>Engulfing candle (or pin bar)</strong> at the AOI is the entry trigger — wait for a strong rejection candle that sweeps liquidity inside the zone.</li>
+          <li><strong>Stop loss</strong> goes where invalidation occurs — beyond the AOI, beyond the engulfing wick. Never moved.</li>
+          <li><strong>Take profit</strong> at the next major structure point with at least 1:2 R:R, ideally 1:3.</li>
+          <li><strong>"Set and Forget"</strong> — once the order is in, you don't touch it. No partials, no breakevens, no trailing stops. Either TP hits or SL hits.</li>
+        </ol>
+        <p class="muted" style="margin-top:8px;">When this setup fires on any pair, you'll see <strong>"AlexG Set & Forget"</strong> tagged on the signal card and inside the modal's strategies section.</p>
+      </div>
+
+      <div class="wisdom-card" style="grid-column: 1 / -1;">
+        <h3>🐍 MambaFX strategy — Supply/Demand zone retest</h3>
+        <p class="muted" style="margin-bottom:8px;"><em>Caveat: same as with FXAlexG, MambaFX makes most of his money from courses and trade-management subscriptions, not from publicly verifiable trading audits. The strategy itself, summarized below from his public videos and supply/demand literature, is a sound classical Smart Money Concept method — but treat any "9/10 wins" claims attributed to him as marketing.</em></p>
+        <p>Core public methodology:</p>
+        <ol>
+          <li><strong>HTF / LTF synchronization</strong> — Daily/H4 trend must agree with the entry direction (already enforced by our HTF + 4H gates).</li>
+          <li><strong>Identify an "impulse leg"</strong> — 3+ consecutive same-direction candles where each body is &gt;50% of its range. This signals institutional drive.</li>
+          <li><strong>Mark the candle BEFORE the impulse</strong> as the supply (bearish impulse) or demand (bullish impulse) zone — that's where buyers/sellers stepped in originally.</li>
+          <li><strong>Wait for retest</strong> — price returns to that zone on a pullback.</li>
+          <li><strong>Confirmation candle</strong> — a candle in the impulse direction at the zone is the entry trigger.</li>
+          <li><strong>Stop loss</strong> beyond the zone, target the next opposing key level (typically 1:2+ R:R).</li>
+        </ol>
+        <p class="muted" style="margin-top:8px;">When this setup fires on any pair, you'll see <strong>"MambaFX"</strong> tagged on the signal card and inside the modal's strategies section — easy to identify which signals trace to his methodology.</p>
+      </div>
+
+      <div class="wisdom-card" style="grid-column: 1 / -1;">
+        <h3>📐 Live chart pattern recognition</h3>
+        <p class="muted" style="margin-bottom:8px;">The system now scans every pair's price action live for three classical chart patterns and fires a vote when one forms. Each requires specific structure to be present, so most signals don't have any of these — but when they do, it's a high-conviction setup.</p>
+        <ul>
+          <li><strong>Double Top / Double Bottom</strong> — Two peaks (or troughs) at similar prices with a swing between, then break of the neckline. Considered one of the most reliable reversal patterns. Bearish on neckline break for double top, bullish for double bottom.</li>
+          <li><strong>Head &amp; Shoulders / Inverse H&amp;S</strong> — Three swing points where the middle is the most extreme and the outer two are at similar prices. Classic reversal. The system fires when price breaks the neckline drawn between the lows (or highs in inverse).</li>
+          <li><strong>Triangle breakout (Ascending / Descending / Symmetrical)</strong> — Detects flat highs + rising lows (ascending bullish), flat lows + falling highs (descending bearish), or both converging (symmetrical). Fires on the breakout direction.</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card" style="grid-column: 1 / -1;">
+        <h3>📚 Three documented-edge strategies just added</h3>
+        <p class="muted" style="margin-bottom:8px;">Drawn from academic research and 2025-2026 prop-trader playbooks. Each fires only when its specific conditions are met:</p>
+        <ul>
+          <li><strong>Hidden RSI Divergence</strong> — Trend-continuation pattern. In an uptrend, price prints a higher low while RSI prints a lower low (institutions accumulating during pullbacks). Documented to outperform regular divergence because it trades WITH the dominant trend instead of against it.</li>
+          <li><strong>TTM Squeeze Breakout</strong> — Bollinger Bands inside Keltner Channel = volatility coiling. When Bollinger expands back outside Keltner, the coil "fires" with high momentum. Heavily used by futures and forex prop traders for catching breakouts at the start.</li>
+          <li><strong>Three-Bar Reversal</strong> — Classic exhaustion: 2 bars extending a move, then a 3rd bar that strongly reverses and closes beyond the 2nd bar's range. Signals momentum has died. Strongest at support/resistance levels.</li>
+        </ul>
+      </div>
+
+      <div class="wisdom-card">
+        <h3>🏆 What prop-firm-funded traders do consistently</h3>
+        <ul>
+          <li>Fixed risk per trade: 0.5–1% (NEVER 2%+)</li>
+          <li>Trade only their best 1–2 setups, no exceptions</li>
+          <li>Pre-defined R:R (minimum 1:2, ideally 1:3)</li>
+          <li>Trade within their personal "best window" (often London or NY only)</li>
+          <li>Walk away after hitting a daily loss limit (3% or 2 losses)</li>
+          <li>Journal every trade — review losses without judgment, looking for pattern violations</li>
+          <li>Skip trading during major news, end of week, low-volatility regimes</li>
+          <li>Treat trading as a business, not a get-rich-quick scheme</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2 style="margin-top:28px">How ForexSight builds a signal</h2>
+    <p>For each pair, 9 independent signals each cast a vote (bullish / bearish / neutral) on 1-hour candles:</p>
+    <ul>
+      <li><strong>RSI, MACD, EMA stack, Short-term EMA, Bollinger Bands, Stochastic, ADX</strong> — classical technical indicators</li>
+      <li><strong>Candlestick patterns</strong> — engulfing, hammer, shooting star, morning/evening star</li>
+      <li><strong>Support / Resistance</strong> — pivot points from the last 50 bars</li>
+    </ul>
+    <p>Each vote is weighted by that indicator's historical hit-rate. The weighted majority sets direction; its weighted share sets the confluence %. That score is then multiplied by a <strong>session liquidity factor</strong> (London/NY overlap gets a 10% boost, off-hours a 10% penalty) and a <strong>per-pair + per-hour context boost</strong> (if a pair historically wins during this hour of day, its confidence gets a small bump — capped at ±50%).</p>
+    <p>Entry = current price. Stop Loss = entry ± 1.5 × ATR(14). TP1 = entry ± 1.5 × ATR (1:1 R:R). TP2 = entry ± 3 × ATR (1:2 R:R).</p>
+
+    <h3>Position-size calculator</h3>
+    <div class="calc">
+      <label>Account balance (£) <input type="number" id="calc-balance" value="1000" min="1" /></label>
+      <label>Risk per trade (%) <input type="number" id="calc-risk" value="1" min="0.1" max="5" step="0.1" /></label>
+      <label>Pair <select id="calc-pair"></select></label>
+      <label>Stop distance (pips) <input type="number" id="calc-pips" value="20" min="1" /></label>
+      <button id="calc-btn">Calculate</button>
+      <div id="calc-result"></div>
+    </div>
+  </section>
+
+  <section id="platforms" class="tab-content">
+    <h2>Placing trades on each platform</h2>
+    <p class="muted">Universal rule: <strong>never</strong> size a position so that a full SL hit loses more than 1–2% of your account. Use the position-size calculator below for each signal.</p>
+
+    <div class="plat">
+      <h3>MetaTrader 4 (MT4) / MetaTrader 5 (MT5)</h3>
+      <ol>
+        <li>Open <em>Market Watch</em> (Ctrl+M) and right-click the pair → <em>New Order</em> (F9).</li>
+        <li>Type: <code>Pending Order</code> if entering at a level away from current price, else <code>Market Execution</code>.</li>
+        <li>Volume: use lot size from the calculator on the signal card.</li>
+        <li>Stop Loss: paste the SL price from the signal.</li>
+        <li>Take Profit: paste TP1 (or split: half at TP1, move SL to entry, let the rest run to TP2).</li>
+        <li>Click <em>Sell by Market</em> / <em>Buy by Market</em>.</li>
+      </ol>
+    </div>
+
+    <div class="plat">
+      <h3>TradingView (paper or connected broker)</h3>
+      <ol>
+        <li>Open the pair chart. Press <code>Shift+Click</code> on the price scale to drop a horizontal line at entry.</li>
+        <li>Click <em>Trade</em> panel → pick your broker (OANDA, FOREX.com, Tradovate, etc.).</li>
+        <li>Order type: <em>Limit</em> at entry price.</li>
+        <li>Attach bracket: SL = the SL price, TP = TP1 price.</li>
+        <li>Quantity: paste units from the position-size calculator.</li>
+        <li>Review → <em>Buy / Sell</em>.</li>
+      </ol>
+    </div>
+
+    <div class="plat">
+      <h3>cTrader</h3>
+      <ol>
+        <li>Right-click pair in <em>Symbols</em> → <em>Create New Order</em>.</li>
+        <li>Order: <em>Limit</em>. Enter price = signal entry.</li>
+        <li>Volume: enter lots from calculator.</li>
+        <li>Protection: tick <em>Stop Loss</em> and <em>Take Profit</em>, paste prices.</li>
+        <li>Place.</li>
+      </ol>
+    </div>
+
+    <div class="plat">
+      <h3>OANDA (web / app)</h3>
+      <ol>
+        <li>Open pair → <em>Trade</em>.</li>
+        <li>Order type: <em>Limit</em>, enter price = signal entry.</li>
+        <li>Units: from calculator (positive = buy, negative = sell; or use the Buy/Sell toggle).</li>
+        <li>Enable <em>Stop Loss</em> and <em>Take Profit</em>, enter as <em>Price</em> (not pips).</li>
+        <li>Submit.</li>
+      </ol>
+    </div>
+
+    <div class="plat">
+      <h3>IG / CMC / Plus500 / FOREX.com / XM etc. (generic)</h3>
+      <ol>
+        <li>Search the pair → open order ticket.</li>
+        <li>Select <em>Limit order</em> (or <em>Pending</em>).</li>
+        <li>Enter price = signal entry.</li>
+        <li>Fill <em>Stop</em> and <em>Limit</em> (TP) with the signal prices. Most platforms let you toggle between "points", "pips", and "level" — always use <strong>level / price</strong> to avoid mistakes.</li>
+        <li>Size using the calculator.</li>
+        <li>Place order.</li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="calculator" class="tab-content">
+    <h2>Lot Size Calculator</h2>
+    <p class="muted">Calculates position size based on (a) the risk you're willing to take AND (b) the margin your broker requires — so you never get a "not enough money" error.</p>
+    <div class="calc-standalone">
+      <div class="calc-row">
+        <label>Account balance (£)
+          <input type="number" id="calc2-balance" value="1000" min="1" step="50" />
+        </label>
+        <label>Risk type
+          <div class="calc-toggle" role="tablist">
+            <button type="button" class="calc-toggle-btn active" data-risk-mode="percent">% of account</button>
+            <button type="button" class="calc-toggle-btn" data-risk-mode="amount">£ amount</button>
+          </div>
+        </label>
+      </div>
+      <div class="calc-row">
+        <label id="calc2-risk-percent-label">Risk per trade (%)
+          <input type="number" id="calc2-risk" value="1" min="0.1" max="10" step="0.1" />
+        </label>
+        <label id="calc2-risk-amount-label" style="display:none;">Risk amount (£)
+          <input type="number" id="calc2-risk-amount" value="20" min="1" step="1" />
+        </label>
+        <label>Pair <span class="muted" style="font-weight:400">(type to search)</span>
+          <div class="lev-pair-combo">
+            <input type="text" id="calc2-pair" placeholder="Type a pair — gold, eurusd, dax, btc..." autocomplete="off" autocapitalize="characters" spellcheck="false" />
+            <div id="calc2-pair-suggestions" class="lev-pair-suggestions" hidden role="listbox"></div>
+          </div>
+        </label>
+      </div>
+      <div class="calc-row">
+        <label>Stop distance (pips)
+          <input type="number" id="calc2-pips" value="20" min="1" step="1" />
+        </label>
+        <label>Current price <span class="muted">(auto for gold/major pairs)</span>
+          <input type="number" id="calc2-price" placeholder="e.g. 4500" min="0" step="0.01" />
+        </label>
+      </div>
+      <div class="calc-row">
+        <label>Broker leverage
+          <select id="calc2-leverage">
+            <option value="30">1:30 (EU/UK regulated)</option>
+            <option value="50">1:50</option>
+            <option value="100" selected>1:100</option>
+            <option value="200">1:200</option>
+            <option value="400">1:400</option>
+            <option value="500">1:500</option>
+            <option value="1000">1:1000</option>
+            <option value="2000">1:2000</option>
+          </select>
+        </label>
+        <label></label>
+      </div>
+      <button id="calc2-btn" class="calc-go">Calculate Lot Size</button>
+      <div id="calc2-result" class="calc-result"></div>
+    </div>
+
+    <!-- v275 — LEVERAGE MATRIX. Side-by-side comparison of EVERY leverage
+         option across EVERY pair, with profit/loss expectations per leverage. -->
+    <div class="calc-standalone leverage-matrix-card">
+      <h2>📊 Leverage Matrix</h2>
+      <p class="muted">See exactly how much you'd make or lose at every leverage level. Shows max position size, required margin, profit if TP hits, loss if SL hits — across every leverage your broker offers.</p>
+      <div class="calc-row">
+        <label>Account balance (£)
+          <input type="number" id="lev-balance" value="1000" min="1" step="50" />
+        </label>
+        <label class="lev-pair-label">Pair <span class="muted" style="font-weight:400">(type to search)</span>
+          <div class="lev-pair-combo">
+            <input type="text" id="lev-pair" value="XAU/USD" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Type a pair, e.g. gold, eurusd, dax" />
+            <div id="lev-pair-suggestions" class="lev-pair-suggestions" hidden role="listbox"></div>
+          </div>
+        </label>
+      </div>
+      <!-- v282 — BROKER selector. Caps the leverage matrix to what the
+           chosen broker actually offers for the selected instrument class.
+           Reuses the .lev-pair-* combo CSS for consistent styling. -->
+      <div class="calc-row">
+        <label class="lev-pair-label">Broker <span class="muted" style="font-weight:400">(type to search — IC Markets, Exness, FBS…)</span>
+          <div class="lev-pair-combo">
+            <input type="text" id="lev-broker" value="IC Markets" autocomplete="off" spellcheck="false" placeholder="Type your broker name…" />
+            <div id="lev-broker-suggestions" class="lev-pair-suggestions" hidden role="listbox"></div>
+          </div>
+        </label>
+        <label class="lev-custom-cap-wrap" id="lev-custom-cap-wrap" style="display:none;">Your max leverage (1:X)
+          <input type="number" id="lev-custom-cap" value="500" min="1" max="5000" step="1" />
+        </label>
+      </div>
+      <div class="calc-row">
+        <label>Entry price
+          <input type="number" id="lev-entry" value="2650" min="0" step="0.01" />
+        </label>
+        <label>Stop-loss distance (pips)
+          <input type="number" id="lev-sl-pips" value="30" min="1" step="1" />
+        </label>
+      </div>
+      <!-- v276 — Paste-signal helper: enter entry/SL/TP prices and the
+           calculator auto-computes pip distances + fills SL/TP fields. -->
+      <div class="lev-paste-signal">
+        <div class="lev-paste-label">Or paste signal (auto-fills SL + TP distances):</div>
+        <div class="calc-row">
+          <label>Signal entry
+            <input type="number" id="lev-sig-entry" placeholder="e.g. 2650.50" min="0" step="0.0001" />
+          </label>
+          <label>SL price
+            <input type="number" id="lev-sig-sl" placeholder="e.g. 2647.50" min="0" step="0.0001" />
+          </label>
+          <label>TP price
+            <input type="number" id="lev-sig-tp" placeholder="e.g. 2656.00" min="0" step="0.0001" />
+          </label>
+        </div>
+        <button id="lev-apply-signal" class="lev-apply-btn" type="button">Apply signal levels</button>
+      </div>
+      <div class="calc-row">
+        <label>Take-profit distance (pips)
+          <input type="number" id="lev-tp-pips" value="60" min="1" step="1" />
+        </label>
+        <label>Position to evaluate
+          <select id="lev-sizing">
+            <option value="max" selected>MAX possible at each leverage</option>
+            <option value="risk-1">Size for 1% account risk</option>
+            <option value="risk-2">Size for 2% account risk</option>
+            <option value="risk-5">Size for 5% account risk</option>
+            <option value="lot-001">0.01 lot (micro)</option>
+            <option value="lot-01">0.1 lot (mini)</option>
+            <option value="lot-1">1.0 lot (standard)</option>
+            <option value="custom">Custom lot size…</option>
+          </select>
+        </label>
+      </div>
+      <!-- v276 — Custom lot input, revealed when sizing = custom -->
+      <div class="calc-row lev-custom-lot-row" id="lev-custom-row" style="display:none;">
+        <label>Custom lot size
+          <input type="number" id="lev-custom-lot" value="0.5" min="0.001" step="0.001" />
+        </label>
+        <label></label>
+      </div>
+      <button id="lev-btn" class="calc-go">Generate matrix</button>
+      <div id="lev-result" class="lev-result"></div>
+    </div>
+  </section>
+  <!-- v237 — Removed stray duplicate </section> here that closed nothing. -->
+
+  <!-- v285 — CHART BOT. Multi-modal trading analyst — paste a chart, ask a
+       question, get a verdict grounded in real brain backtest stats. Uses
+       Claude API when ANTHROPIC_API_KEY is set; otherwise brain-only mode. -->
+  <section id="chart-bot" class="tab-content">
+    <div class="cb-wrap">
+      <div class="cb-header">
+        <div class="cb-title">
+          <h2>📈 Chart Bot</h2>
+          <p class="muted">Drop a chart screenshot, type a question, get a verdict. Every read is paired with the brain's real backtested numbers.</p>
+        </div>
+        <div class="cb-controls">
+          <label class="cb-pair-hint">Pair
+            <input type="text" id="cb-pair-hint" placeholder="e.g. XAU/USD" autocomplete="off" />
+          </label>
+          <label class="cb-pair-hint">Timeframe
+            <select id="cb-timeframe">
+              <option value="">— pick —</option>
+              <option value="1m">1 minute</option>
+              <option value="5m">5 minutes</option>
+              <option value="15m">15 minutes</option>
+              <option value="30m">30 minutes</option>
+              <option value="1H">1 hour</option>
+              <option value="4H" selected>4 hour</option>
+              <option value="1D">Daily</option>
+              <option value="1W">Weekly</option>
+            </select>
+          </label>
+          <button id="cb-new-chat" class="cb-secondary" type="button">New chat</button>
+        </div>
+      </div>
+      <div id="cb-status" class="cb-status muted"></div>
+      <div id="cb-messages" class="cb-messages" aria-live="polite"></div>
+      <div id="cb-attachments" class="cb-attachments"></div>
+      <div class="cb-composer">
+        <button id="cb-attach-btn" class="cb-attach" title="Attach chart screenshot" type="button">📎</button>
+        <input id="cb-file" type="file" accept="image/*" multiple hidden />
+        <textarea id="cb-input" placeholder="Ask anything — &quot;Should I buy XAU/USD here?&quot;, &quot;Read this chart&quot;, &quot;What's the safest setup right now?&quot;" rows="2"></textarea>
+        <button id="cb-send" class="cb-send" type="button">Send</button>
+      </div>
+      <p class="cb-disclaimer muted">
+        Chart reading is probabilistic, not certain. The bot will refuse to give a verdict if the chart is unclear or the brain's evidence is weak. Setups carry real risk — use the calculator to size positions appropriately.
+      </p>
+    </div>
+  </section>
+
+  <!-- v289/v290 — LIVE CHART tab. Official TradingView Advanced Chart widget
+       embedded (free, no API key, no credits — same as gptchart.ai uses).
+       16 strategy presets, indicator picker, expert mode. The bot analyzes
+       the same instrument using live OHLC + brain stats. No credit system —
+       user supplies their own Anthropic API key once. -->
+  <section id="live-chart" class="tab-content">
+    <div class="lc-wrap">
+      <div class="lc-header">
+        <div class="lc-title">
+          <h2>📊 Live Chart + AI Analyst</h2>
+          <p class="muted">Official TradingView chart + multi-strategy AI analysis. Pick a strategy, tap Analyse — get entry/SL/TP grounded in real backtest stats.</p>
+          <div class="lc-now-watching-badge" title="The pair currently loaded in the chart. Auto-updates if you change symbol inside TradingView.">
+            👁️ Now watching: <strong id="lc-now-watching">XAU/USD</strong>
+          </div>
+        </div>
+        <div class="lc-controls">
+          <label class="lc-field">Asset
+            <select id="lc-asset-class">
+              <option value="forex" selected>Forex / Metals</option>
+              <option value="crypto">Crypto</option>
+              <option value="stock">Stocks / Indices</option>
+            </select>
+          </label>
+          <label class="lc-field">Symbol
+            <input type="text" id="lc-pair" value="XAU/USD" autocomplete="off" autocapitalize="characters" spellcheck="false" />
+          </label>
+          <label class="lc-field">Timeframe
+            <select id="lc-timeframe">
+              <option value="1m">1m</option>
+              <option value="5m">5m</option>
+              <option value="15m">15m</option>
+              <option value="30m">30m</option>
+              <option value="1H">1H</option>
+              <option value="4H" selected>4H</option>
+              <option value="1D">1D</option>
+              <option value="1W">1W</option>
+              <option value="1M">1M</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <!-- Live data quote panel — driven by our /api/prices feed for the
+           pair, mirrors what the bot sees -->
+      <div class="lc-status-row">
+        <div class="lc-quote">
+          <span class="lc-quote-label">Price</span>
+          <span class="lc-quote-value" id="lc-price">—</span>
+          <span class="lc-quote-change" id="lc-change">—</span>
+        </div>
+        <div class="lc-quote-meta">
+          <span><span class="lc-mlabel">Day H</span> <span id="lc-day-high">—</span></span>
+          <span><span class="lc-mlabel">Day L</span> <span id="lc-day-low">—</span></span>
+          <span><span class="lc-mlabel">Swing H</span> <span id="lc-swing-high">—</span></span>
+          <span><span class="lc-mlabel">Swing L</span> <span id="lc-swing-low">—</span></span>
+          <span><span class="lc-mlabel">HTF</span> <span id="lc-htf">—</span></span>
+        </div>
+        <div class="lc-status muted" id="lc-status">Loading…</div>
+      </div>
+
+      <!-- TradingView Advanced Chart widget container. v363 — expand button
+           for fullscreen view uses the browser Fullscreen API. -->
+      <div class="lc-tv-wrap" id="lc-tv-wrap">
+        <button id="lc-tv-fullscreen" class="lc-tv-fullscreen-btn" type="button"
+                aria-label="Expand chart to fullscreen" title="Expand to fullscreen">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 9V3h6M21 9V3h-6M3 15v6h6M21 15v6h-6"/>
+          </svg>
+          <span class="lc-tv-fullscreen-label">Expand</span>
+        </button>
+        <div id="lc-tv-container" class="lc-tv-container"></div>
+      </div>
+
+      <!-- v290 — STRATEGY PRESETS. 16 chips. Picking one focuses the AI's
+           analysis on that strategy specifically (vs the default full scan). -->
+      <div class="lc-strats">
+        <div class="lc-strats-header">
+          <span class="lc-strats-label">Strategy focus</span>
+          <button id="lc-strats-clear" class="lc-strats-clear" type="button">Clear</button>
+        </div>
+        <div class="lc-strats-grid" id="lc-strats-grid">
+          <button class="lc-chip" data-strat="auto">🤖 Auto (full scan)</button>
+          <button class="lc-chip" data-strat="smc-sweep">SMC Liquidity Sweep</button>
+          <button class="lc-chip" data-strat="smc-ob">SMC Order Block</button>
+          <button class="lc-chip" data-strat="smc-fvg">SMC FVG Fill</button>
+          <button class="lc-chip" data-strat="ict-killzone">ICT Killzone</button>
+          <button class="lc-chip" data-strat="ict-breaker">ICT Breaker Block</button>
+          <button class="lc-chip" data-strat="wyckoff">Wyckoff Spring/Upthrust</button>
+          <button class="lc-chip" data-strat="elliott">Elliott Wave Count</button>
+          <button class="lc-chip" data-strat="fib">Fibonacci Retracement</button>
+          <button class="lc-chip" data-strat="supply-demand">Supply / Demand Zone</button>
+          <button class="lc-chip" data-strat="trend-following">Trend Following</button>
+          <button class="lc-chip" data-strat="pullback">Pullback Retracement</button>
+          <button class="lc-chip" data-strat="breakout">Breakout + Retest</button>
+          <button class="lc-chip" data-strat="mean-reversion">Mean Reversion</button>
+          <button class="lc-chip" data-strat="scalping">Scalping</button>
+          <button class="lc-chip" data-strat="harmonic">Harmonic Patterns</button>
+          <button class="lc-chip" data-strat="range">Range Trading</button>
+        </div>
+      </div>
+
+      <!-- v290 — INDICATOR PICKER. Up to 3 indicators the bot must reference. -->
+      <div class="lc-strats">
+        <div class="lc-strats-header">
+          <span class="lc-strats-label">Indicators (max 3) — the bot will reference these specifically</span>
+          <span class="muted" id="lc-ind-count" style="font-size:11px;">0/3</span>
+        </div>
+        <div class="lc-strats-grid">
+          <button class="lc-chip lc-chip-ind" data-ind="ema-20-50-200">EMA 20/50/200</button>
+          <button class="lc-chip lc-chip-ind" data-ind="sma">SMA</button>
+          <button class="lc-chip lc-chip-ind" data-ind="rsi">RSI</button>
+          <button class="lc-chip lc-chip-ind" data-ind="macd">MACD</button>
+          <button class="lc-chip lc-chip-ind" data-ind="bollinger">Bollinger Bands</button>
+          <button class="lc-chip lc-chip-ind" data-ind="stoch">Stochastic</button>
+          <button class="lc-chip lc-chip-ind" data-ind="atr">ATR</button>
+          <button class="lc-chip lc-chip-ind" data-ind="vwap">VWAP</button>
+          <button class="lc-chip lc-chip-ind" data-ind="ichimoku">Ichimoku</button>
+          <button class="lc-chip lc-chip-ind" data-ind="adx">ADX</button>
+        </div>
+      </div>
+
+      <!-- v290 — EXPERT MODE. Custom prompt textarea, only shown when toggled. -->
+      <div class="lc-strats">
+        <div class="lc-strats-header">
+          <label class="lc-expert-toggle">
+            <input type="checkbox" id="lc-expert-toggle" />
+            <span class="lc-strats-label">Expert mode — write your own instructions</span>
+          </label>
+        </div>
+        <textarea id="lc-expert-prompt" class="lc-expert-textarea" rows="3" placeholder="e.g. &quot;Only consider London session signals. Look for liquidity grabs above the Asian range high. Avoid trades near 8:30 NY news.&quot;" hidden></textarea>
+      </div>
+
+      <div class="lc-actions">
+        <button id="lc-analyze" class="lc-primary" type="button">🧠 Analyse now</button>
+        <button id="lc-snap-analyze" class="lc-primary lc-primary-alt" type="button" title="Capture the chart and let Claude see the actual pixels + data">📸 Snap & Analyse</button>
+        <label class="lc-auto-toggle">
+          <input type="checkbox" id="lc-auto" />
+          Auto-analyse every 2 min
+        </label>
+        <span class="muted lc-cost-note">Snap & Analyse captures your TradingView tab for real chart reading. Requires desktop Chrome/Edge/Firefox.</span>
+      </div>
+
+      <div id="lc-verdict" class="lc-verdict" hidden></div>
+
+      <p class="muted" style="font-size:11px;line-height:1.5;margin:4px 0 0">
+        Chart is the official free TradingView widget. AI analysis runs on Claude using the same OHLC feed and brain stats. No subscription, no credits — you set <code>ANTHROPIC_API_KEY</code> once and pay Anthropic directly per call (~1-10p).
+      </p>
+    </div>
+  </section>
+
+  <!-- v365 — Trade Doctor tab. Wired to /api/trade-doctor. User submits a
+       proposed trade; gets back verdict + green lights + red flags. This
+       is the pivot from "give me signals" to "help me evaluate MY trades". -->
+  <section id="trade-doctor" class="tab-content">
+    <div class="td-header">
+      <h2 class="td-title">Trade Doctor · Second Opinion</h2>
+      <p class="td-sub muted">Enter a trade you're thinking about taking. Get a comprehensive verdict from 8 independent sources of truth: conditions score, macro basket, veto status, system direction, pattern library, correlation risk, R:R sanity, position size.</p>
+    </div>
+
+    <form id="td-form" class="td-form" onsubmit="return false;">
+      <div class="td-row">
+        <label class="td-field">
+          <span class="td-label">Pair</span>
+          <select id="td-pair" class="td-input">
+            <option value="XAU/USD">XAU/USD (Gold)</option>
+            <option value="BTC/USD">BTC/USD (Bitcoin)</option>
+            <option value="EUR/USD">EUR/USD</option>
+            <option value="GBP/USD">GBP/USD</option>
+            <option value="USD/JPY">USD/JPY</option>
+            <option value="AUD/USD">AUD/USD</option>
+            <option value="NZD/USD">NZD/USD</option>
+            <option value="USD/CAD">USD/CAD</option>
+            <option value="USD/CHF">USD/CHF</option>
+          </select>
+        </label>
+        <label class="td-field">
+          <span class="td-label">Direction</span>
+          <div class="td-dir-toggle">
+            <button type="button" class="td-dir-btn active" data-dir="BUY" id="td-dir-buy">BUY</button>
+            <button type="button" class="td-dir-btn" data-dir="SELL" id="td-dir-sell">SELL</button>
+          </div>
+        </label>
+      </div>
+      <div class="td-row">
+        <label class="td-field">
+          <span class="td-label">Entry</span>
+          <input type="number" id="td-entry" class="td-input" step="0.00001" inputmode="decimal" placeholder="e.g. 3980.5">
+        </label>
+        <label class="td-field">
+          <span class="td-label">Stop Loss</span>
+          <input type="number" id="td-sl" class="td-input" step="0.00001" inputmode="decimal" placeholder="e.g. 4005">
+        </label>
+        <label class="td-field">
+          <span class="td-label">Risk %</span>
+          <input type="number" id="td-risk" class="td-input" step="0.1" min="0.1" max="5" value="1" inputmode="decimal">
+        </label>
+      </div>
+      <div class="td-row">
+        <label class="td-field">
+          <span class="td-label">TP1 <span class="td-opt">(optional)</span></span>
+          <input type="number" id="td-tp1" class="td-input" step="0.00001" inputmode="decimal">
+        </label>
+        <label class="td-field">
+          <span class="td-label">TP2 <span class="td-opt">(optional)</span></span>
+          <input type="number" id="td-tp2" class="td-input" step="0.00001" inputmode="decimal">
+        </label>
+        <label class="td-field">
+          <span class="td-label">TP3 (target)</span>
+          <input type="number" id="td-tp3" class="td-input" step="0.00001" inputmode="decimal" placeholder="required">
+        </label>
+      </div>
+      <div class="td-actions">
+        <button type="button" id="td-submit" class="td-submit-btn">Get Verdict</button>
+        <button type="button" id="td-prefill" class="td-prefill-btn" title="Prefill from most recent signal">↻ Prefill from top signal</button>
+      </div>
+    </form>
+
+    <div id="td-result" class="td-result" hidden></div>
+
+    <div class="td-help muted" style="margin-top:24px;font-size:12px;line-height:1.6">
+      <strong>Why this matters:</strong> After 300+ versions, the honest truth is retail traders lose money not by missing signals but by taking bad trades. This tool answers <em>"is THIS trade a good idea right now?"</em> — cross-referencing conditions, macro, veto, correlation, and pattern library. Use it before every trade.
+    </div>
+
+    <div class="td-personal-edge" id="td-personal-edge" style="margin-top:32px" hidden>
+      <h3 style="margin:0 0 12px;font-size:15px">Your Personal Edge</h3>
+      <div id="td-personal-edge-body"></div>
+    </div>
+  </section>
+</main>
+
+<div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+  <div class="modal-content">
+    <button class="close-btn" aria-label="Close">×</button>
+    <div id="modal-body"></div>
+  </div>
+</div>
+
+<!-- v345 — Educational disclaimer relocated here (was at top above the tabs). -->
+<div class="disclaimer disclaimer-bottom">
+  ⚠ <strong>Educational tool — not financial advice.</strong>
+  Confidence = weighted % of indicators agreeing. It is NOT a probability of winning. Forex is high-risk — you can lose capital fast. Paper-trade, risk 1–2% per trade max, and verify every signal with your own analysis.
+</div>
+
+<footer class="footer">
+  <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

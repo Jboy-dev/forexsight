@@ -1,0 +1,14 @@
+name = "forexsight-preview"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "."
+
+# Preview account KV — separate namespace, starts empty. Original site
+# (forexsight-justice) still uses id 7babaa9899b446f6b8dbe054c901809d on
+# the other Cloudflare account.
+[[kv_namespaces]]
+binding = "TRADES_KV"
+id = "2fb103a2b4d64a5185aaecf5c02dcc2a"
+
+# v354 — Cloudflare Workers AI binding
+[ai]
+binding = "AI"

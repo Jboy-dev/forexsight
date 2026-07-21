@@ -1,0 +1,13 @@
+name = "forexsight-cron"
+main = "index.js"
+compatibility_date = "2025-01-01"
+# workers_dev disabled — no subdomain registered on this account, and we
+# don't need a public URL. Cron trigger fires on schedule regardless.
+# To manually verify, hit /api/cron-heartbeat on Pages (updated by every fire).
+workers_dev = false
+
+[triggers]
+crons = ["*/5 * * * *"]   # every 5 minutes
+
+[vars]
+TARGET_BASE = "https://forexsight-justice.pages.dev"

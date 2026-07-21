@@ -1,0 +1,56 @@
+name: Preview scanner heartbeat
+
+# Free autonomous cron for forexsight-preview.pages.dev.
+# GitHub runs this on their infrastructure — no Cloudflare plan needed.
+# Fires every 5 minutes, hits the scan chain in parallel via curl.
+#
+# GitHub cron notes:
+#   • 5-min minimum granularity
+#   • Runs on the default branch only
+#   • Can lag up to 15 min during GitHub load spikes (rare)
+#   • Free tier: 2000 minutes/month for private repos, unlimited public
+#     — this workflow uses ~20 seconds per run × 288 runs/day = ~1.4 min/day
+#     ⇒ ~42 min/month. Well inside the free tier.
+
+on:
+  schedule:
+    # Every 15 min — fits in private-repo free tier (2000 min/month).
+    # If you flip the repo to public later, drop this to */5 for tighter
+    # coverage since public repos get unlimited Actions minutes.
+    - cron: '*/15 * * * *'
+  workflow_dispatch:   # allow manual trigger from Actions tab
+
+concurrency:
+  group: preview-scanner
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    env:
+      BASE: https://forexsight-preview.pages.dev
+    steps:
+      - name: Fire scan chain in parallel
+        run: |
+          set +e
+          echo "▶ Firing scan chain against $BASE"
+          curl -sS -o /dev/null -w "check-signals   %{http_code} %{time_total}s\n" "$BASE/api/check-signals" &
+          curl -sS -o /dev/null -w "shadow-tracker  %{http_code} %{time_total}s\n" "$BASE/api/shadow-tracker" &
+          curl -sS -o /dev/null -w "tp-monitor      %{http_code} %{time_total}s\n" "$BASE/api/tp-monitor" &
+          curl -sS -o /dev/null -w "self-trust      %{http_code} %{time_total}s\n" "$BASE/api/self-trust" &
+          curl -sS -o /dev/null -w "chart-eye       %{http_code} %{time_total}s\n" "$BASE/api/chart-eye" &
+          wait
+          echo "✔ chain complete"
+
+      - name: Verify state
+        run: |
+          echo "▶ State audit:"
+          curl -sS "$BASE/api/state-audit" | python3 -c "
+          import json, sys
+          d = json.load(sys.stdin)
+          print(f\"  overall: {d.get('overall')} — {d.get('summary')}\")
+          for name, chk in d.get('checks', {}).items():
+              s = chk.get('status', '?')
+              print(f\"  {'GREEN ' if s=='GREEN' else 'YELLOW' if s=='YELLOW' else 'RED   '} {name}\")
+          "
