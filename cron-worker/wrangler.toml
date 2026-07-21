@@ -9,5 +9,8 @@ workers_dev = false
 [triggers]
 crons = ["*/5 * * * *"]   # every 5 minutes
 
+# v386 — fires against BOTH sites. TARGET_BASE kept for backwards compat;
+# TARGETS_JSON is the new comma-separated list read by index.js.
 [vars]
 TARGET_BASE = "https://forexsight-justice.pages.dev"
+TARGETS_JSON = "https://forexsight-justice.pages.dev,https://forexsight-preview.pages.dev"
