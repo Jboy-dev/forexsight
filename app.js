@@ -5246,6 +5246,24 @@ async function loadSignals(force = false) {
 }
 
 async function _loadSignalsHeavyScan(force = false) {
+  // v391b — defense-in-depth: even if someone calls the heavy scan
+  // directly, check server first. Only run the 16-price fetch when
+  // server signals are absent OR user explicitly forced.
+  if (!force) {
+    try {
+      const r = await fetch('/api/latest-signals', { cache: 'no-store' });
+      if (r.ok) {
+        const d = await r.json();
+        const ageMin = d.ts ? (Date.now() - d.ts) / 60000 : Infinity;
+        const sigs = Array.isArray(d.signals) ? d.signals : [];
+        if (ageMin < 5 && sigs.length > 0) {
+          state.signals = sigs;
+          if (typeof renderSignals === 'function') renderSignals();
+          return; // skip the 16-price storm
+        }
+      }
+    } catch {}
+  }
   // v213 — kick off learning brain backtest update (non-blocking)
   loadBrainStatus().catch(() => {});
   // v214 — refresh the shadow signal feed (would-have outcomes)

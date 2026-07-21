@@ -1,19 +1,24 @@
 // ForexSight Service Worker — required for iOS PWA notifications and offline shell.
 
-const CACHE = 'forexsight-cf-v391';
+const CACHE = 'forexsight-cf-v391b';
 const SHELL = ['/', '/index.html', '/app.js', '/style.css', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
-  // v246 — Cache each shell file independently so ONE missing file (e.g. a
-  // future icon rename) doesn't break the whole install. addAll() is
-  // all-or-nothing; this loop keeps going even if some 404.
-  event.waitUntil(
-    caches.open(CACHE).then(async (c) => {
+  // v391b — nuke ALL old caches on install so a fresh app.js always wins
+  // instead of the SW serving cached-stale code. Was: old caches lingered
+  // until activate; new: install itself deletes them.
+  event.waitUntil((async () => {
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)));
+    } catch {}
+    try {
+      const c = await caches.open(CACHE);
       await Promise.all(SHELL.map(async (url) => {
-        try { await c.add(url); } catch (e) { /* swallow per-file */ }
+        try { await c.add(url); } catch { /* per-file */ }
       }));
-    }).catch(() => {})
-  );
+    } catch {}
+  })());
   self.skipWaiting();
 });
 // v246 — Catch any unhandled error inside the SW so it doesn't get killed
