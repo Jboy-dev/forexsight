@@ -1,6 +1,6 @@
 // ForexSight Service Worker — required for iOS PWA notifications and offline shell.
 
-const CACHE = 'forexsight-cf-v391b';
+const CACHE = 'forexsight-cf-v392';
 const SHELL = ['/', '/index.html', '/app.js', '/style.css', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {

@@ -15,7 +15,7 @@
 // backtests; this learns from LIVE signals as they unfold in real time.
 
 const SHADOW_KEY = 'shadow-tracker';
-const SHADOW_MAX = 60;
+const SHADOW_MAX = 200;  // v392 — 3.3x capacity so brain has more history
 
 // v246 — Fetch with 8s timeout via AbortController so a hung upstream can't
 // freeze the shadow update loop.
