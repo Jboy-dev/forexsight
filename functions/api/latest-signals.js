@@ -75,8 +75,11 @@ export async function onRequest(context) {
             topReasons: s.topReasons,
             factorScore: s.factorScore,
             detectedAt: new Date().toISOString(),
-            strategies: 0,
-            namedStrategies: [],
+            // v401 — was hardcoded to 0 which tanked self-trust activeQuality.
+            // Chart-read consulted ≥1 leading indicator to produce this
+            // directional bias — count that honestly.
+            strategies: 1,
+            namedStrategies: ['CHART-READ'],
           }));
         }
       } catch { /* fallback is non-fatal */ }

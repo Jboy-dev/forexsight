@@ -155,10 +155,19 @@ async function _fetchBars(origin, symbol) {
 }
 
 // Round to the pair's natural precision so entry/SL/TP look right in the UI
+// v401 — FIX: previous check `includes('/USD')` missed USD-first pairs
+// (USD/CHF, USD/CAD, USD/JPY, etc), causing them to fall through to 2dp.
+// USD/CHF entry 0.8123 became 0.81 same as SL 0.8089 → display broken,
+// self-trust tanked, math validator failed.
 function _roundToPrecision(v, pair) {
-  if (pair && pair.includes('JPY')) return Math.round(v * 1000) / 1000;
+  if (!pair) return Math.round(v * 100) / 100;
+  if (pair.includes('JPY')) return Math.round(v * 1000) / 1000;
   if (pair === 'XAU/USD' || pair === 'XAG/USD') return Math.round(v * 100) / 100;
-  if (pair && pair.includes('/USD') && !pair.startsWith('BTC')) return Math.round(v * 100000) / 100000;
+  if (pair === 'BTC/USD') return Math.round(v * 100) / 100;
+  if (pair === 'ETH/USD' || pair === 'SOL/USD') return Math.round(v * 100) / 100;
+  if (['US30','NAS100','SPX500','GER40','UK100','JPN225'].includes(pair)) return Math.round(v * 10) / 10;
+  // All other FX (majors, crosses, USD-first, USD-last) → 5 decimals
+  if (pair.includes('/')) return Math.round(v * 100000) / 100000;
   return Math.round(v * 100) / 100;
 }
 
