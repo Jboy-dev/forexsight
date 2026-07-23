@@ -150,14 +150,28 @@ async function _shadowInner(context) {
   const initialStatusByKey = new Map(shadow.map(s => [s.key, s.status]));
 
   // Load latest signals to find new entries
+  // v402b — read via /api/latest-signals ENDPOINT (not KV directly) so
+  // the fallback chart-read/PREMIUM signals also get tracked. Reading KV
+  // directly missed all fallback signals → 0 tracked today despite 9
+  // signals visible to the user.
   let latestSignals = [];
   try {
-    const raw = await env.TRADES_KV.get('latest-signals');
-    if (raw) {
-      const data = JSON.parse(raw);
+    const lsRes = await fetch(`${origin}/api/latest-signals`);
+    if (lsRes.ok) {
+      const data = await lsRes.json();
       latestSignals = Array.isArray(data.signals) ? data.signals : [];
     }
   } catch {}
+  // Fallback to KV if HTTP failed (rare)
+  if (latestSignals.length === 0) {
+    try {
+      const raw = await env.TRADES_KV.get('latest-signals');
+      if (raw) {
+        const data = JSON.parse(raw);
+        latestSignals = Array.isArray(data.signals) ? data.signals : [];
+      }
+    } catch {}
+  }
 
   // Dedupe: signal key = pair+direction+detectedAt hour
   // v257 — RELAXED QUALITY FILTER. The previous v248 thresholds (pWin≥60,
@@ -224,7 +238,17 @@ async function _shadowInner(context) {
     const pathB = qER != null && qER >= SHADOW_GOOD_E_R;
     // PATH C — Endorsed picks (Top Pick or Elite Pattern)
     const pathC = sig.brainRecommended === true || sig.isEliteBrainPattern === true;
-    if (!pathA && !pathB && !pathC) continue;
+    // v402 — PATH D: chart-read / strong-read / PREMIUM tier signals.
+    // These come from live-analysis, not the strict scanner, so they
+    // don't have pWin/edge/quantum. They ARE what users see and click,
+    // and shadow needs to track them so the brain learns from real
+    // outcomes. Without this, today's 9 signals never got tracked →
+    // brain got 0 learning input today.
+    const tier = String(sig.tier || '').toLowerCase();
+    const isTrackableTier = ['premium','strong-read','chart-read','best','platinum','elite','top','gold'].includes(tier);
+    const hasReasonableConf = (sig.confidence || 0) >= 65;
+    const pathD = isTrackableTier && hasReasonableConf;
+    if (!pathA && !pathB && !pathC && !pathD) continue;
     const hourBucket = (sig.detectedAt || new Date().toISOString()).slice(0, 13); // YYYY-MM-DDTHH
     const key = `${sig.pair}_${sig.direction}_${hourBucket}`;
     if (existingKeys.has(key)) continue;
