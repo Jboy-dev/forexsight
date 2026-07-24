@@ -9328,3 +9328,8 @@ body.light-theme .tb-head.tb-very-low .tb-label  { color: #991b1b; }
 }
 .stand-aside-dismiss:active { transform: scale(0.94); }
 /* v396 end ─────────────────────────────────────────────────────── */
+
+/* v405 — Ensure toast never blocks clicks when hidden; only the toast
+   itself is clickable (via cursor:pointer), never a full-screen overlay */
+.v390-toast.v390-hide,
+.v390-toast:not(.v390-show) { pointer-events: none; }

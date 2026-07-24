@@ -7114,9 +7114,17 @@ async function renderSignalModal(s, options = {}) {
 }
 $('.close-btn').addEventListener('click', () => $('#modal').classList.add('hidden'));
 
-// v395 — Modal now ONLY closes via the × button. Swipe-down-to-close
-// and backdrop-tap were causing accidental dismissals ("twitching").
-// User request: signal modal stays open until they explicitly hit ×.
+// v405 — RESTORED backdrop-click + Escape key. Users reported clicks
+// stopped registering (modal stuck open with no easy escape). × button
+// alone wasn't discoverable on iOS. Bringing back the fallbacks.
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    const modal = document.getElementById('modal');
+    if (modal && !modal.classList.contains('hidden')) {
+      modal.classList.add('hidden');
+    }
+  }
+});
 
 // Smooth scroll to top of tab-content area when switching tabs (helpful on
 // mobile if user has scrolled deep into one tab and switches to another)
@@ -7129,8 +7137,14 @@ document.querySelectorAll('.tab').forEach(t => {
     }, 50);
   });
 });
-// v395 — Backdrop-click no longer closes modal. Only the × button does.
-// (Was the second cause of "twitching" — a stray tap outside would dismiss.)
+// v405 — RESTORED backdrop-click for modal. Was disabled in v395 but
+// left users unable to escape stuck modals on mobile. Now: tapping the
+// dark backdrop closes the modal. Only pure taps directly on #modal
+// (not bubbling from any child) — so touch scrolling inside the modal
+// content won't accidentally close it.
+document.getElementById('modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'modal') e.target.classList.add('hidden');
+});
 
 // Position size calculator (legacy — in Forex Wisdom tab)
 const pairList = Object.keys(PAIRS);

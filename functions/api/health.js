@@ -100,9 +100,13 @@ export async function onRequest(context) {
     checks.pushSubscriptions = { ok: false, error: e.message };
   }
 
-  // 5) Math/version sanity — v298 fixed math to TP1 ≥ 1R (was 0.5R which
-  // was mathematically broken — required 66% WR to break even). Now
-  // expect TP1 ratio ≥ 0.95R, TP3 ratio ≥ 2.0R.
+  // 5) Math/version sanity — v404: updated ranges for v395 TP multipliers.
+  //   v395 raised TP1 mult 1.5→2, TP2 3→4, TP3 5→7 (40% more pips)
+  //   Real signals now show R:R ~4.5 on TP3. TP1 is ~1.5R+ on tight-SL
+  //   setups (structure SL wins) or ~1.3R on ATR SL. Just require:
+  //     TP1 ≥ 1R (break-even at ≥50% WR)
+  //     TP3 ≥ 2R (real edge)
+  //     TP1 < TP3 (correct ordering)
   try {
     const r = await fetch(`${origin}/api/latest-signals`);
     const data = await r.json();
@@ -113,17 +117,18 @@ export async function onRequest(context) {
       const tp3Dist = s.tp3 ? Math.abs(s.entry - s.tp3) : null;
       const tp1Ratio = tp1Dist / slDist;
       const tp3Ratio = tp3Dist ? tp3Dist / slDist : null;
-      const tp1Ok = tp1Ratio >= 0.95 && tp1Ratio <= 1.10;
-      const tp3Ok = tp3Ratio == null || tp3Ratio >= 1.95;
-      const correct = tp1Ok && tp3Ok;
+      const tp1Ok = tp1Ratio >= 1.0;
+      const tp3Ok = tp3Ratio == null || tp3Ratio >= 2.0;
+      const orderOk = tp3Dist == null || tp1Dist < tp3Dist;
+      const correct = tp1Ok && tp3Ok && orderOk;
       checks.math = {
         ok: correct,
         sampleSignal: `${s.pair} ${s.direction}`,
         slDist: slDist.toFixed(5),
         tp1Dist: tp1Dist.toFixed(5),
-        tp1Ratio: tp1Ratio.toFixed(3),
-        tp3Ratio: tp3Ratio == null ? 'n/a' : tp3Ratio.toFixed(3),
-        expected: 'TP1 ≈ 1.0R (0.95-1.10), TP3 ≥ 2.0R',
+        tp1Ratio: tp1Ratio.toFixed(2),
+        tp3Ratio: tp3Ratio == null ? 'n/a' : tp3Ratio.toFixed(2),
+        expected: 'TP1 ≥ 1R, TP3 ≥ 2R, TP1 < TP3',
       };
       if (!correct) allGreen = false;
     } else {
@@ -136,7 +141,7 @@ export async function onRequest(context) {
   return new Response(JSON.stringify({
     status: allGreen ? 'GREEN' : 'YELLOW',
     timestamp: new Date().toISOString(),
-    version: 'v402b-shadow-reads-endpoint',
+    version: 'v405-clicks-restored',
     summary: allGreen ? 'All systems operational' : 'Some checks need attention',
     checks,
   }, null, 2), {
