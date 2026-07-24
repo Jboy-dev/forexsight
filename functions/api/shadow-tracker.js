@@ -317,10 +317,29 @@ async function _shadowInner(context) {
     try { ohlcMap[pair] = await fetchOHLC(origin, sym); }
     catch { ohlcMap[pair] = null; }
   }));
+  // v409 — REAL BUG FIX. Expiry check was nested inside OHLC loop. When
+  // OHLC fetch failed OR bars didn't cover post-signal window, the whole
+  // pair got `continue`d and expiry check never ran. Result: 4-day-old
+  // ETH/USD signals stuck 'open' forever. Now expire ALL over-48h open
+  // signals regardless of OHLC availability, THEN do TP/SL resolution.
+  const EXPIRY_HRS = 48;
+  for (const s of shadow) {
+    if (s.status !== 'open') continue;
+    const firedMs = Date.parse(s.firedAt || '');
+    if (!Number.isFinite(firedMs)) continue;
+    const ageHrs = (Date.now() - firedMs) / 3600000;
+    if (ageHrs > EXPIRY_HRS) {
+      s.status = 'expired';
+      s.checkedAt = new Date().toISOString();
+      if (!s.resolvedAt) s.resolvedAt = new Date().toISOString();
+    }
+  }
+
   for (const pair of pairList) {
     const ohlc = ohlcMap[pair];
     if (!ohlc || ohlc.length < 5) continue;
     for (const s of openByPair[pair]) {
+      if (s.status !== 'open') continue; // v409 — skip if already expired above
       const firedMs = Date.parse(s.firedAt || '');
       if (!Number.isFinite(firedMs)) continue;
       // Bars AFTER the signal fired
@@ -359,12 +378,8 @@ async function _shadowInner(context) {
           s.winReasons = _computeWinReasons(s);
         }
       }
-      // Auto-expire signals older than 48h still open — they're stale
-      const ageHrs = (Date.now() - firedMs) / 3600000;
-      if (!outcome && ageHrs > 48) {
-        s.status = 'expired';
-        s.checkedAt = new Date().toISOString();
-      }
+      // v409 — expiry check moved to top of function so it runs even when
+      // OHLC fetch fails. This block previously duplicated it.
     }
   }
 
