@@ -9381,3 +9381,37 @@ body.light-theme .tb-head.tb-very-low .tb-label  { color: #991b1b; }
 
 /* Card content updates should never flash — smooth height transitions */
 .collapsible-header { transition: opacity 180ms ease-out; }
+
+/* v410 — Platform responsiveness pass */
+
+/* Fast taps: remove the 300ms delay on all interactive elements */
+button, a, .tab, [role="button"], [data-signal-pair], [data-cc-take],
+.signals-rescan-btn, .stand-aside-dismiss, .close-btn, input[type="range"],
+.collapsible-header, [data-collapsible="true"] {
+  touch-action: manipulation;
+}
+
+/* iOS safe-area for notch/dynamic island (viewport-fit=cover requires this) */
+body {
+  padding-top: env(safe-area-inset-top, 0);
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* Kill the iOS grey-flash on tap globally (specific elements can re-enable) */
+html { -webkit-tap-highlight-color: transparent; }
+
+/* Native-feeling active state for tappable cards */
+button:active, .tab:active, [role="button"]:active {
+  transform: scale(0.97);
+  transition: transform 80ms ease-out;
+}
+
+/* Smoother scroll on iOS (momentum) */
+main, .modal-content, .tab-content {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* v410 end */
