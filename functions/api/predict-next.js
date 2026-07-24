@@ -273,6 +273,10 @@ export async function onRequest(context) {
   }
 
   // News sentiment (15 pts) — check base vs quote bias
+  // v407 — was requiring netForBuy ≥ 3 which needs many articles. Real
+  // news often comes in 1-2 articles. Lowered threshold to 1 so a
+  // single bearish article (e.g. "AUD/USD warrants downside") actually
+  // votes bear instead of being silently ignored. Weight kept at 15.
   if (newsRes && newsRes.perCurrency) {
     const parts = pair.split('/');
     if (parts.length === 2) {
@@ -280,8 +284,31 @@ export async function onRequest(context) {
       const baseB = newsRes.perCurrency[base]?.bias || 0;
       const quoteB = newsRes.perCurrency[quote]?.bias || 0;
       const netForBuy = baseB - quoteB;
-      if (netForBuy >= 3) vote('bull', `News flow bullish for ${base} vs ${quote}`, 15, `${base}=${baseB > 0 ? '+' : ''}${baseB}, ${quote}=${quoteB > 0 ? '+' : ''}${quoteB}`);
-      else if (netForBuy <= -3) vote('bear', `News flow bearish for ${base} vs ${quote}`, 15, `${base}=${baseB > 0 ? '+' : ''}${baseB}, ${quote}=${quoteB > 0 ? '+' : ''}${quoteB}`);
+      if (netForBuy >= 1) vote('bull', `News flow bullish for ${base} vs ${quote}`, 15, `${base}=${baseB > 0 ? '+' : ''}${baseB}, ${quote}=${quoteB > 0 ? '+' : ''}${quoteB}`);
+      else if (netForBuy <= -1) vote('bear', `News flow bearish for ${base} vs ${quote}`, 15, `${base}=${baseB > 0 ? '+' : ''}${baseB}, ${quote}=${quoteB > 0 ? '+' : ''}${quoteB}`);
+    }
+    // v407 — also check pair-specific news samples for direct headline
+    // sentiment. If any headline for the pair symbol itself contains
+    // a directional cue ("downside", "warns", "rally not built to last"),
+    // vote in that direction even if the currency-level bias didn't trip.
+    // This catches cases like "AUD/USD warrants downside" where AUD bias
+    // is only +1 (one article) but the article is explicitly bearish
+    // for the PAIR.
+    const pairSym = pair.replace('/', '');
+    const bearishPhrases = /(downside|warrants down|bearish|weakness|not built to last|fall(s|ing)?|declin|drop|selloff)/i;
+    const bullishPhrases = /(upside|bullish|rally|surge|strength|breakout|climb|rise|advance)/i;
+    for (const cur of parts) {
+      const samples = newsRes.perCurrency[cur]?.samples || [];
+      for (const art of samples) {
+        const title = art.title || '';
+        if (!title.toUpperCase().includes(pairSym)) continue;
+        const isBaseHigh = title.split(' ')[0].startsWith(cur); // e.g. "AUD/USD" → AUD is base
+        if (bearishPhrases.test(title) && !bullishPhrases.test(title)) {
+          vote(isBaseHigh ? 'bear' : 'bull', `Pair headline bearish for ${cur}`, 12, title.slice(0, 80));
+        } else if (bullishPhrases.test(title) && !bearishPhrases.test(title)) {
+          vote(isBaseHigh ? 'bull' : 'bear', `Pair headline bullish for ${cur}`, 12, title.slice(0, 80));
+        }
+      }
     }
   }
 
@@ -293,8 +320,16 @@ export async function onRequest(context) {
   const direction = bullWeight > bearWeight ? 'BUY' : bearWeight > bullWeight ? 'SELL' : 'HOLD';
 
   // Confidence: 50% base, scale by margin ratio, boost by ADX if strong trend
+  // v407 — added CONVICTION dampening. Previous formula gave 40 bull + 0 bear
+  // the same 90% as 200 bull + 0 bear — thin agreement was scoring same as
+  // broad agreement. Audit found AUD/USD at "90% conf" with only 40 total
+  // weight and news going the other way. Now:
+  //   convictionFactor scales 0.5 (weight<30) → 1.0 (weight≥100)
+  //   so thin unanimous evidence tops out at ~70%, not 90%.
   let confidence = 50;
   if (totalWeight > 0) confidence = 50 + Math.round((margin / totalWeight) * 45);
+  const convictionFactor = Math.min(1.0, Math.max(0.5, (totalWeight - 20) / 80));
+  confidence = Math.round(50 + (confidence - 50) * convictionFactor);
   if (adx != null && adx > 25 && direction !== 'HOLD') confidence = Math.min(90, confidence + 5);
   confidence = Math.max(0, Math.min(90, confidence));
 

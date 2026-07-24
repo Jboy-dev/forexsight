@@ -4557,9 +4557,16 @@ document.addEventListener('click', (e) => {
 $('#conf-slider').addEventListener('input', (e) => {
   state.minConf = +e.target.value;
   $('#conf-val').textContent = state.minConf + '%';
+  // v408 — set --slider-fill so the CSS gradient shows the active portion
+  e.target.style.setProperty('--slider-fill', state.minConf + '%');
   try { localStorage.setItem(MIN_CONF_KEY, String(state.minConf)); } catch {}
   renderSignals();
 });
+// v408 — set initial fill on load
+setTimeout(() => {
+  const el = document.getElementById('conf-slider');
+  if (el) el.style.setProperty('--slider-fill', (state.minConf || 0) + '%');
+}, 100);
 // ========== Refresh button — short tap = data refresh, long press = hard refresh ==========
 // Hard refresh is critical for iOS PWA users: when we ship new code, the
 // home-screen app keeps serving the old service-worker-cached files until

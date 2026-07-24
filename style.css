@@ -7532,31 +7532,57 @@ button.active {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 40px rgba(191, 90, 242, 0.06);
 }
 
-/* ── Range slider (Min confidence) — cleaner track ── */
+/* v408 — Premium confidence slider. Thicker track, gradient fill on the
+   active side, refined thumb, better touch target. */
 input[type='range'] {
   -webkit-appearance: none;
   appearance: none;
-  height: 6px;
-  background: var(--surface-3);
-  border-radius: 3px;
+  height: 8px;
+  min-width: 140px;
+  background: linear-gradient(90deg,
+    #22c55e 0%, #4ade80 var(--slider-fill, 50%),
+    rgba(148, 163, 184, 0.20) var(--slider-fill, 50%),
+    rgba(148, 163, 184, 0.20) 100%);
+  border-radius: 999px;
   outline: none;
   cursor: pointer;
+  padding: 0;
+  transition: background 100ms;
+}
+body.light-theme input[type='range'] {
+  background: linear-gradient(90deg,
+    #16a34a 0%, #22c55e var(--slider-fill, 50%),
+    rgba(15, 23, 42, 0.08) var(--slider-fill, 50%),
+    rgba(15, 23, 42, 0.08) 100%);
 }
 input[type='range']::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--gradient-brand);
-  border: 2px solid var(--surface-1);
-  box-shadow: 0 2px 8px rgba(10, 132, 255, 0.4);
+  background: #ffffff;
+  border: 2px solid #22c55e;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(34, 197, 94, 0.15);
   cursor: pointer;
-  transition: all 160ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 140ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 140ms;
 }
 input[type='range']::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 4px 16px rgba(10, 132, 255, 0.6);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4), 0 0 0 5px rgba(34, 197, 94, 0.20);
+}
+input[type='range']::-webkit-slider-thumb:active {
+  transform: scale(1.25);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5), 0 0 0 6px rgba(34, 197, 94, 0.28);
+}
+input[type='range']::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid #22c55e;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(34, 197, 94, 0.15);
+  cursor: pointer;
 }
 
 /* ── Scrollbars — thin + subtle (desktop only) ── */
