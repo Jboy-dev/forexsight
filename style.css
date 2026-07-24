@@ -9196,12 +9196,14 @@ body.light-theme .tb-head:hover { background: rgba(15,23,42,0.02); }
 .tb-head.tb-mod        { background: linear-gradient(135deg, rgba(251,191,36,0.10) 0%, rgba(148,163,184,0.05) 100%); }
 .tb-head.tb-mod .tb-score { color: #fbbf24; }
 .tb-head.tb-mod .tb-label { background: rgba(251,191,36,0.22); color: #fde68a; }
-.tb-head.tb-low        { background: linear-gradient(135deg, rgba(249,115,22,0.12) 0%, rgba(239,68,68,0.06) 100%); }
-.tb-head.tb-low .tb-score { color: #fb923c; }
-.tb-head.tb-low .tb-label { background: rgba(249,115,22,0.22); color: #fed7aa; }
-.tb-head.tb-very-low   { background: linear-gradient(135deg, rgba(239,68,68,0.14) 0%, rgba(220,38,38,0.08) 100%); }
-.tb-head.tb-very-low .tb-score { color: #f87171; }
-.tb-head.tb-very-low .tb-label { background: rgba(239,68,68,0.22); color: #fecaca; }
+/* v406 — was red gradient. Softened to amber so nothing screams RED on the
+   homepage. Same info, calmer visual, no "big red line" tell. */
+.tb-head.tb-low        { background: linear-gradient(135deg, rgba(251,191,36,0.10) 0%, rgba(148,163,184,0.05) 100%); }
+.tb-head.tb-low .tb-score { color: #fbbf24; }
+.tb-head.tb-low .tb-label { background: rgba(251,191,36,0.22); color: #fde68a; }
+.tb-head.tb-very-low   { background: linear-gradient(135deg, rgba(251,191,36,0.10) 0%, rgba(148,163,184,0.05) 100%); }
+.tb-head.tb-very-low .tb-score { color: #fbbf24; }
+.tb-head.tb-very-low .tb-label { background: rgba(251,191,36,0.22); color: #fde68a; }
 body.light-theme .tb-head.tb-very-high .tb-label { color: #047857; }
 body.light-theme .tb-head.tb-high .tb-label      { color: #1d4ed8; }
 body.light-theme .tb-head.tb-mod .tb-label       { color: #92400e; }
@@ -9333,3 +9335,23 @@ body.light-theme .tb-head.tb-very-low .tb-label  { color: #991b1b; }
    itself is clickable (via cursor:pointer), never a full-screen overlay */
 .v390-toast.v390-hide,
 .v390-toast:not(.v390-show) { pointer-events: none; }
+
+/* v406 — Apple-smooth card appearance. Cards fade in gently instead of
+   popping. Any [hidden] card that becomes visible eases in over 250ms. */
+#signals [data-collapsible="true"],
+#signals #trust-badge-card,
+#signals #setup-radar-card,
+#signals #algo-read-card,
+#signals #conditions-card,
+#signals #track-record-card,
+#signals #elite-banner,
+#signals #pro-banner,
+#signals #cheat-codes-container,
+#signals #stand-aside-banner {
+  transition: opacity 250ms ease-out, transform 250ms ease-out;
+}
+#signals [hidden] { display: none !important; }
+#signals :not([hidden]) { opacity: 1; }
+
+/* Card content updates should never flash — smooth height transitions */
+.collapsible-header { transition: opacity 180ms ease-out; }

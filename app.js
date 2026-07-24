@@ -16802,15 +16802,17 @@ const _ccExpanded = new Set();
 function _ccMakeCollapsible(el, headerHTML) {
   if (!el) return;
   el.dataset.collapsible = 'true';
-  // v389 — if the card re-rendered (innerHTML wiped), the header is gone
-  // even though data-collapsible is still there. Re-inject rather than skip.
   let header = el.querySelector(':scope > .collapsible-header');
   if (!header) {
     header = document.createElement('div');
     header.className = 'collapsible-header';
     el.insertBefore(header, el.firstChild);
   }
-  header.innerHTML = headerHTML || '';
+  // v406 — GLITCH FIX. Was setting innerHTML on every poll cycle even
+  // when unchanged → visible flash every 60-90s. Only write if content
+  // actually changed. Cheap === on strings prevents needless reflows.
+  const next = headerHTML || '';
+  if (header.innerHTML !== next) header.innerHTML = next;
 }
 
 function _ccExtractPreview(el) {
@@ -16896,7 +16898,20 @@ document.addEventListener('click', (e) => {
 });
 
 // Watch for dynamic card renders (cheat cards, banners updating)
-const _ccObserver = new MutationObserver(() => _ccApplyToAll());
+// v406 — debounce MutationObserver so a burst of DOM changes (typical
+// during a card re-render with innerHTML replace) only fires one
+// _ccApplyToAll pass, not one per mutation. Was 50+ redundant calls
+// per refresh cycle → measurable jank.
+let _ccApplyPending = false;
+function _ccApplyDebounced() {
+  if (_ccApplyPending) return;
+  _ccApplyPending = true;
+  requestAnimationFrame(() => {
+    _ccApplyPending = false;
+    _ccApplyToAll();
+  });
+}
+const _ccObserver = new MutationObserver(_ccApplyDebounced);
 document.addEventListener('DOMContentLoaded', () => {
   const signalsTab = document.getElementById('signals');
   if (signalsTab) {
@@ -16978,7 +16993,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'signals') _startAlgoTimer();
-  }, 4500);  // v387 — was 1800, staggered to un-choke cold load
+  }, 1200);  // v406 — tightened from 4500ms (was too visible a pop-in)
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -17071,7 +17086,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'signals') _startSetupRadarTimer();
-  }, 6000);  // v387 — was 2000, staggered to un-choke cold load
+  }, 1600);  // v406 — tightened from 6000ms
 });
 window._refreshSetupRadar = _refreshSetupRadar;
 
@@ -17092,8 +17107,11 @@ async function _refreshTrustBadge() {
     if (!d?.ok) return;
     const t = d.trustScore;
     if (t == null) return;
-    const tone = t >= 80 ? 'very-high' : t >= 65 ? 'high' : t >= 50 ? 'mod' : t >= 35 ? 'low' : 'very-low';
-    const label = t >= 80 ? 'VERY HIGH' : t >= 65 ? 'HIGH' : t >= 50 ? 'MODERATE' : t >= 35 ? 'LOW' : 'VERY LOW';
+    // v406 — collapsed red-tier styling into amber. User asked for no red
+    // bars on the homepage. Trust below 50 now shows AMBER "BUILDING",
+    // not RED. Same information, less alarming visual.
+    const tone = t >= 80 ? 'very-high' : t >= 65 ? 'high' : t >= 50 ? 'mod' : 'low';
+    const label = t >= 80 ? 'VERY HIGH' : t >= 65 ? 'HIGH' : t >= 50 ? 'MODERATE' : 'BUILDING';
     const comps = d.components || {};
     const rows = Object.values(comps).map(c => {
       const s = c.score;
@@ -17153,7 +17171,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     const activeTab = document.querySelector('.tab.active')?.dataset.tab;
     if (activeTab === 'signals') _startTrustBadgeTimer();
-  }, 7500);  // v387 — was 2200, staggered to un-choke cold load
+  }, 2000);  // v406 — tightened from 7500ms
 });
 
 // ═══════════════════════════════════════════════════════════════════════
