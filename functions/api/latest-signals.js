@@ -108,7 +108,15 @@ export async function onRequest(context) {
         const laRes = await fetch(`${url.protocol}//${url.host}/api/live-analysis?minConfidence=60`);
         if (laRes.ok) {
           const la = await laRes.json();
-          liveAnalysisSignals = (la.signals || []).map(s => ({
+          // v413 — QUALITY GATE. chart-read tier = multiple missing
+          // confluences = 71% loser per shadow-tracker data. NEVER show
+          // chart-read to the user. Only strong-read + PREMIUM reach the
+          // feed. Better to show 0 signals than rubbish.
+          const filteredLa = (la.signals || []).filter(s => {
+            const t = String(s.tier || '').toLowerCase();
+            return t === 'premium' || t === 'strong-read';
+          });
+          liveAnalysisSignals = filteredLa.map(s => ({
             pair: s.pair,
             direction: s.direction,
             confidence: s.confidence,
@@ -121,20 +129,20 @@ export async function onRequest(context) {
             pipsToTp3: s.tp3Pips,
             rMultiple: s.riskReward,
             slMethod: s.slMethod,
-            source: s.tier === 'PREMIUM' ? 'premium-read' : 'chart-read',  // v350
-            tier: s.tier,             // v350 — PREMIUM / strong-read / chart-read
-            reasoning: s.reasoning,   // v350 — plain-English why
-            topPick: s.tier === 'PREMIUM',  // top-pick for premium chart-reads
+            // v413 — sources reflect the higher bar: premium or strong-read only
+            source: s.tier === 'PREMIUM' ? 'premium-read' : 'strong-read',
+            tier: s.tier,             // PREMIUM or strong-read
+            reasoning: s.reasoning,
+            topPick: s.tier === 'PREMIUM',
             topPickReason: s.reasoning,
             verdict: s.verdict,
             topReasons: s.topReasons,
             factorScore: s.factorScore,
             detectedAt: new Date().toISOString(),
-            // v401 — was hardcoded to 0 which tanked self-trust activeQuality.
-            // Chart-read consulted ≥1 leading indicator to produce this
-            // directional bias — count that honestly.
-            strategies: 1,
-            namedStrategies: ['CHART-READ'],
+            // v413 — strong-read went through 3+ confluence gates, count it
+            // as 2 strategies. PREMIUM went through ALL gates, count as 3.
+            strategies: s.tier === 'PREMIUM' ? 3 : 2,
+            namedStrategies: s.tier === 'PREMIUM' ? ['PREMIUM'] : ['STRONG-READ'],
           }));
 
           // v411 — LOSING-PATTERN FILTERS. Deep-dive of last 12 losses
