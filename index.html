@@ -19,9 +19,33 @@
 <!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
 <link rel="preconnect" href="https://rsms.me/" crossorigin>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<link rel="stylesheet" href="style.css?v=411" />
+<link rel="stylesheet" href="style.css?v=412" />
 </head>
 <body>
+<!-- v412 — NUCLEAR SW-KILL. Runs before ANY cached script. Unregisters
+     every stuck service worker + purges every cache from the OLD app. If
+     any SW was killed OR any cache was cleared, we hard-reload once so the
+     user gets fresh HTML/JS/CSS on that same visit instead of waiting
+     for the next open. Guarded with sessionStorage so it doesn't loop. -->
+<script>
+(function(){
+  if (!('serviceWorker' in navigator)) return;
+  var didClean = false;
+  Promise.all([
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      return Promise.all(regs.map(function(r){ didClean = true; return r.unregister().catch(function(){}); }));
+    }).catch(function(){}),
+    (window.caches ? caches.keys().then(function(keys){
+      return Promise.all(keys.map(function(k){ didClean = true; return caches.delete(k).catch(function(){}); }));
+    }) : Promise.resolve()).catch(function(){})
+  ]).then(function(){
+    if (didClean && !sessionStorage.getItem('_v412_reloaded')) {
+      sessionStorage.setItem('_v412_reloaded', '1');
+      location.reload();
+    }
+  });
+})();
+</script>
 <header class="topbar">
   <div class="brand">
     <span class="logo" aria-hidden="true">
@@ -903,6 +927,6 @@
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=411"></script>
+<script src="app.js?v=412"></script>
 </body>
 </html>
