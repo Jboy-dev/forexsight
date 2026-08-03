@@ -41,6 +41,61 @@ export async function onRequest(context) {
       );
     }
 
+    // v411 — Loss-pattern filter for chart-read signals. Deep-dive of last
+    // 12 losses (100% loss rate today) found three killer patterns:
+    //   1. DEAD-ASIA hours (02:00-06:00 UTC) — thin liquidity, fake bounces
+    //   2. BATCH fires — 3+ signals firing at same tick = same setup, not
+    //      confluence. Almost always false-bounce noise.
+    //   3. CORRELATED pairs same direction — AUD+NZD BUY together isn't
+    //      confluence, it's the SAME setup detected twice. Take strongest,
+    //      drop the rest.
+    function _v411FilterLosingPatterns(sigs) {
+      if (!Array.isArray(sigs) || sigs.length === 0) return sigs || [];
+      const nowUtcHour = new Date().getUTCHours();
+      // Filter 1: dead-Asia hours (02-06 UTC). Requires HIGHER confidence
+      // (≥80%) during those hours instead of the normal 60% floor.
+      let out = sigs.filter(s => {
+        if (nowUtcHour >= 2 && nowUtcHour < 6) {
+          if ((s.confidence || 0) < 80) return false;
+        }
+        return true;
+      });
+      // Filter 2: batch cap. If >3 signals in same direction fire together,
+      // keep only the top-3 by confidence. Batches of 5+ are almost always
+      // false-signal storms.
+      const byDir = { BUY: [], SELL: [] };
+      for (const s of out) {
+        if (s.direction === 'BUY') byDir.BUY.push(s);
+        else if (s.direction === 'SELL') byDir.SELL.push(s);
+      }
+      for (const dir of ['BUY', 'SELL']) {
+        if (byDir[dir].length > 3) {
+          byDir[dir].sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+          const dropped = byDir[dir].slice(3);
+          out = out.filter(s => !dropped.includes(s));
+        }
+      }
+      // Filter 3: correlation dedup. AUD+NZD (both commodity/risk-on) or
+      // EUR+GBP (both anti-USD) firing same direction — keep one. USD/CHF
+      // + USD/JPY same dir — keep one.
+      const groups = [
+        ['AUD/USD', 'NZD/USD'],
+        ['EUR/USD', 'GBP/USD'],
+        ['USD/CHF', 'USD/JPY', 'USD/CAD'],
+      ];
+      for (const group of groups) {
+        for (const dir of ['BUY', 'SELL']) {
+          const inGroup = out.filter(s => group.includes(s.pair) && s.direction === dir);
+          if (inGroup.length > 1) {
+            inGroup.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+            const dropped = inGroup.slice(1);
+            out = out.filter(s => !dropped.includes(s));
+          }
+        }
+      }
+      return out;
+    }
+
     // v347 — If the strict feed is empty, fall back to live-analysis so
     // the user always sees SOMETHING (chart-read predictions for each pair
     // with strong direction). "Loading signals..." with 0 signals for hours
@@ -81,6 +136,14 @@ export async function onRequest(context) {
             strategies: 1,
             namedStrategies: ['CHART-READ'],
           }));
+
+          // v411 — LOSING-PATTERN FILTERS. Deep-dive of last 12 losses
+          // found: (a) 5 chart-reads firing simultaneously as a batch =
+          // false-bounce not real edge; (b) 02:00-06:00 UTC dead-Asia
+          // hours produced 8/12 losses (thin liquidity fake bounces);
+          // (c) correlated pairs firing same direction is one setup
+          // detected twice, not confluence.
+          liveAnalysisSignals = _v411FilterLosingPatterns(liveAnalysisSignals);
         }
       } catch { /* fallback is non-fatal */ }
     }
