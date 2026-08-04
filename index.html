@@ -19,7 +19,7 @@
 <!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
 <link rel="preconnect" href="https://rsms.me/" crossorigin>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<link rel="stylesheet" href="style.css?v=415" />
+<link rel="stylesheet" href="style.css?v=416" />
 </head>
 <body>
 <!-- v412 — NUCLEAR SW-KILL. Runs before ANY cached script. Unregisters
@@ -190,6 +190,12 @@
 
     <div class="signals-status-row">
       <div class="status" id="signals-status">Loading live signals…</div>
+      <!-- v416 — live-watch pulse indicator. Green pulse = actively
+           monitoring live market (London/NY hours). Amber = off-hours
+           slow-poll. Title updates with last-check timestamp. -->
+      <div id="live-watch-pulse" class="live-watch-pulse" title="Eyes on live market · algo-read every 30s during London/NY">
+        <span class="lwp-dot"></span><span class="lwp-label">Live</span>
+      </div>
       <button type="button" id="signals-rescan-btn" class="signals-rescan-btn"
               title="Force a fresh scan of all pairs right now">🔄 Rescan now</button>
     </div>
@@ -927,6 +933,6 @@
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=415"></script>
+<script src="app.js?v=416"></script>
 </body>
 </html>

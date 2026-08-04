@@ -16986,9 +16986,51 @@ async function _refreshAlgoRead() {
 function _startAlgoTimer() {
   _refreshAlgoRead();
   if (_arTimer) clearInterval(_arTimer);
-  _arTimer = setInterval(_refreshAlgoRead, 120000);
+  // v416 — LIVE-WATCH MODE. Poll frequency adapts to session:
+  //   London/NY hours (07-20 UTC): every 30s  — pro-trader eyes on market
+  //   Off-hours:                   every 3min — no need to burn quota
+  // A tick catches A+ setups as they form so signals publish within
+  // ~30s of the setup appearing, not up to 15min later.
+  const tick = () => {
+    const h = new Date().getUTCHours();
+    const isActive = h >= 7 && h <= 20;
+    _refreshAlgoRead();
+    // Also nudge fresh-scan so new signals get evaluated against new algo state
+    if (isActive && typeof _forceFreshScan === 'function') {
+      _forceFreshScan({ full: false }).catch(() => {});
+    }
+  };
+  const intervalMs = () => {
+    const h = new Date().getUTCHours();
+    return (h >= 7 && h <= 20) ? 30_000 : 180_000;
+  };
+  _arTimer = setInterval(tick, intervalMs());
+  // Re-check interval every 5min in case hour boundary crossed
+  setInterval(() => {
+    if (_arTimer) {
+      clearInterval(_arTimer);
+      _arTimer = setInterval(tick, intervalMs());
+    }
+  }, 300_000);
 }
 function _stopAlgoTimer() { if (_arTimer) { clearInterval(_arTimer); _arTimer = null; } }
+
+// v416 — Update the live-watch pulse tone based on session activity.
+// Green = actively watching (London/NY). Amber = off-hours slow poll.
+function _v416UpdateWatchPulse() {
+  const el = document.getElementById('live-watch-pulse');
+  if (!el) return;
+  const h = new Date().getUTCHours();
+  const active = h >= 7 && h <= 20;
+  el.classList.toggle('off-hours', !active);
+  const label = el.querySelector('.lwp-label');
+  if (label) label.textContent = active ? 'Live' : 'Slow';
+  el.title = active
+    ? '👁️ Eyes on live market · algo-read every 30s (London/NY)'
+    : '💤 Off-hours slow-watch · algo-read every 3 min';
+}
+setInterval(_v416UpdateWatchPulse, 60_000);
+document.addEventListener('DOMContentLoaded', () => setTimeout(_v416UpdateWatchPulse, 500));
 
 document.addEventListener('click', (e) => {
   const tab = e.target && e.target.closest && e.target.closest('.tab[data-tab]');
