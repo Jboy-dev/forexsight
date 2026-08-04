@@ -189,6 +189,32 @@ export async function onRequest(context) {
                 }
               }
             } catch {}
+
+            // v415 — A+ SETUP GATE. Live-market microstructure check.
+            // Only publish a signal if algo-read confirms the SAME direction
+            // with ≥2 institutional footprints RIGHT NOW. Real A+ setups
+            // show up as: price rejection at VWAP, absorption bar,
+            // wick rejection, or magnetized round-number reaction —
+            // all measurable from OHLC. This is the difference between
+            // 'indicator vote says BUY' and 'the market is actively
+            // reversing UP right now'.
+            if (liveAnalysisSignals && liveAnalysisSignals.length) {
+              try {
+                const arRes = await fetch(`${url.protocol}//${url.host}/api/algo-read`);
+                if (arRes.ok) {
+                  const ar = await arRes.json();
+                  const byPair = {};
+                  for (const p of (ar.pairs || [])) byPair[p.pair] = p;
+                  liveAnalysisSignals = liveAnalysisSignals.filter(s => {
+                    const algo = byPair[s.pair];
+                    if (!algo) return false;                      // no algo data → block
+                    if (algo.algoBias !== s.direction) return false; // direction disagrees → block
+                    if ((algo.algoStrength || 0) < 2) return false;  // weak footprint → block
+                    return true;
+                  });
+                }
+              } catch {}
+            }
           }
         }
       } catch { /* fallback is non-fatal */ }
