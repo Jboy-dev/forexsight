@@ -17,7 +17,11 @@ on:
     # Every 15 min — fits in private-repo free tier (2000 min/month).
     # If you flip the repo to public later, drop this to */5 for tighter
     # coverage since public repos get unlimited Actions minutes.
-    - cron: '*/15 * * * *'
+    # v417 — was */15 (96/day × 5 endpoints = 480 Function calls/day just
+    # from cron). Bumped to */30 to halve the quota burn while keeping
+    # signal freshness < 30 min. Combined with client-side throttles the
+    # total is now well inside the Pages Functions 100k/day free tier.
+    - cron: '*/30 * * * *'
   workflow_dispatch:   # allow manual trigger from Actions tab
 
 concurrency:

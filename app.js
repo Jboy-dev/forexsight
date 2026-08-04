@@ -15907,7 +15907,7 @@ function _startGoldLivePolling() {
   const activeTab = document.querySelector('.tab.active')?.dataset.tab;
   if (activeTab !== 'signals') return;
   _pollGoldLive();
-  _goldLiveTimer = setInterval(_pollGoldLive, 25000);
+  _goldLiveTimer = setInterval(_pollGoldLive, 90000);  // v417 — was 25s (3.4k/day quota) → 90s (960/day)
 }
 
 function _stopGoldLivePolling() {
@@ -16112,7 +16112,7 @@ async function _refreshConditions() {
 function _startConditionsPolling() {
   _refreshConditions();
   if (_condsTimer) clearInterval(_condsTimer);
-  _condsTimer = setInterval(_refreshConditions, 60000);
+  _condsTimer = setInterval(_refreshConditions, 300000);  // v417 — 60s → 5min (quota safe)
 }
 function _stopConditionsPolling() {
   if (_condsTimer) { clearInterval(_condsTimer); _condsTimer = null; }
@@ -17000,9 +17000,12 @@ function _startAlgoTimer() {
       _forceFreshScan({ full: false }).catch(() => {});
     }
   };
+  // v417 — REVERTED aggressive 30s polling. Was burning through the
+  // Cloudflare Pages Functions 100k/day free-tier quota (~7800/day
+  // during liquid hours alone → outage). Back to 2min sustainable.
   const intervalMs = () => {
     const h = new Date().getUTCHours();
-    return (h >= 7 && h <= 20) ? 30_000 : 180_000;
+    return (h >= 7 && h <= 20) ? 120_000 : 300_000;
   };
   _arTimer = setInterval(tick, intervalMs());
   // Re-check interval every 5min in case hour boundary crossed
@@ -17121,7 +17124,7 @@ async function _refreshSetupRadar() {
 function _startSetupRadarTimer() {
   _refreshSetupRadar();
   if (_srTimer) clearInterval(_srTimer);
-  _srTimer = setInterval(_refreshSetupRadar, 90000);
+  _srTimer = setInterval(_refreshSetupRadar, 300000);  // v417 — 90s → 5min (setup-radar fans out 15 requests per call; was 21k/day)
 }
 function _stopSetupRadarTimer() { if (_srTimer) { clearInterval(_srTimer); _srTimer = null; } }
 
@@ -17207,7 +17210,7 @@ async function _refreshTrustBadge() {
 function _startTrustBadgeTimer() {
   _refreshTrustBadge();
   if (_tbTimer) clearInterval(_tbTimer);
-  _tbTimer = setInterval(_refreshTrustBadge, 180000);
+  _tbTimer = setInterval(_refreshTrustBadge, 300000);  // v417 — 3min → 5min (quota safe)
 }
 function _stopTrustBadgeTimer() { if (_tbTimer) { clearInterval(_tbTimer); _tbTimer = null; } }
 document.addEventListener('click', (e) => {
