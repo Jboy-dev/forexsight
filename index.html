@@ -19,9 +19,45 @@
 <!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
 <link rel="preconnect" href="https://rsms.me/" crossorigin>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<link rel="stylesheet" href="style.css?v=417" />
+<link rel="stylesheet" href="style.css?v=418" />
 </head>
 <body>
+<!-- v418 — OUTAGE FALLBACK. If preview URL's Functions are down (quota
+     exhausted, Cloudflare outage, etc.), redirect to the working
+     justice URL so the user isn't stuck on a broken site. Runs after
+     3s so real API responses have a chance to arrive first. -->
+<script>
+(function(){
+  if (location.host !== 'forexsight-preview.pages.dev') return;
+  setTimeout(function(){
+    fetch('/api/health', { cache: 'no-store' })
+      .then(function(r){ return r.text().then(function(t){ return { r: r, t: t }; }); })
+      .then(function(x){
+        var isJson = (x.r.headers.get('content-type') || '').indexOf('json') >= 0;
+        var looksLikeHtml = x.t.trim().slice(0, 20).toLowerCase().indexOf('<!doctype') === 0;
+        if (!isJson || looksLikeHtml) {
+          if (sessionStorage.getItem('_v418_redirected')) return;
+          sessionStorage.setItem('_v418_redirected', '1');
+          var banner = document.createElement('div');
+          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(180deg,#dc2626,#991b1b);color:#fff;padding:14px 18px;text-align:center;font-family:-apple-system,sans-serif;font-weight:700;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
+          banner.innerHTML = '⚠ Preview API is down (Cloudflare quota) — <a href="https://forexsight-justice.pages.dev/" style="color:#fef3c7;text-decoration:underline">click to open the working site</a> · auto-redirecting in <span id="_v418_c">5</span>s';
+          document.body.insertBefore(banner, document.body.firstChild);
+          var n = 5;
+          var tick = setInterval(function(){
+            n--;
+            var el = document.getElementById('_v418_c');
+            if (el) el.textContent = String(n);
+            if (n <= 0) {
+              clearInterval(tick);
+              location.href = 'https://forexsight-justice.pages.dev/';
+            }
+          }, 1000);
+        }
+      })
+      .catch(function(){});
+  }, 3000);
+})();
+</script>
 <!-- v412 — NUCLEAR SW-KILL. Runs before ANY cached script. Unregisters
      every stuck service worker + purges every cache from the OLD app. If
      any SW was killed OR any cache was cleared, we hard-reload once so the
@@ -933,6 +969,6 @@
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=417"></script>
+<script src="app.js?v=418"></script>
 </body>
 </html>
