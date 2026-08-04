@@ -4166,7 +4166,11 @@ async function _checkSignalsInner(context) {
     if (slDist === 0) errs.push('zero-sl-distance');
     else {
       if (tp1Dist < slDist * 0.95) errs.push(`tp1-below-1R (${(tp1Dist/slDist).toFixed(2)}R)`);
-      if (tp3Dist < slDist * 2.0) errs.push(`tp3-below-2R (${(tp3Dist/slDist).toFixed(2)}R)`);
+      // v419 — R:R hard gate raised 2.0 → 3.0. Real-world edge maths:
+      // to be net profitable at 40% WR you need R:R ≥ 1.5. At 30% WR
+      // you need R:R ≥ 2.33. Setting the floor at 3.0 gives break-even
+      // at 25% WR — a much safer buffer against WR degradation.
+      if (tp3Dist < slDist * 3.0) errs.push(`tp3-below-3R (${(tp3Dist/slDist).toFixed(2)}R)`);
     }
 
     // v398 — SL sanity ceiling. Defense-in-depth against any code path

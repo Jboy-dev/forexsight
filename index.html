@@ -19,9 +19,34 @@
 <!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
 <link rel="preconnect" href="https://rsms.me/" crossorigin>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<link rel="stylesheet" href="style.css?v=418" />
+<link rel="stylesheet" href="style.css?v=420" />
 </head>
 <body>
+<!-- v419 — AUTO-VERSION-CHECK. Every 5 min while page open, checks
+     current deployed version via /api/health. If it doesn't match
+     what we loaded with, silently reload once so user gets latest
+     code. Guarded so it only fires when version actually differs. -->
+<script>
+window._APP_VERSION_AT_LOAD = 'v419';
+(function(){
+  var CHECK_MS = 5 * 60 * 1000;
+  var currentUrlV = new URLSearchParams(document.querySelector('script[src*="app.js"]')?.src?.split('?')[1] || '').get('v') || 'v419';
+  setInterval(function(){
+    if (location.host !== 'forexsight-preview.pages.dev' && location.host !== 'forexsight-justice.pages.dev') return;
+    fetch('/api/health', { cache: 'no-store' })
+      .then(function(r){ return r.ok && r.headers.get('content-type')?.indexOf('json') >= 0 ? r.json() : null; })
+      .then(function(d){
+        if (!d || !d.version) return;
+        var deployedV = (d.version || '').split('-')[0]; // e.g. "v420" from "v420-foo"
+        if (deployedV && deployedV !== currentUrlV) {
+          if (sessionStorage.getItem('_v419_updated_' + deployedV)) return;
+          sessionStorage.setItem('_v419_updated_' + deployedV, '1');
+          location.reload();
+        }
+      }).catch(function(){});
+  }, CHECK_MS);
+})();
+</script>
 <!-- v418 — OUTAGE FALLBACK. If preview URL's Functions are down (quota
      exhausted, Cloudflare outage, etc.), redirect to the working
      justice URL so the user isn't stuck on a broken site. Runs after
@@ -83,31 +108,10 @@
 })();
 </script>
 <header class="topbar">
-  <div class="brand">
-    <span class="logo" aria-hidden="true">
-      <svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="lg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0a84ff"/>
-            <stop offset="50%" stop-color="#5fd5ff"/>
-            <stop offset="100%" stop-color="#30d158"/>
-          </linearGradient>
-          <linearGradient id="lg-glow" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#0a84ff" stop-opacity="0.4"/>
-            <stop offset="100%" stop-color="#30d158" stop-opacity="0.4"/>
-          </linearGradient>
-        </defs>
-        <rect x="2" y="2" width="36" height="36" rx="10" fill="url(#lg-glow)" opacity="0.18"/>
-        <path d="M8 28 L14 18 L20 24 L32 8" fill="none" stroke="url(#lg-grad)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="32" cy="8" r="2.4" fill="#30d158"/>
-        <circle cx="20" cy="24" r="2" fill="#5fd5ff" opacity="0.85"/>
-        <circle cx="14" cy="18" r="1.7" fill="#0a84ff" opacity="0.85"/>
-      </svg>
-    </span>
-    <div class="brand-text">
-      <h1>ForexSight <span class="scan-pulse" id="scan-pulse" title="Live scanning every minute · brain learning continuously"></span></h1>
-      <span class="tag">Multi-indicator confluence · Live data · News-aware</span>
-    </div>
+  <!-- v420 — Brand removed from homepage per request. Only the tiny
+       scan-pulse indicator kept (needs to exist for JS to update). -->
+  <div class="brand" style="min-width:0">
+    <span class="scan-pulse" id="scan-pulse" title="Live scanning · brain learning" style="width:8px;height:8px;display:inline-block"></span>
   </div>
   <div class="controls">
     <label class="ctrl">Min confidence
@@ -167,49 +171,49 @@
          VWAP position, absorption bars, wick rejections, round-number
          gravity, algo time windows, range compression. Directional
          bias per pair + market-wide summary. -->
-    <div id="algo-read-card" class="algo-read-card" hidden></div>
+    <div id="algo-read-card" class="algo-read-card" hidden data-collapsible="true"></div>
 
     <!-- v379 — SETUP RADAR. Scans EVERY pair via /api/predict-next and lists
          every setup with meaningful directional bias, ranked by strength.
          Includes setups the strict main gate held back (with reason), so
          you never miss a valid setup. -->
-    <div id="setup-radar-card" class="setup-radar-card" hidden></div>
+    <div id="setup-radar-card" class="setup-radar-card" hidden data-collapsible="true"></div>
 
     <!-- v373 — CHEAT CODES banner. Four web-verified professional
          techniques (Silver Bullet, Liquidity Sweep+Reversal, ORB,
          Wyckoff Spring). Each fires only in its documented window with
          its exact trigger. Sources cited on each signal. -->
-    <div id="cheat-codes-container" class="cheat-codes-container" hidden></div>
+    <div id="cheat-codes-container" class="cheat-codes-container" hidden data-collapsible="true"></div>
 
     <!-- v372 — PRO signal banner. The highest-conviction tier: price
          reacting at a daily key level with candle trigger + HTF bias +
          news catalyst + session appropriate + R:R≥3. Expected 0-2/day.
          When present, THIS is the trade to take. -->
-    <div id="pro-banner" class="pro-banner" hidden></div>
+    <div id="pro-banner" class="pro-banner" hidden data-collapsible="true"></div>
 
     <!-- v366 — ELITE signal banner. Passes 10-gate system-level filters.
          Fires more often than PRO but is still selective. -->
-    <div id="elite-banner" class="elite-banner" hidden></div>
+    <div id="elite-banner" class="elite-banner" hidden data-collapsible="true"></div>
 
     <!-- v366 — STAND ASIDE banner. Only visible when Conditions Score < 50.
          Overrides everything else — tells user not to trade regardless of
          what signals show. This is the "consistent wins" filter. -->
-    <div id="stand-aside-banner" class="stand-aside-banner" hidden></div>
+    <div id="stand-aside-banner" class="stand-aside-banner" hidden data-collapsible="true"></div>
 
     <!-- v380 — TRUST BADGE. Single-glance system trust score (0-100).
          Tap to expand into full breakdown: filtered-tier WR, live setup
          quality, calibration accuracy, filter selectivity. -->
-    <div id="trust-badge-card" class="trust-badge-card" hidden></div>
+    <div id="trust-badge-card" class="trust-badge-card" hidden data-collapsible="true"></div>
 
     <!-- v367 — Honest track record card. Shows real wins/losses per tier
          so you can see EXACTLY how the system is performing right now.
          Trustworthiness comes from showing your work, not from claims. -->
-    <div id="track-record-card" class="track-record-card" hidden></div>
+    <div id="track-record-card" class="track-record-card" hidden data-collapsible="true"></div>
 
     <!-- v364 — Trading Conditions Score. Single 0-100 that tells you if you
          should be trading at all right now. Retail's biggest cause of losses
          is taking bad trades in bad conditions — this is the first filter. -->
-    <div id="conditions-card" class="conditions-card" hidden>
+    <div id="conditions-card" class="conditions-card" hidden data-collapsible="true">
       <div class="conditions-header">
         <div class="conditions-score-wrap">
           <div class="conditions-score" id="conditions-score-num">—</div>
@@ -969,6 +973,6 @@
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=418"></script>
+<script src="app.js?v=420"></script>
 </body>
 </html>
