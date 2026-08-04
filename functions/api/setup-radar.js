@@ -141,8 +141,13 @@ export async function onRequest(context) {
   }, null, 2), {
     headers: {
       'Content-Type': 'application/json',
-      'Cache-Control': 'public, s-maxage=60',
+      // v422 — s-maxage 60 → 300. Edge caches setup-radar for 5min so
+      // client polls get served from CDN, not Function invocations.
+      // Cuts quota burn 5x on this endpoint (was 15-pair fanout per call).
+      // CORS added so cross-origin fallback fetches work.
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=60',
       'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Content-Type',
     },
   });
 }

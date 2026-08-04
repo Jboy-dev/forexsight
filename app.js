@@ -4995,6 +4995,7 @@ async function loadBrainStatus() {
     wrap = document.createElement('div');
     wrap.id = 'brain-status-card';
     wrap.className = 'brain-status-card';
+    wrap.dataset.collapsible = 'true';  // v422 — collapsed by default like other cards
     isNew = true;
   }
   // Re-attach guarantee from v259 — card always lives just above the grid.
@@ -16851,6 +16852,10 @@ function _ccExtractPreview(el) {
     const title = el.querySelector('.cheat-title')?.textContent?.trim() || '';
     return `<span class="collapsible-badge">${tech}</span><span>${title.slice(0, 60)}</span>`;
   }
+  if (id === 'brain-status-card') {
+    const samples = el.querySelector('.brain-samples-count, .brain-live-text')?.textContent?.trim().slice(0, 60) || 'Learning brain';
+    return `<span class="collapsible-badge">🧠 Brain</span><span class="collapsible-preview">${samples}</span>`;
+  }
   // v388 — added covers for the newer cards
   if (id === 'trust-badge-card') {
     const score = el.querySelector('.tb-score')?.textContent?.trim() || '—';
@@ -16881,6 +16886,7 @@ function _ccApplyToAll() {
     '#pro-banner',
     '#stand-aside-banner',
     '#cheat-codes-container .cheat-card',
+    '#brain-status-card',   // v422 — Learning Brain card closed by default
   ];
   for (const sel of selectors) {
     document.querySelectorAll(sel).forEach(el => {
