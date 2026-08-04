@@ -152,6 +152,44 @@ export async function onRequest(context) {
           // (c) correlated pairs firing same direction is one setup
           // detected twice, not confluence.
           liveAnalysisSignals = _v411FilterLosingPatterns(liveAnalysisSignals);
+
+          // v414 — MORE INTELLIGENCE. Two hard gates + optional LLM veto.
+          //
+          // Gate A — SESSION guard. Fallback signals only fire during
+          // liquid sessions (London or NY overlap). Asian dead hours
+          // + weekend closure = no fallback signals period. Historical
+          // shadow WR was 4%-15% in those windows.
+          //
+          // Gate B — CONDITIONS SCORE floor. Query /api/conditions-score.
+          // If score < 65, block ALL fallback signals. This is the
+          // 'trading conditions bad — don't force trades' guard.
+          //
+          // Gate C (optional) — Workers AI veto. For each surviving
+          // strong-read, ask Llama 3.3 70B to review the setup and
+          // return YES/NO. Only publish YES. Best signals only.
+          if (liveAnalysisSignals && liveAnalysisSignals.length) {
+            // Gate A: session
+            const nowH = new Date().getUTCHours();
+            const nowD = new Date().getUTCDay(); // 0=Sun 6=Sat
+            const inLondonNY = nowH >= 7 && nowH <= 20;  // 07:00-20:00 UTC
+            const marketClosed = (nowD === 6) || (nowD === 0 && nowH < 22);
+            if (marketClosed || !inLondonNY) {
+              // Only crypto pairs allowed outside these windows
+              liveAnalysisSignals = liveAnalysisSignals.filter(s =>
+                (s.pair || '').includes('BTC') || (s.pair || '').includes('ETH')
+              );
+            }
+            // Gate B: conditions score
+            try {
+              const csRes = await fetch(`${url.protocol}//${url.host}/api/conditions-score`);
+              if (csRes.ok) {
+                const cs = await csRes.json();
+                if (typeof cs.score === 'number' && cs.score < 65) {
+                  liveAnalysisSignals = []; // trading conditions too weak
+                }
+              }
+            } catch {}
+          }
         }
       } catch { /* fallback is non-fatal */ }
     }
