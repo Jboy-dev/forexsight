@@ -334,8 +334,23 @@ export async function onRequest(context) {
   confidence = Math.max(0, Math.min(90, confidence));
 
   // Threshold: if the margin is thin, downgrade to HOLD (avoid coin-flip signals)
-  const finalDirection = (totalWeight >= 30 && margin >= 15) ? direction : 'HOLD';
-  const finalConfidence = finalDirection === 'HOLD' ? Math.min(confidence, 55) : confidence;
+  // v424 — HARD MULTI-TIMEFRAME AGREEMENT. Was: 4H HTF counted as a
+  // 20pt vote. Now: HTF trend must AGREE with the direction OR be
+  // unknown. If HTF actively opposes (up vs SELL, down vs BUY), force
+  // HOLD. This kills counter-trend guesses that lose most of the time.
+  let candidateDir = (totalWeight >= 30 && margin >= 15) ? direction : 'HOLD';
+  if (candidateDir === 'BUY' && htfTrend === 'down') candidateDir = 'HOLD';
+  if (candidateDir === 'SELL' && htfTrend === 'up') candidateDir = 'HOLD';
+
+  let finalDirection = candidateDir;
+  let finalConfidence = finalDirection === 'HOLD' ? Math.min(confidence, 55) : confidence;
+
+  // v424 — EXPECTED-VALUE GATE. If R:R × WR - (1-WR) is negative,
+  // this is a losing bet no matter how many strategies fire. Requires
+  // TP3/SL ratio × baseline_WR - (1 - baseline_WR) ≥ 0.3 (10% edge).
+  // Uses conservative WR = confidence / 100 as proxy for realized WR.
+  // Blocks negative-EV trades even when other layers would let them fire.
+  // (This gate runs AFTER SL/TP levels are computed below — see later.)
 
   // ─── 5. Entry / SL / TP ────────────────────────────────────────────
   // v322 — Smart SL: tighter of 1.5×ATR / structure / per-pair cap.
@@ -395,6 +410,21 @@ export async function onRequest(context) {
       riskRewardTP1: +(tp1Dist / slDist).toFixed(2),
       riskRewardTP3: +(tp3Dist / slDist).toFixed(2),
     };
+    // v424 — EXPECTED VALUE GATE. If EV < 0.3R, the trade is a losing
+    // bet on average. Uses proxy WR = confidence/100 (conservative).
+    //   EV = R:R × WR - (1 - WR)
+    // For 3:1 R:R at 30% WR → EV = 0.9 - 0.7 = 0.2 (below threshold)
+    // For 3:1 R:R at 40% WR → EV = 1.2 - 0.6 = 0.6 (passes)
+    // For 5:1 R:R at 25% WR → EV = 1.25 - 0.75 = 0.5 (passes)
+    const wrProxy = Math.max(0.25, Math.min(0.85, finalConfidence / 100));
+    const rr = tp3Dist / slDist;
+    const ev = rr * wrProxy - (1 - wrProxy);
+    if (ev < 0.3) {
+      // Negative or thin edge — downgrade to HOLD, kill levels
+      levels = null;
+      finalDirection = 'HOLD';
+      finalConfidence = Math.min(finalConfidence, 55);
+    }
   }
 
   // Time horizon based on ADX + HTF
