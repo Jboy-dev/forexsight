@@ -214,6 +214,50 @@ export async function onRequest(context) {
                   });
                 }
               } catch {}
+
+              // v423 — NEWS BLACKOUT gate. Block signals when high-impact
+              // news is imminent (30 min before → 60 min after). Chart-read
+              // fallback previously bypassed this — biggest source of
+              // whipsaw losses during NFP/CPI/FOMC.
+              try {
+                const calRes = await fetch(`${url.protocol}//${url.host}/api/calendar?impact=high`);
+                if (calRes.ok) {
+                  const cal = await calRes.json();
+                  const events = cal.events || cal.items || (Array.isArray(cal) ? cal : []);
+                  const nowMs = Date.now();
+                  const inBlackout = (events || []).some(e => {
+                    const t = Date.parse(e.date || e.time || 0);
+                    if (!Number.isFinite(t)) return false;
+                    const diffMin = (t - nowMs) / 60000;
+                    return diffMin >= -60 && diffMin <= 30; // 30min before → 60min after
+                  });
+                  if (inBlackout) liveAnalysisSignals = [];
+                }
+              } catch {}
+
+              // v423 — SIGNAL PATIENCE. Only publish a signal that has
+              // been present in TWO consecutive scans. Stops flash-signals
+              // that appear for one tick then disappear. Uses KV to track
+              // first-seen per pair+direction.
+              try {
+                if (env.TRADES_KV && liveAnalysisSignals && liveAnalysisSignals.length) {
+                  const raw = await env.TRADES_KV.get('v423-pending-signals');
+                  const seen = raw ? JSON.parse(raw) : {};
+                  const kept = [];
+                  const nextSeen = {};
+                  const nowMs = Date.now();
+                  for (const s of liveAnalysisSignals) {
+                    const key = `${s.pair}_${s.direction}`;
+                    const firstSeen = seen[key] || nowMs;
+                    nextSeen[key] = firstSeen;
+                    // Publish if signal has been consistently present for ≥90s
+                    if (nowMs - firstSeen >= 90_000) kept.push(s);
+                  }
+                  // Persist next-seen map (only current candidates carry forward)
+                  await env.TRADES_KV.put('v423-pending-signals', JSON.stringify(nextSeen)).catch(() => {});
+                  liveAnalysisSignals = kept;
+                }
+              } catch {}
             }
           }
         }
