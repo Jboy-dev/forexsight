@@ -1,0 +1,74 @@
+name: Mirror signals to git
+
+# v426 — Signal mirror. Every 30 min, fetch working signals from the
+# live API and commit them to /data/*.json. When Cloudflare Functions
+# quota is exhausted, the static site falls back to reading from
+# https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/*
+#
+# This means:
+#   • Signals stay available even when Cloudflare is down
+#   • Zero Cloudflare Function calls for the fallback path
+#   • Zero cost (GH raw is free + unlimited)
+#   • Only ~2 min of GH Actions time per day (well inside 2000 min/mo)
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-signals
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch snapshot from working URL
+        run: |
+          set +e
+          mkdir -p data
+          # Try justice URL first (currently the reliable one)
+          for BASE in "https://forexsight-justice.pages.dev" "https://forexsight-preview.pages.dev"; do
+            for ep in latest-signals shadow-tracker self-trust conditions-score algo-read setup-radar; do
+              body=$(curl -sS --max-time 15 "$BASE/api/$ep" 2>/dev/null)
+              # Skip if empty OR looks like HTML fallback
+              [ -z "$body" ] && continue
+              first=$(printf %.1s "$body")
+              [ "$first" != "{" ] && [ "$first" != "[" ] && continue
+              # Write only if we got a fresh JSON blob from this endpoint
+              if [ ! -f "data/${ep}.json" ] || [ $(echo "$body" | wc -c) -gt 100 ]; then
+                echo "$body" > "data/${ep}.json"
+                echo "✓ ${ep}.json from $BASE ($(echo "$body" | wc -c) bytes)"
+              fi
+            done
+            # If we got at least latest-signals from THIS base, stop trying others
+            [ -f "data/latest-signals.json" ] && break
+          done
+          # Add mirror metadata
+          echo "{\"mirroredAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"source\":\"github-actions-mirror\"}" > data/_mirror-meta.json
+          ls -la data/
+
+      - name: Commit + push if changed
+        run: |
+          cd $GITHUB_WORKSPACE
+          git config user.name "signals-mirror-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          # Only commit if there are actual changes
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: mirror signals snapshot $(date -u +%H:%M)"
+            git push
+            echo "✔ pushed mirror snapshot"
+          else
+            echo "→ no changes to commit"
+          fi

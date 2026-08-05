@@ -15973,6 +15973,48 @@ async function _forceFreshScan(opts = {}) {
 }
 window._forceFreshScan = _forceFreshScan;
 
+// v426 — GITHUB MIRROR FALLBACK. When /api/latest-signals returns HTML
+// (Cloudflare outage/quota), fall over to the git-mirrored JSON
+// snapshot at raw.githubusercontent.com. GH Action /mirror-signals.yml
+// updates it every 30 min from the working URL. This means the app
+// always has signals even during platform outages.
+window._v426MirrorFetch = async function(endpoint) {
+  // endpoint is like 'latest-signals' (no /api/ prefix)
+  const MIRROR_BASE = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data';
+  try {
+    const r = await fetch(`${MIRROR_BASE}/${endpoint}.json`, { cache: 'no-store' });
+    if (!r.ok) return null;
+    const d = await r.json();
+    // Tag as mirror-sourced so UI can show a "cached snapshot" note
+    if (d && typeof d === 'object') d._source = 'github-mirror';
+    return d;
+  } catch { return null; }
+};
+
+// Patch _forceFreshScan to use mirror when API returns HTML
+const _v426OrigForceFreshScan = _forceFreshScan;
+_forceFreshScan = async function(opts = {}) {
+  try {
+    const r = await fetch('/api/latest-signals', { cache: 'no-store' });
+    if (r.ok) {
+      const ct = r.headers.get('content-type') || '';
+      if (!ct.includes('json')) {
+        // API returning HTML fallback — use git mirror
+        const mirror = await window._v426MirrorFetch('latest-signals');
+        if (mirror && Array.isArray(mirror.signals) && mirror.signals.length) {
+          state.signals = mirror.signals;
+          if (typeof renderSignals === 'function') renderSignals();
+          const statusEl = document.getElementById('signals-status');
+          if (statusEl) statusEl.textContent = `${mirror.signals.length} signals · GitHub mirror (API down)`;
+          return;
+        }
+      }
+    }
+  } catch {}
+  return _v426OrigForceFreshScan(opts);
+};
+window._forceFreshScan = _forceFreshScan;
+
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) {
     _stopGoldLivePolling();
