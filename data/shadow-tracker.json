@@ -1,40 +1,46 @@
 {
   "ok": true,
-  "ts": 1786019015072,
-  "isoTime": "2026-08-06T12:23:35.072Z",
-  "tracked": 2,
+  "ts": 1786027332138,
+  "isoTime": "2026-08-06T14:42:12.138Z",
+  "tracked": 3,
   "open": 1,
   "wins": 1,
-  "losses": 0,
+  "losses": 1,
   "expired": 0,
-  "shadowWinRate": "100.0%",
+  "shadowWinRate": "50.0%",
   "winRateWindows": {
     "last24h": {
-      "n": 0,
+      "n": 1,
       "wins": 0,
-      "losses": 0,
-      "wr": null
+      "losses": 1,
+      "wr": 0
     },
     "last7d": {
-      "n": 1,
+      "n": 2,
       "wins": 1,
-      "losses": 0,
-      "wr": 100
+      "losses": 1,
+      "wr": 50
     },
     "last30d": {
-      "n": 1,
+      "n": 2,
       "wins": 1,
-      "losses": 0,
-      "wr": 100
+      "losses": 1,
+      "wr": 50
     },
     "lifetime": {
-      "n": 1,
+      "n": 2,
       "wins": 1,
-      "losses": 0,
-      "wr": 100
+      "losses": 1,
+      "wr": 50
     }
   },
-  "topFailureReasons": [],
+  "topFailureReasons": [
+    {
+      "reason": "london-open-volatility",
+      "count": 1,
+      "pctOfLosses": 100
+    }
+  ],
   "topWinReasons": [
     {
       "reason": "strong-confidence-80plus",
@@ -77,6 +83,42 @@
   "newResolutions": 0,
   "feed": [
     {
+      "key": "XAU/USD_BUY_2026-08-06T14",
+      "pair": "XAU/USD",
+      "direction": "BUY",
+      "entry": 4328.2,
+      "sl": 4297.83,
+      "tp1": 4358.58,
+      "tp2": 4388.95,
+      "tp3": 4429.45,
+      "confidence": 84,
+      "strategies": 4,
+      "firedAt": "2026-08-06T14:10:26.149Z",
+      "status": "open",
+      "barsToOutcome": null,
+      "checkedAt": null,
+      "failureReasons": null,
+      "winReasons": null,
+      "brainScore": 93,
+      "acceptancePath": "standard",
+      "expectedR": 0.09,
+      "brainRecommended": false,
+      "isEliteBrainPattern": false,
+      "isTopPick": true,
+      "bigMove": false,
+      "inKillzone": true,
+      "namedStrategies": [
+        "MOMENTUM",
+        "TREND",
+        "VWAP",
+        "ICHIMOKU"
+      ],
+      "adx": 48,
+      "pipPotential": 1013,
+      "pWin": 68,
+      "edge": 29
+    },
+    {
       "key": "XAU/USD_BUY_2026-08-06T07",
       "pair": "XAU/USD",
       "direction": "BUY",
@@ -88,17 +130,19 @@
       "confidence": 85,
       "strategies": 3,
       "firedAt": "2026-08-06T07:30:26.599Z",
-      "status": "open",
-      "barsToOutcome": null,
-      "checkedAt": null,
-      "failureReasons": null,
+      "status": "lost",
+      "barsToOutcome": 6,
+      "checkedAt": "2026-08-06T14:10:26.063Z",
+      "failureReasons": [
+        "london-open-volatility"
+      ],
       "winReasons": null,
       "brainScore": 90,
       "acceptancePath": "standard",
       "expectedR": 0.07,
       "brainRecommended": false,
       "isEliteBrainPattern": false,
-      "isTopPick": true,
+      "isTopPick": false,
       "bigMove": false,
       "inKillzone": true,
       "namedStrategies": [
