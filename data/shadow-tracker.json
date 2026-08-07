@@ -1,44 +1,59 @@
 {
   "ok": true,
-  "ts": 1786027332138,
-  "isoTime": "2026-08-06T14:42:12.138Z",
+  "ts": 1786062032066,
+  "isoTime": "2026-08-07T00:20:32.066Z",
   "tracked": 3,
-  "open": 1,
+  "open": 0,
   "wins": 1,
-  "losses": 1,
+  "losses": 2,
   "expired": 0,
-  "shadowWinRate": "50.0%",
+  "shadowWinRate": "33.3%",
   "winRateWindows": {
     "last24h": {
-      "n": 1,
+      "n": 2,
       "wins": 0,
-      "losses": 1,
+      "losses": 2,
       "wr": 0
     },
     "last7d": {
-      "n": 2,
+      "n": 3,
       "wins": 1,
-      "losses": 1,
-      "wr": 50
+      "losses": 2,
+      "wr": 33.3
     },
     "last30d": {
-      "n": 2,
+      "n": 3,
       "wins": 1,
-      "losses": 1,
-      "wr": 50
+      "losses": 2,
+      "wr": 33.3
     },
     "lifetime": {
-      "n": 2,
+      "n": 3,
       "wins": 1,
-      "losses": 1,
-      "wr": 50
+      "losses": 2,
+      "wr": 33.3
     }
   },
   "topFailureReasons": [
     {
+      "reason": "mid-confidence",
+      "count": 1,
+      "pctOfLosses": 50
+    },
+    {
+      "reason": "pre-ny-volatility",
+      "count": 1,
+      "pctOfLosses": 50
+    },
+    {
+      "reason": "immediate-rejection",
+      "count": 1,
+      "pctOfLosses": 50
+    },
+    {
       "reason": "london-open-volatility",
       "count": 1,
-      "pctOfLosses": 100
+      "pctOfLosses": 50
     }
   ],
   "topWinReasons": [
@@ -78,9 +93,9 @@
       "pctOfWins": 100
     }
   ],
-  "persisted": false,
-  "dirty": false,
-  "newResolutions": 0,
+  "persisted": true,
+  "dirty": true,
+  "newResolutions": 1,
   "feed": [
     {
       "key": "XAU/USD_BUY_2026-08-06T14",
@@ -94,17 +109,21 @@
       "confidence": 84,
       "strategies": 4,
       "firedAt": "2026-08-06T14:10:26.149Z",
-      "status": "open",
-      "barsToOutcome": null,
-      "checkedAt": null,
-      "failureReasons": null,
+      "status": "lost",
+      "barsToOutcome": 1,
+      "checkedAt": "2026-08-07T00:20:31.335Z",
+      "failureReasons": [
+        "mid-confidence",
+        "pre-ny-volatility",
+        "immediate-rejection"
+      ],
       "winReasons": null,
       "brainScore": 93,
       "acceptancePath": "standard",
       "expectedR": 0.09,
       "brainRecommended": false,
       "isEliteBrainPattern": false,
-      "isTopPick": true,
+      "isTopPick": false,
       "bigMove": false,
       "inKillzone": true,
       "namedStrategies": [

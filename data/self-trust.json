@@ -1,28 +1,51 @@
 {
   "ok": true,
   "version": "v359-self-trust",
-  "timestamp": "2026-08-06T14:42:12.270Z",
-  "trustScore": 20,
+  "timestamp": "2026-08-07T00:20:32.192Z",
+  "trustScore": 2,
   "autoCorrection": {
     "edgeAdjPts": 8,
     "pWinAdjPts": 5,
     "note": "Trust low — tightening gate hard"
   },
   "historicalBacktest": {
-    "totalYearsCovered": 30,
-    "totalSignals": 850,
-    "wins": 244,
-    "losses": 583,
-    "winRate": 30,
+    "totalYearsCovered": 70.1,
+    "totalSignals": 1980,
+    "wins": 510,
+    "losses": 1434,
+    "winRate": 26,
     "score": 0
   },
   "liveTrades": {
-    "totalResolved": 2,
-    "lifetimeWinRate": 50,
-    "recentWindowSize": 2,
-    "recentWinRate": 50,
-    "score": 40
+    "totalResolved": 3,
+    "lifetimeWinRate": 33,
+    "recentWindowSize": 3,
+    "recentWinRate": 33,
+    "score": 6
   },
-  "calibration": null,
+  "calibration": {
+    "accuracyPct": 0,
+    "meanErrorPts": 52,
+    "buckets": {
+      "60-70": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "70-80": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "80-90": {
+        "samples": 3,
+        "winRate": 33,
+        "expected": 85,
+        "error": 52
+      },
+      "90+": {
+        "samples": 0,
+        "note": "too few samples"
+      }
+    }
+  },
   "interpretation": "VERY LOW TRUST — protective mode; only elite setups will pass"
 }
