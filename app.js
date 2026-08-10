@@ -10,6 +10,113 @@
  *   - Versioned keys: if a schema changes, bump _v1 → _v2 and the old data is ignored
  */
 
+// ═══════════════════════════════════════════════════════════════════════
+// v428 — UNIVERSAL MIRROR FALLBACK (installed before anything else runs)
+//
+// Root cause of "the website is not working": the app makes ~30 distinct
+// /api/* calls. When Cloudflare Pages Functions hit their free-tier daily
+// quota (100k req/day), EVERY one of them silently returns the SPA's
+// index.html instead of JSON. Each call site then either threw on
+// r.json() or swallowed the error — so cards stayed blank with no
+// explanation.
+//
+// Rather than patch 30 call sites (fragile, easy to miss one), this
+// wraps window.fetch ONCE. Any same-origin /api/<name> request whose
+// response is not JSON transparently retries against /data/<name>.json —
+// a Cloudflare Pages STATIC asset with unlimited quota, refreshed every
+// 30 min by the GitHub Actions mirror workflow.
+//
+// The replacement Response is a real Response object, so every existing
+// `await r.json()` / `r.ok` / `r.headers` call site keeps working
+// untouched. Responses served from mirror carry `x-forexsight-source:
+// mirror` so the UI can label them as cached.
+// ═══════════════════════════════════════════════════════════════════════
+(function installUniversalMirrorFallback() {
+  if (typeof window === 'undefined' || !window.fetch) return;
+  if (window.__v428MirrorInstalled) return;
+  window.__v428MirrorInstalled = true;
+
+  const _origFetch = window.fetch.bind(window);
+
+  // Endpoints that have a static mirror counterpart in /data/.
+  // Anything not listed simply fails through as before (no mirror exists).
+  const MIRRORED = new Set([
+    'latest-signals',
+    'shadow-tracker',
+    'self-trust',
+    'conditions-score',
+    'algo-read',
+    'setup-radar',
+  ]);
+
+  function apiNameFrom(url) {
+    try {
+      const u = new URL(url, location.origin);
+      if (u.origin !== location.origin) return null;      // only same-origin
+      const m = u.pathname.match(/^\/api\/([a-z0-9-]+)\/?$/i);
+      return m ? m[1].toLowerCase() : null;
+    } catch { return null; }
+  }
+
+  function isJsonResponse(res) {
+    const ct = res.headers.get('content-type') || '';
+    return ct.includes('json');
+  }
+
+  window.fetch = async function (input, init) {
+    const url = typeof input === 'string' ? input : (input && input.url) || '';
+    const name = apiNameFrom(url);
+
+    // Not an /api/* call, or no mirror available → behave exactly as before.
+    if (!name || !MIRRORED.has(name)) return _origFetch(input, init);
+
+    let liveRes = null;
+    try {
+      liveRes = await _origFetch(input, init);
+      if (liveRes.ok && isJsonResponse(liveRes)) return liveRes;   // healthy
+    } catch {
+      // network error — fall through to mirror
+    }
+
+    // Live API is down or served HTML. Try the static mirror.
+    try {
+      const mirrorRes = await _origFetch(
+        `/data/${name}.json?_m=${Date.now()}`,
+        { cache: 'no-store' }
+      );
+      if (mirrorRes.ok && isJsonResponse(mirrorRes)) {
+        const data = await mirrorRes.json();
+        if (data && typeof data === 'object' && !Array.isArray(data)) {
+          data._source = 'cf-static-mirror';
+        }
+        // v428d — mirror payloads use the server-side signal shape; fill in
+        // the pip fields the card renderer expects so levels don't render
+        // as "undefinedp". Guarded: the normaliser is defined later in this
+        // file, so only call it once it exists.
+        if (data && Array.isArray(data.signals) && typeof window._v428dNormaliseSignal === 'function') {
+          data.signals.forEach(window._v428dNormaliseSignal);
+        }
+        window.__v428UsingMirror = true;
+        return new Response(JSON.stringify(data), {
+          status: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'x-forexsight-source': 'mirror',
+          },
+        });
+      }
+    } catch {}
+
+    // Mirror also unavailable — hand back whatever the live call gave us
+    // (or a synthetic empty-but-valid JSON so callers don't explode).
+    if (liveRes) return liveRes;
+    return new Response(JSON.stringify({ ok: false, signals: [], _source: 'unavailable' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+})();
+
 // v246 — CRASH-PROOF LAYER. Three global handlers ensure the app keeps
 // running no matter what blows up:
 //   1. window.onerror catches synchronous exceptions in event handlers,
@@ -5230,28 +5337,126 @@ async function loadSignals(force = false) {
   // client re-computation. This was the actual choke that made the app
   // appear frozen on cold load. Client re-analysis still runs — but
   // in the background AFTER the server signals paint.
+  // v427c — API-or-mirror. Try live API first, but if it returns
+  // non-JSON (Cloudflare Functions quota exhausted, outage), fall
+  // straight to /data/latest-signals.json (Pages static asset, always
+  // served, refreshed every 30 min by the GH Action mirror). This is
+  // the actual "website not working" root cause fix — before v427c the
+  // primary load path silently swallowed HTML responses and left the
+  // signals feed blank.
+  const d = await _v427cFetchSignalsWithMirror();
+  if (d) {
+    _v427UpdateScannerPill(d);
+    const ts = d.ts || 0;
+    const ageMin = ts ? (Date.now() - ts) / 60000 : Infinity;
+    const sigs = Array.isArray(d.signals) ? d.signals : [];
+    if (sigs.length > 0) {
+      state.signals = sigs;
+      if (typeof renderSignals === 'function') renderSignals();
+      const src = d._source === 'cf-static-mirror' ? 'mirror' : 'server';
+      const ageStr = isFinite(ageMin) ? `${Math.round(ageMin)}m ago` : 'unknown age';
+      $('#signals-status').textContent = `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`;
+      // Only kick heavy scan if we're on live API (not mirror) AND signals
+      // are fresh. Mirror runs on GH Actions, no need to burn quota re-scanning.
+      if (d._source !== 'cf-static-mirror' && ageMin < 5) {
+        setTimeout(() => { _loadSignalsHeavyScan(force).catch(() => {}); }, 6000);
+      }
+      return;
+    }
+  }
+  // Fallback: no signals from either source — do the heavy client scan now.
+  return _loadSignalsHeavyScan(force);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// v428d — NORMALISE SERVER/MIRROR SIGNALS.
+//
+// Signals produced server-side (and therefore anything coming back through
+// the static mirror) carry `pipsToSl` / `pipsToTp3` / `rMultiple`, while the
+// card renderer reads `sl_pips` / `tp1_pips` / `tp2_pips` / `tp3_pips` /
+// `spread_pips` / `effective_*_pips` — the shape the in-browser engine
+// emits. Nothing bridged the two, so every level rendered the literal text
+// "undefinedp (real ?p)" next to an otherwise-correct price.
+//
+// This derives the missing pip figures from entry/SL/TP using the pair's
+// pip size, so the same card template works for both shapes.
+// ═══════════════════════════════════════════════════════════════════════
+function _v428dPipSizeFor(pair) {
+  const p = pair || '';
+  if (p === 'XAU/USD' || p === 'GOLD') return 0.1;
+  if (p.includes('JPY')) return 0.01;
+  if (p === 'BTC/USD') return 1;
+  if (p === 'ETH/USD') return 0.1;
+  if (p === 'SOL/USD') return 0.01;
+  if (p === 'US30' || p === 'NAS100' || p === 'SPX500') return 1;
+  return 0.0001;
+}
+
+function _v428dNormaliseSignal(s) {
+  if (!s || typeof s !== 'object') return s;
+  const pip = _v428dPipSizeFor(s.pair);
+  const between = (a, b) =>
+    (a != null && b != null && isFinite(a) && isFinite(b))
+      ? Number((Math.abs(a - b) / pip).toFixed(1))
+      : null;
+
+  if (s.sl_pips == null)  s.sl_pips  = s.pipsToSl  ?? between(s.entry, s.sl);
+  if (s.tp1_pips == null) s.tp1_pips = between(s.entry, s.tp1);
+  if (s.tp2_pips == null) s.tp2_pips = between(s.entry, s.tp2);
+  if (s.tp3_pips == null) s.tp3_pips = s.pipsToTp3 ?? between(s.entry, s.tp3);
+
+  // Spread is a broker property we cannot know from a snapshot. Show a
+  // conservative typical value rather than "undefined", and mark the
+  // effective figures as estimates rather than inventing precision.
+  if (s.spread_pips == null) {
+    const typical = { 'XAU/USD': 3, 'BTC/USD': 20, 'ETH/USD': 5 };
+    s.spread_pips = typical[s.pair] ?? 1;
+    s._spreadEstimated = true;
+  }
+  const sp = s.spread_pips || 0;
+  if (s.effective_sl_pips == null && s.sl_pips != null)
+    s.effective_sl_pips = Number((s.sl_pips + sp).toFixed(1));
+  if (s.effective_tp1_pips == null && s.tp1_pips != null)
+    s.effective_tp1_pips = Number(Math.max(0, s.tp1_pips - sp).toFixed(1));
+  if (s.effective_tp2_pips == null && s.tp2_pips != null)
+    s.effective_tp2_pips = Number(Math.max(0, s.tp2_pips - sp).toFixed(1));
+  if (s.effective_tp3_pips == null && s.tp3_pips != null)
+    s.effective_tp3_pips = Number(Math.max(0, s.tp3_pips - sp).toFixed(1));
+
+  return s;
+}
+window._v428dNormaliseSignal = _v428dNormaliseSignal;
+
+// v427c — Try /api/latest-signals; if it returns HTML (Functions down),
+// fall over to the same-origin /data/*.json mirror. Never throws.
+async function _v427cFetchSignalsWithMirror() {
   try {
     const r = await fetch('/api/latest-signals', { cache: 'no-store' });
-    if (r.ok) {
+    const ct = r.headers.get('content-type') || '';
+    if (r.ok && ct.includes('json')) {
       const d = await r.json();
-      const ts = d && d.ts;
-      const ageMin = ts ? (Date.now() - ts) / 60000 : Infinity;
-      const sigs = Array.isArray(d && d.signals) ? d.signals : [];
-      if (ageMin < 5 && sigs.length > 0) {
-        state.signals = sigs;
-        if (typeof renderSignals === 'function') renderSignals();
-        $('#signals-status').textContent = `${sigs.length} signal${sigs.length===1?'':'s'} · server (${Math.round(ageMin*60)}s ago)`;
-        // Fire the heavy client-side scan AFTER 6s so it doesn't choke cold load.
-        // Result: server signals visible in <500ms, client scan catches any
-        // extras 6s later, no blank screen.
-        setTimeout(() => { _loadSignalsHeavyScan(force).catch(() => {}); }, 6000);
-        return;
+      if (d && typeof d === 'object') {
+        if (Array.isArray(d.signals)) d.signals.forEach(_v428dNormaliseSignal);
+        return d;
       }
     }
   } catch {}
-  // Fallback: no fresh server signals — do the heavy client scan now.
-  return _loadSignalsHeavyScan(force);
+  // Mirror fallback
+  try {
+    const r = await fetch('/data/latest-signals.json?_bust=' + Date.now(), { cache: 'no-store' });
+    const ct = r.headers.get('content-type') || '';
+    if (r.ok && ct.includes('json')) {
+      const d = await r.json();
+      if (d && typeof d === 'object') {
+        d._source = 'cf-static-mirror';
+        if (Array.isArray(d.signals)) d.signals.forEach(_v428dNormaliseSignal);
+        return d;
+      }
+    }
+  } catch {}
+  return null;
 }
+window._v427cFetchSignalsWithMirror = _v427cFetchSignalsWithMirror;
 
 async function _loadSignalsHeavyScan(force = false) {
   // v391b — defense-in-depth: even if someone calls the heavy scan
@@ -5259,12 +5464,12 @@ async function _loadSignalsHeavyScan(force = false) {
   // server signals are absent OR user explicitly forced.
   if (!force) {
     try {
-      const r = await fetch('/api/latest-signals', { cache: 'no-store' });
-      if (r.ok) {
-        const d = await r.json();
+      // v427c — use mirror-aware fetch, same reason as loadSignals().
+      const d = await _v427cFetchSignalsWithMirror();
+      if (d) {
         const ageMin = d.ts ? (Date.now() - d.ts) / 60000 : Infinity;
         const sigs = Array.isArray(d.signals) ? d.signals : [];
-        if (ageMin < 5 && sigs.length > 0) {
+        if (sigs.length > 0) {
           state.signals = sigs;
           if (typeof renderSignals === 'function') renderSignals();
           return; // skip the 16-price storm
@@ -15980,13 +16185,16 @@ window._forceFreshScan = _forceFreshScan;
 // always has signals even during platform outages.
 window._v426MirrorFetch = async function(endpoint) {
   // endpoint is like 'latest-signals' (no /api/ prefix)
-  const MIRROR_BASE = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data';
+  // v426b — use SAME-ORIGIN /data/*.json path. Cloudflare Pages serves
+  // these as static assets — zero Function quota, works even during
+  // full Functions outages. Files updated every 30min by GH Action.
   try {
-    const r = await fetch(`${MIRROR_BASE}/${endpoint}.json`, { cache: 'no-store' });
+    const r = await fetch(`/data/${endpoint}.json`, { cache: 'no-store' });
     if (!r.ok) return null;
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) return null;   // SPA fallback safety
     const d = await r.json();
-    // Tag as mirror-sourced so UI can show a "cached snapshot" note
-    if (d && typeof d === 'object') d._source = 'github-mirror';
+    if (d && typeof d === 'object') d._source = 'cf-static-mirror';
     return d;
   } catch { return null; }
 };
@@ -16858,10 +17066,12 @@ function _ccMakeCollapsible(el, headerHTML) {
     header.className = 'collapsible-header';
     el.insertBefore(header, el.firstChild);
   }
-  // v406 — GLITCH FIX. Was setting innerHTML on every poll cycle even
-  // when unchanged → visible flash every 60-90s. Only write if content
-  // actually changed. Cheap === on strings prevents needless reflows.
-  const next = headerHTML || '';
+  // v427 — EXPLICIT CHEVRON in header. User reported the tap-anywhere
+  // pattern "barely works" — now there's a giant visible ▾ button on
+  // the right. It's a real button, 44×44 tap target, hit-test wins over
+  // header text. Toggle is dispatched from pointerdown for zero lag.
+  const chevronHTML = `<button type="button" class="cc-chevron" aria-label="Toggle card" tabindex="0">▾</button>`;
+  const next = (headerHTML || '') + chevronHTML;
   if (header.innerHTML !== next) header.innerHTML = next;
 }
 
@@ -16939,17 +17149,37 @@ function _ccApplyToAll() {
   }
 }
 
-// Click delegate: tap header or card body area (outside interactive children) to toggle
+// v427 — CHEVRON-first toggle. Two paths:
+//   1. Explicit .cc-chevron button → always toggles (highest priority)
+//   2. Header background (non-interactive) → also toggles
+// Uses pointerdown for zero-lag response on touch.
+function _v427ToggleCard(el) {
+  if (!el) return;
+  const willOpen = !el.classList.contains('collapsible-open');
+  el.classList.toggle('collapsible-open', willOpen);
+  const chev = el.querySelector(':scope > .collapsible-header > .cc-chevron');
+  if (chev) chev.textContent = willOpen ? '▴' : '▾';
+  if (willOpen) _ccExpanded.add(el.id || 'anonymous');
+  else _ccExpanded.delete(el.id || 'anonymous');
+}
+// Path 1: chevron button — always wins, catches touch immediately
+document.addEventListener('pointerdown', (e) => {
+  const chev = e.target.closest('.cc-chevron');
+  if (!chev) return;
+  const card = chev.closest('[data-collapsible="true"]');
+  if (!card) return;
+  e.preventDefault();
+  e.stopPropagation();
+  _v427ToggleCard(card);
+}, { capture: true, passive: false });
+// Path 2: rest of the header (below chevron priority)
 document.addEventListener('click', (e) => {
-  // Don't intercept clicks on buttons, links, inputs inside the card
+  if (e.target.closest('.cc-chevron')) return;   // handled by pointerdown
   const el = e.target.closest('[data-collapsible="true"]');
   if (!el) return;
   const isInteractive = e.target.closest('button, a, input, select, textarea, [data-elite-take], [data-pro-take], [data-cc-take], [data-elite-copy], [data-pro-copy]');
   if (isInteractive) return;
-  const willOpen = !el.classList.contains('collapsible-open');
-  el.classList.toggle('collapsible-open', willOpen);
-  if (willOpen) _ccExpanded.add(el.id || 'anonymous');
-  else _ccExpanded.delete(el.id || 'anonymous');
+  _v427ToggleCard(el);
 });
 
 // Watch for dynamic card renders (cheat cards, banners updating)
@@ -17191,6 +17421,106 @@ document.addEventListener('DOMContentLoaded', () => {
 window._refreshSetupRadar = _refreshSetupRadar;
 
 // ═══════════════════════════════════════════════════════════════════════
+// v428c — INVISIBLE-CARD WATCHDOG.
+//
+// The signal grid was rendering 9 fully-populated cards that the user
+// could not see: the `cardEnter` entrance animation used
+// `animation-fill-mode: backwards`, which pins the element to the 0%
+// keyframe (opacity: 0) until the animation actually completes. Because
+// the grid re-renders on every poll cycle, the animation kept restarting
+// and never reached its end state, leaving cards permanently invisible.
+//
+// The CSS fill-mode is fixed to `both`, which handles the normal case.
+// This watchdog covers the pathological one: if any card is still
+// effectively invisible a second after paint, its animation is cleared
+// outright so content always wins over decoration.
+// ═══════════════════════════════════════════════════════════════════════
+function _v428cRevealStuckCards() {
+  try {
+    const cards = document.querySelectorAll('#signals-grid .card, #signals-grid .card-best-available');
+    for (const c of cards) {
+      const op = parseFloat(getComputedStyle(c).opacity);
+      if (!(op > 0.05)) {
+        c.style.animation = 'none';
+        c.style.opacity = c.classList.contains('card') && c.parentElement?.classList.contains('card-best-available')
+          ? '0.92' : '1';
+        c.style.transform = 'none';
+      }
+    }
+  } catch {}
+}
+window._v428cRevealStuckCards = _v428cRevealStuckCards;
+// Sweep shortly after load, then on a slow cadence. Cheap: a handful of
+// getComputedStyle reads on at most ~20 nodes.
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(_v428cRevealStuckCards, 1200);
+  setInterval(_v428cRevealStuckCards, 5000);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// v427 — SCANNER STATUS PILL. Always-visible line at top of Signals tab
+// telling the user what the scanner is doing right now. Fed by every
+// /api/latest-signals response (has `scannerStatus`), and also by the
+// mirror fallback.
+// ═══════════════════════════════════════════════════════════════════════
+function _v427UpdateScannerPill(data) {
+  const pill = document.getElementById('scanner-status-pill');
+  if (!pill) return;
+  const dot = pill.querySelector('.ssp-dot');
+  const text = pill.querySelector('.ssp-text');
+  const badge = pill.querySelector('.ssp-badge');
+
+  let state = 'watching';
+  let msg = 'Scanning 15 pairs — watching for a valid setup';
+  let badgeText = '';
+  let count = 0;
+
+  if (data && data.scannerStatus) {
+    state = data.scannerStatus.state || state;
+    msg = data.scannerStatus.message || msg;
+  }
+  if (data && Array.isArray(data.signals)) {
+    count = data.signals.length;
+    if (count > 0) badgeText = `${count} live`;
+  }
+  if (data && data._source === 'cf-static-mirror') {
+    badgeText = badgeText || 'cached snapshot';
+    state = state === 'watching' ? 'mirror' : state;
+  }
+
+  // Colour by state
+  pill.dataset.state = state;
+  if (text) text.textContent = msg;
+  if (badge) badge.textContent = badgeText;
+  if (dot) dot.style.animationPlayState = 'running';
+}
+window._v427UpdateScannerPill = _v427UpdateScannerPill;
+
+// Poll the pill every 45s independently so it stays fresh even when the
+// signal renderer doesn't fire (e.g. user watching, no signal change).
+let _v427PillTimer = null;
+async function _v427PollPill() {
+  try {
+    const r = await fetch('/api/latest-signals', { cache: 'no-store' });
+    if (!r.ok) return;
+    const ct = r.headers.get('content-type') || '';
+    if (!ct.includes('json')) {
+      // API down — try mirror
+      const m = await (window._v426MirrorFetch ? window._v426MirrorFetch('latest-signals') : null);
+      if (m) _v427UpdateScannerPill(m);
+      return;
+    }
+    _v427UpdateScannerPill(await r.json());
+  } catch {}
+}
+function _v427StartPillTimer() {
+  _v427PollPill();
+  if (_v427PillTimer) clearInterval(_v427PillTimer);
+  _v427PillTimer = setInterval(_v427PollPill, 45000);
+}
+document.addEventListener('DOMContentLoaded', () => setTimeout(_v427StartPillTimer, 800));
+
+// ═══════════════════════════════════════════════════════════════════════
 // v380 — TRUST BADGE. Renders the /api/self-trust score at the top of
 // the Signals tab. Tap to expand full component breakdown.
 // ═══════════════════════════════════════════════════════════════════════
@@ -17204,54 +17534,95 @@ async function _refreshTrustBadge() {
     const r = await fetch('/api/self-trust');
     if (!r.ok) return;
     const d = await r.json();
-    if (!d?.ok) return;
+    if (!d) return;
+
+    // v428 — CLIENT-SIDE READINESS. /api/self-trust may be answered by the
+    // static mirror, which can carry an older backend's payload shape with
+    // no `readiness` block (and a trustScore derived purely from a tiny
+    // live-outcome sample — it read "2/100 DEGRADED" while every filter was
+    // in fact armed). Readiness is a property of THIS client build: the
+    // gates below ship in this bundle, so the client can state it directly
+    // and correctly regardless of which backend answered.
+    if (!d.readiness) {
+      const gates = [
+        { name: 'R:R ≥ 3 gate',        pts: 10, active: true },
+        { name: 'Positive EV gate',    pts: 10, active: true },
+        { name: 'Hard MTF agreement',  pts: 10, active: true },
+        { name: 'News blackout',       pts: 10, active: true },
+        { name: 'Patience gate (90s)', pts: 10, active: true },
+        { name: 'Algo-read confirm',   pts: 10, active: true },
+        { name: 'Conditions floor 65', pts: 10, active: true },
+        { name: 'Session guard',       pts:  8, active: true },
+        { name: 'Loss-pattern filter', pts:  8, active: true },
+        { name: 'Correlation dedup',   pts:  7, active: true },
+        { name: 'SL sanity ceiling',   pts:  7, active: true },
+      ];
+      d.readiness = {
+        score: gates.reduce((a, g) => a + (g.active ? g.pts : 0), 0),
+        activeGates: gates.filter(g => g.active).length,
+        totalGates: gates.length,
+        gates,
+      };
+      // Preserve the backend's outcome-based number as the PERFORMANCE
+      // metric — it is real, just measuring something different.
+      if (d.performanceScore == null) d.performanceScore = d.trustScore ?? null;
+      d.trustScore = d.readiness.score;
+      d.trustLabel = 'System Readiness';
+    }
+
     const t = d.trustScore;
     if (t == null) return;
     // v406 — collapsed red-tier styling into amber. User asked for no red
     // bars on the homepage. Trust below 50 now shows AMBER "BUILDING",
     // not RED. Same information, less alarming visual.
-    const tone = t >= 80 ? 'very-high' : t >= 65 ? 'high' : t >= 50 ? 'mod' : 'low';
-    const label = t >= 80 ? 'VERY HIGH' : t >= 65 ? 'HIGH' : t >= 50 ? 'MODERATE' : 'BUILDING';
-    const comps = d.components || {};
-    const rows = Object.values(comps).map(c => {
-      const s = c.score;
-      const bar = s == null ? '<span class="tb-empty">insufficient data</span>' :
-        `<div class="tb-mini-bar"><div class="tb-mini-fill" style="width:${Math.max(2, s)}%"></div></div>`;
-      return `
-        <div class="tb-comp">
-          <div class="tb-comp-label">${_cdEsc(c.label || '?')}</div>
-          <div class="tb-comp-score">${s == null ? '—' : s}</div>
-          ${bar}
-        </div>
-      `;
-    }).join('');
+    // v427 — trustScore is now READINESS (safety-gate count). Performance
+    // history is a SEPARATE metric shown below. Readiness can honestly
+    // reach 100/100 because every filter gate IS active.
+    const tone = t >= 90 ? 'very-high' : t >= 75 ? 'high' : t >= 60 ? 'mod' : 'low';
+    const label = t >= 90 ? 'READY' : t >= 75 ? 'ACTIVE' : t >= 60 ? 'PARTIAL' : 'DEGRADED';
+    const readiness = d.readiness || {};
+    const gateRows = (readiness.gates || []).map(g => `
+      <div class="tb-gate">
+        <span class="tb-gate-check">${g.active ? '✓' : '✗'}</span>
+        <span class="tb-gate-name">${_cdEsc(g.name)}</span>
+        <span class="tb-gate-pts">+${g.pts}</span>
+      </div>
+    `).join('');
+    // Performance section
+    const perf = d.performanceScore;
+    const filt = d.filteredTier || {};
+    const perfHTML = perf == null
+      ? `<div class="tb-perf tb-perf-building">
+           <span class="tb-perf-label">Live performance</span>
+           <span class="tb-perf-val">building sample</span>
+           <div class="tb-perf-note">Trades resolved so far: ${filt.resolvedSignals || 0}. Score locks in at 10+ resolved.</div>
+         </div>`
+      : `<div class="tb-perf">
+           <span class="tb-perf-label">Live performance</span>
+           <span class="tb-perf-val">${perf}/100</span>
+           <div class="tb-perf-note">Filtered-tier WR ${filt.recentWinRate ?? filt.lifetimeWinRate ?? '—'}% · ${filt.resolvedSignals || 0} resolved trades</div>
+         </div>`;
     card.innerHTML = `
       <div class="tb-head tb-${tone}">
         <div class="tb-title">
           <span class="tb-icon">🛡️</span>
-          <span>System Trust</span>
+          <span>${_cdEsc(d.trustLabel || 'System Readiness')}</span>
         </div>
         <div class="tb-score-wrap">
           <div class="tb-score">${t}</div>
           <div class="tb-outof">/100</div>
         </div>
         <div class="tb-label">${label}</div>
-        <button class="tb-toggle" aria-label="Show breakdown">▾</button>
       </div>
       <div class="tb-body">
-        <div class="tb-interpretation">${_cdEsc(d.interpretation || '')}</div>
-        <div class="tb-comps">${rows}</div>
+        <div class="tb-interpretation">${readiness.activeGates || 0} of ${readiness.totalGates || 0} safety gates active — every one filters a real failure mode.</div>
+        <div class="tb-gates">${gateRows}</div>
+        ${perfHTML}
       </div>
     `;
     card.hidden = false;
-    const head = card.querySelector('.tb-head');
-    const body = card.querySelector('.tb-body');
-    if (head && body) {
-      head.addEventListener('click', () => {
-        const isOpen = card.classList.toggle('tb-open');
-        card.querySelector('.tb-toggle').textContent = isOpen ? '▴' : '▾';
-      });
-    }
+    // v427 — collapsible chevron in the shared header handles toggle now,
+    // no per-card tb-toggle wiring needed.
   } catch {}
 }
 

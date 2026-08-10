@@ -1,19 +1,27 @@
 name: Mirror signals to git
 
-# v426 — Signal mirror. Every 30 min, fetch working signals from the
-# live API and commit them to /data/*.json. When Cloudflare Functions
-# quota is exhausted, the static site falls back to reading from
-# https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/*
+# v428 — Signal mirror, hardened.
 #
-# This means:
-#   • Signals stay available even when Cloudflare is down
-#   • Zero Cloudflare Function calls for the fallback path
-#   • Zero cost (GH raw is free + unlimited)
-#   • Only ~2 min of GH Actions time per day (well inside 2000 min/mo)
+# Every 15 min, fetch each endpoint from whichever Cloudflare deployment
+# is currently healthy and commit the JSON to /data/*.json. Cloudflare
+# Pages serves those as STATIC assets (unlimited quota), so the app keeps
+# working even when Pages Functions are fully quota-exhausted.
+#
+# v428 fixes over v426:
+#   • Per-endpoint failover. v426 broke out of the URL loop as soon as
+#     data/latest-signals.json existed on disk — even when that file was
+#     a stale leftover from a previous run and THIS run had fetched
+#     nothing. Endpoints like algo-read / setup-radar therefore never got
+#     a mirror file at all. Now every endpoint independently tries every
+#     base URL until one returns real JSON.
+#   • Freshness guard. A response is only written if it parses as JSON
+#     AND is larger than a trivial error blob.
+#   • Cadence 30m → 15m (still ~3 min of Actions time/day, far inside
+#     the 2000 min/month free tier).
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
 
 concurrency:
@@ -26,36 +34,58 @@ permissions:
 jobs:
   mirror:
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 1
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Fetch snapshot from working URL
+      - name: Fetch each endpoint from whichever URL is healthy
         run: |
           set +e
           mkdir -p data
-          # Try justice URL first (currently the reliable one)
-          for BASE in "https://forexsight-justice.pages.dev" "https://forexsight-preview.pages.dev"; do
-            for ep in latest-signals shadow-tracker self-trust conditions-score algo-read setup-radar; do
-              body=$(curl -sS --max-time 15 "$BASE/api/$ep" 2>/dev/null)
-              # Skip if empty OR looks like HTML fallback
+          BASES="https://forexsight-justice.pages.dev https://forexsight-preview.pages.dev"
+          ENDPOINTS="latest-signals shadow-tracker self-trust conditions-score algo-read setup-radar"
+          OK_COUNT=0
+          FAIL_LIST=""
+
+          for ep in $ENDPOINTS; do
+            GOT=0
+            for BASE in $BASES; do
+              body=$(curl -sS --max-time 20 "$BASE/api/$ep" 2>/dev/null)
               [ -z "$body" ] && continue
               first=$(printf %.1s "$body")
+              # Must look like JSON, not the SPA's index.html fallback
               [ "$first" != "{" ] && [ "$first" != "[" ] && continue
-              # Write only if we got a fresh JSON blob from this endpoint
-              if [ ! -f "data/${ep}.json" ] || [ $(echo "$body" | wc -c) -gt 100 ]; then
-                echo "$body" > "data/${ep}.json"
-                echo "✓ ${ep}.json from $BASE ($(echo "$body" | wc -c) bytes)"
-              fi
+              # Must actually parse
+              echo "$body" | python3 -c "import json,sys; json.load(sys.stdin)" 2>/dev/null || continue
+              # Must be non-trivial (an error blob is usually < 100 bytes)
+              size=$(printf %s "$body" | wc -c)
+              [ "$size" -lt 60 ] && continue
+              printf '%s' "$body" > "data/${ep}.json"
+              echo "  ✓ ${ep}.json  ${size}b  from ${BASE}"
+              GOT=1
+              OK_COUNT=$((OK_COUNT+1))
+              break
             done
-            # If we got at least latest-signals from THIS base, stop trying others
-            [ -f "data/latest-signals.json" ] && break
+            if [ "$GOT" = "0" ]; then
+              echo "  ✗ ${ep}: no healthy source this run (keeping previous file if any)"
+              FAIL_LIST="$FAIL_LIST $ep"
+            fi
           done
-          # Add mirror metadata
-          echo "{\"mirroredAt\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"source\":\"github-actions-mirror\"}" > data/_mirror-meta.json
+
+          cat > data/_mirror-meta.json <<EOF
+          {
+            "mirroredAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "source": "github-actions-mirror",
+            "endpointsRefreshed": ${OK_COUNT},
+            "endpointsFailed": "${FAIL_LIST}"
+          }
+          EOF
+
+          echo ""
+          echo "refreshed ${OK_COUNT} endpoint(s) this run"
           ls -la data/
 
       - name: Commit + push if changed
@@ -64,10 +94,10 @@ jobs:
           git config user.name "signals-mirror-bot"
           git config user.email "actions@github.com"
           git add data/
-          # Only commit if there are actual changes
           if ! git diff --cached --quiet; then
             git commit -m "chore: mirror signals snapshot $(date -u +%H:%M)"
-            git push
+            # Retry push once — concurrent runs can race
+            git push || (git pull --rebase && git push)
             echo "✔ pushed mirror snapshot"
           else
             echo "→ no changes to commit"

@@ -209,7 +209,10 @@ export async function onRequest(context) {
                     const algo = byPair[s.pair];
                     if (!algo) return false;                      // no algo data → block
                     if (algo.algoBias !== s.direction) return false; // direction disagrees → block
-                    if ((algo.algoStrength || 0) < 2) return false;  // weak footprint → block
+                    // v427 — raised 2 → 3. Only PUBLISH signals where the
+                    // market has 3+ institutional footprints in agreement.
+                    // Higher WR by refusing to trade thin-conviction setups.
+                    if ((algo.algoStrength || 0) < 3) return false;
                     return true;
                   });
                 }
@@ -314,10 +317,31 @@ export async function onRequest(context) {
       }
     } catch { /* non-fatal — signals still ship without hit state */ }
 
+    // v427 — SCANNER STATUS. Lets the client show "what am I doing right now?"
+    // pill instead of leaving the user staring at a static screen wondering
+    // whether the scanner is working. Message reflects real gate state.
+    const nowH = new Date().getUTCHours();
+    const nowD = new Date().getUTCDay();
+    const marketClosed = (nowD === 6) || (nowD === 0 && nowH < 22);
+    const inLondonNY = nowH >= 7 && nowH <= 20;
+    let scannerStatus;
+    if (marketClosed) {
+      scannerStatus = { state: 'weekend', message: 'Market closed — crypto only (BTC/ETH scanned every 2 min)' };
+    } else if (!inLondonNY && !((data?.signals || []).some(s => (s.pair||'').includes('BTC')))) {
+      scannerStatus = { state: 'quiet-session', message: 'Asian quiet hours — waiting for London open, crypto-only signals' };
+    } else if ((data?.signals || []).length > 0) {
+      scannerStatus = { state: 'firing', message: `${data.signals.length} qualified setup${data.signals.length > 1 ? 's' : ''} passing all 11 gates` };
+    } else if ((liveAnalysisSignals || []).length === 0) {
+      scannerStatus = { state: 'watching', message: 'Scanning 15 pairs — no setups passing all 11 gates right now (this is normal patience)' };
+    } else {
+      scannerStatus = { state: 'validating', message: `Setup found — validating through gates (patience/news/algo-read)` };
+    }
+
     return new Response(JSON.stringify({
       ...data,
       stale: isStale,
       ageSeconds: Math.round((Date.now() - data.ts) / 1000),
+      scannerStatus,
     }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
     });

@@ -5,7 +5,12 @@
 <!-- v410 — viewport-fit=cover for iOS notch safe-area, prevents accidental pinch zoom -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
 <title>ForexSight — Live Signal Analytics</title>
-<link rel="manifest" href="/manifest.json" />
+<!-- v428 — versioned manifest URL. The previous manifest hard-coded
+     start_url to the justice deployment, so every home-screen launch
+     opened that (now stale, un-deployable) site regardless of where the
+     app was installed from. It is now host-relative; the ?v= forces
+     browsers and the Cloudflare edge past the cached copy. -->
+<link rel="manifest" href="/manifest.json?v=428e" />
 <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -19,68 +24,84 @@
 <!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
 <link rel="preconnect" href="https://rsms.me/" crossorigin>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<link rel="stylesheet" href="style.css?v=426" />
+<link rel="stylesheet" href="style.css?v=428e" />
 </head>
 <body>
-<!-- v419 — AUTO-VERSION-CHECK. Every 5 min while page open, checks
-     current deployed version via /api/health. If it doesn't match
-     what we loaded with, silently reload once so user gets latest
-     code. Guarded so it only fires when version actually differs. -->
+<!-- v427b — AUTO-HARD-REFRESH on new deploy. Two signals, whichever
+     fires first triggers a hard reload:
+       (A) /api/health version differs from ours   (works when Functions up)
+       (B) /?_v= cache-bust on served index differs (works even when
+           Functions down — HTML is a Pages static asset).
+     Runs every 60s AND on tab-focus (visibilitychange) so a user who
+     switched away and came back gets the fresh code immediately. Uses
+     a cache-busted URL on reload + sessionStorage guard against loops. -->
 <script>
-window._APP_VERSION_AT_LOAD = 'v419';
+window._APP_VERSION_AT_LOAD = 'v428e';
 (function(){
-  var CHECK_MS = 5 * 60 * 1000;
-  var currentUrlV = new URLSearchParams(document.querySelector('script[src*="app.js"]')?.src?.split('?')[1] || '').get('v') || 'v419';
-  setInterval(function(){
+  var CHECK_MS = 60 * 1000;   // v427b — 5min → 60s
+  var currentUrlV = new URLSearchParams(
+    (document.querySelector('script[src*="app.js"]')?.src || '').split('?')[1] || ''
+  ).get('v') || window._APP_VERSION_AT_LOAD;
+  var IN_FLIGHT = false;
+  function hardReload(reason) {
+    if (sessionStorage.getItem('_v427b_reloaded_' + reason)) return;
+    sessionStorage.setItem('_v427b_reloaded_' + reason, '1');
+    var u = new URL(location.href);
+    u.searchParams.set('_r', Date.now().toString(36));   // cache-buster
+    location.replace(u.toString());
+  }
+  function check() {
+    if (IN_FLIGHT) return;
     if (location.host !== 'forexsight-preview.pages.dev' && location.host !== 'forexsight-justice.pages.dev') return;
-    fetch('/api/health', { cache: 'no-store' })
-      .then(function(r){ return r.ok && r.headers.get('content-type')?.indexOf('json') >= 0 ? r.json() : null; })
-      .then(function(d){
-        if (!d || !d.version) return;
-        var deployedV = (d.version || '').split('-')[0]; // e.g. "v420" from "v420-foo"
-        if (deployedV && deployedV !== currentUrlV) {
-          if (sessionStorage.getItem('_v419_updated_' + deployedV)) return;
-          sessionStorage.setItem('_v419_updated_' + deployedV, '1');
-          location.reload();
+    IN_FLIGHT = true;
+    // Signal B — cache-bust the served HTML and inspect its ?v= tag.
+    // Works even when /api/* is down (Cloudflare quota outage) because
+    // Pages serves HTML as a static asset with unlimited quota.
+    fetch('/?_rv=' + Date.now(), { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.text() : ''; })
+      .then(function(html){
+        var m = html && html.match(/app\.js\?v=([^"'\s]+)/);
+        var servedV = m && m[1];
+        if (servedV && servedV !== currentUrlV) {
+          hardReload('static_' + servedV);
+          return null;   // stop chain
         }
-      }).catch(function(){});
-  }, CHECK_MS);
+        // Signal A — Functions-based version stamp
+        return fetch('/api/health', { cache: 'no-store' }).catch(function(){ return null; });
+      })
+      .then(function(r){
+        if (!r) { IN_FLIGHT = false; return; }
+        var ct = r.headers.get('content-type') || '';
+        if (ct.indexOf('json') < 0) { IN_FLIGHT = false; return; }
+        return r.json().then(function(d){
+          if (d && d.version) {
+            var deployedV = (d.version || '').split('-')[0];
+            if (deployedV && deployedV !== currentUrlV) hardReload('api_' + deployedV);
+          }
+          IN_FLIGHT = false;
+        });
+      })
+      .catch(function(){ IN_FLIGHT = false; });
+  }
+  setInterval(check, CHECK_MS);
+  // Fire when tab becomes visible again — user's most likely miss
+  document.addEventListener('visibilitychange', function(){
+    if (document.visibilityState === 'visible') check();
+  });
+  // First check 8s after load (skip initial paint)
+  setTimeout(check, 8000);
 })();
 </script>
-<!-- v418 — OUTAGE FALLBACK. If preview URL's Functions are down (quota
-     exhausted, Cloudflare outage, etc.), redirect to the working
-     justice URL so the user isn't stuck on a broken site. Runs after
-     3s so real API responses have a chance to arrive first. -->
+<!-- v428 — REDIRECT KILLED. The old v418 block auto-redirected preview →
+     justice whenever preview's Functions were down. That became actively
+     harmful: justice runs ancient v365 code with NO mirror fallback, so
+     users were thrown from a working site onto a broken one. Preview is
+     now self-sufficient via /data/*.json static mirrors (unlimited quota),
+     so there is nothing to redirect to. This script also clears the stale
+     sessionStorage flag left by v418 on returning visitors. -->
 <script>
 (function(){
-  if (location.host !== 'forexsight-preview.pages.dev') return;
-  setTimeout(function(){
-    fetch('/api/health', { cache: 'no-store' })
-      .then(function(r){ return r.text().then(function(t){ return { r: r, t: t }; }); })
-      .then(function(x){
-        var isJson = (x.r.headers.get('content-type') || '').indexOf('json') >= 0;
-        var looksLikeHtml = x.t.trim().slice(0, 20).toLowerCase().indexOf('<!doctype') === 0;
-        if (!isJson || looksLikeHtml) {
-          if (sessionStorage.getItem('_v418_redirected')) return;
-          sessionStorage.setItem('_v418_redirected', '1');
-          var banner = document.createElement('div');
-          banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(180deg,#dc2626,#991b1b);color:#fff;padding:14px 18px;text-align:center;font-family:-apple-system,sans-serif;font-weight:700;font-size:14px;box-shadow:0 4px 20px rgba(0,0,0,0.4)';
-          banner.innerHTML = '⚠ Preview API is down (Cloudflare quota) — <a href="https://forexsight-justice.pages.dev/" style="color:#fef3c7;text-decoration:underline">click to open the working site</a> · auto-redirecting in <span id="_v418_c">5</span>s';
-          document.body.insertBefore(banner, document.body.firstChild);
-          var n = 5;
-          var tick = setInterval(function(){
-            n--;
-            var el = document.getElementById('_v418_c');
-            if (el) el.textContent = String(n);
-            if (n <= 0) {
-              clearInterval(tick);
-              location.href = 'https://forexsight-justice.pages.dev/';
-            }
-          }, 1000);
-        }
-      })
-      .catch(function(){});
-  }, 3000);
+  try { sessionStorage.removeItem('_v418_redirected'); } catch(e){}
 })();
 </script>
 <!-- v412 — NUCLEAR SW-KILL. Runs before ANY cached script. Unregisters
@@ -167,6 +188,16 @@ window._APP_VERSION_AT_LOAD = 'v419';
 
 <main>
   <section id="signals" class="tab-content active">
+    <!-- v427 — SCANNER STATUS PILL. Persistent, always-visible line at the
+         top of the Signals tab so the user ALWAYS knows what the scanner
+         is doing: "Watching 15 pairs — none passing gates yet", "Setup
+         forming on XAU/USD — validating", "3 qualified setups below". -->
+    <div id="scanner-status-pill" class="scanner-status-pill" role="status" aria-live="polite">
+      <span class="ssp-dot"></span>
+      <span class="ssp-text">Initialising scanner…</span>
+      <span class="ssp-badge"></span>
+    </div>
+
     <!-- v375 — ALGO READ card. Institutional/HFT footprints per pair:
          VWAP position, absorption bars, wick rejections, round-number
          gravity, algo time windows, range compression. Directional
@@ -973,6 +1004,6 @@ window._APP_VERSION_AT_LOAD = 'v419';
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=426"></script>
+<script src="app.js?v=428e"></script>
 </body>
 </html>

@@ -4109,8 +4109,16 @@ button:active, .tab:active, .card:active, .trade-row:active,
 
 /* Signal cards entering the grid get a stagger-fade so it doesn't feel jarring
    when many appear at once. Pure CSS — no JS overhead. */
+/* v428c — fill-mode was `backwards`, which holds the 0% keyframe
+   (opacity: 0) whenever the animation has not yet finished. The signal
+   grid re-renders on every poll, restarting the animation each time, so
+   cards could sit at opacity 0 indefinitely — the grid looked completely
+   empty even though 9 fully-populated cards were in the DOM. `both` keeps
+   the 100% keyframe (opacity: 1) after the run completes, so a card can
+   never be left invisible. A JS watchdog in app.js covers the pathological
+   case where re-renders outpace the 280ms animation entirely. */
 #signals-grid .card {
-  animation: cardEnter 280ms cubic-bezier(0.4, 0, 0.2, 1) backwards;
+  animation: cardEnter 280ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 #signals-grid .card:nth-child(2)  { animation-delay: 30ms; }
 #signals-grid .card:nth-child(3)  { animation-delay: 60ms; }
@@ -4120,9 +4128,15 @@ button:active, .tab:active, .card:active, .trade-row:active,
 #signals-grid .card:nth-child(7)  { animation-delay: 180ms; }
 #signals-grid .card:nth-child(8)  { animation-delay: 210ms; }
 #signals-grid .card:nth-child(n+9) { animation-delay: 240ms; }
+/* v428c — entrance animates TRANSFORM ONLY, never opacity.
+   Animating opacity from 0 meant that any stalled or perpetually-restarted
+   run left the card fully invisible while its content sat in the DOM —
+   the signal grid rendered 9 complete cards the user could not see. A
+   slide-only entrance is visually near-identical but structurally cannot
+   hide content, no matter how the animation is interrupted. */
 @keyframes cardEnter {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(8px); }
+  to   { transform: translateY(0); }
 }
 
 /* v235b — REMOVED per-row entry animation. Was 240ms fade-in per .trade-row.
@@ -5902,9 +5916,11 @@ button:active:not(:disabled),
 .grid .card:nth-child(6) { animation-delay: 175ms; }
 .grid .card:nth-child(7) { animation-delay: 210ms; }
 .grid .card:nth-child(8) { animation-delay: 245ms; }
+/* v428c — transform-only, same reasoning as cardEnter above: an entrance
+   animation must never be able to leave real content invisible. */
 @keyframes card-enter {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(8px); }
+  to { transform: translateY(0); }
 }
 
 /* ─── Scroll performance ─── */
@@ -7608,10 +7624,15 @@ button:focus-visible,
   border-radius: 6px;
 }
 
-/* ── Signal card entry animation ── */
+/* ── Signal card entry animation ──
+   v428c — this is the THIRD @keyframes cardEnter in this stylesheet and,
+   being last, it is the one that actually applies. It still faded from
+   opacity 0, which silently overrode the fix applied to the earlier
+   definitions and kept signal cards invisible. Transform-only here too:
+   an entrance animation must never gate whether content can be seen. */
 @keyframes cardEnter {
-  from { opacity: 0; transform: translateY(6px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { transform: translateY(6px); }
+  to   { transform: translateY(0); }
 }
 .card, .signal-card {
   animation: cardEnter 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
@@ -8889,8 +8910,165 @@ body.light-theme .cheat-level-tile { background: rgba(15,23,42,0.05); }
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.02em;
-  padding-right: 32px;   /* leave room for the chevron */
+  padding-right: 48px;   /* leave room for the v427 explicit chevron */
+  position: relative;
+  cursor: pointer;
+  min-height: 44px;      /* v427 — Apple HIG minimum touch target height */
 }
+/* v427 — Explicit chevron button. Real 44×44 tap target, wins hit-tests. */
+.cc-chevron {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  line-height: 1;
+  border: 0;
+  background: rgba(148, 163, 184, 0.10);
+  color: rgba(226, 232, 240, 0.95);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 120ms ease, transform 180ms ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  z-index: 3;
+}
+.cc-chevron:hover, .cc-chevron:active {
+  background: rgba(148, 163, 184, 0.22);
+}
+.cc-chevron:active { transform: translateY(-50%) scale(0.94); }
+body.light-theme .cc-chevron {
+  background: rgba(15, 23, 42, 0.06);
+  color: #334155;
+}
+body.light-theme .cc-chevron:hover, body.light-theme .cc-chevron:active {
+  background: rgba(15, 23, 42, 0.12);
+}
+
+/* v427 — SCANNER STATUS PILL — persistent, always visible */
+.scanner-status-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin: 8px 0 12px 0;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.65), rgba(15, 23, 42, 0.55));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(226, 232, 240, 0.95);
+  letter-spacing: 0.01em;
+  transition: border-color 300ms ease, background 300ms ease;
+}
+.scanner-status-pill .ssp-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #22d3ee;
+  box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.6);
+  animation: ssp-pulse 1.6s ease-out infinite;
+  flex-shrink: 0;
+}
+@keyframes ssp-pulse {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.55); }
+  70%  { box-shadow: 0 0 0 10px rgba(34, 211, 238, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0); }
+}
+.scanner-status-pill .ssp-text {
+  flex: 1;
+  min-width: 0;
+}
+.scanner-status-pill .ssp-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(34, 211, 238, 0.15);
+  color: #67e8f9;
+}
+.scanner-status-pill .ssp-badge:empty { display: none; }
+/* State-driven colours */
+.scanner-status-pill[data-state="firing"] {
+  border-color: rgba(34, 197, 94, 0.45);
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.55), rgba(15, 23, 42, 0.55));
+}
+.scanner-status-pill[data-state="firing"] .ssp-dot { background: #22c55e; box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6); animation: ssp-pulse-green 1.4s ease-out infinite; }
+@keyframes ssp-pulse-green {
+  0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+.scanner-status-pill[data-state="firing"] .ssp-badge { background: rgba(34, 197, 94, 0.2); color: #86efac; }
+.scanner-status-pill[data-state="validating"] { border-color: rgba(251, 191, 36, 0.45); }
+.scanner-status-pill[data-state="validating"] .ssp-dot { background: #fbbf24; }
+.scanner-status-pill[data-state="quiet-session"], .scanner-status-pill[data-state="weekend"] {
+  border-color: rgba(148, 163, 184, 0.28);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.4), rgba(15, 23, 42, 0.4));
+}
+.scanner-status-pill[data-state="quiet-session"] .ssp-dot,
+.scanner-status-pill[data-state="weekend"] .ssp-dot { background: #94a3b8; }
+body.light-theme .scanner-status-pill {
+  background: linear-gradient(135deg, rgba(241, 245, 249, 0.9), rgba(226, 232, 240, 0.75));
+  border-color: rgba(15, 23, 42, 0.1);
+  color: #0f172a;
+}
+body.light-theme .scanner-status-pill .ssp-badge { background: rgba(34, 211, 238, 0.15); color: #0e7490; }
+
+/* v427 — Trust card readiness gate rows */
+.tb-gates {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin-top: 8px;
+}
+.tb-gate {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: rgba(34, 197, 94, 0.08);
+  font-size: 12px;
+}
+.tb-gate-check {
+  color: #22c55e;
+  font-weight: 800;
+  width: 16px;
+}
+.tb-gate-name {
+  flex: 1;
+  color: rgba(226, 232, 240, 0.9);
+}
+.tb-gate-pts {
+  font-variant-numeric: tabular-nums;
+  color: rgba(148, 163, 184, 0.85);
+  font-weight: 600;
+}
+.tb-perf {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.10);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+}
+.tb-perf-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(148, 163, 184, 0.85); }
+.tb-perf-val { font-size: 18px; font-weight: 700; color: #93c5fd; margin-left: 8px; }
+.tb-perf-note { font-size: 11px; color: rgba(148, 163, 184, 0.75); margin-top: 4px; }
+.tb-perf-building .tb-perf-val { color: #fbbf24; font-size: 13px; }
+body.light-theme .tb-gate { background: rgba(34, 197, 94, 0.10); }
+body.light-theme .tb-gate-name { color: #0f172a; }
+body.light-theme .tb-perf-note { color: #64748b; }
 .collapsible-header .collapsible-badge {
   padding: 2px 8px;
   border-radius: 999px;
