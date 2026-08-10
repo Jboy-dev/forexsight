@@ -63,6 +63,12 @@
     return ct.includes('json');
   }
 
+  // v430 — the mirror workflow rewrites these files in the public repo
+  // every 15 minutes, so GitHub raw is fresher than whatever /data/*.json
+  // was baked into the last Cloudflare deploy. It sends
+  // `access-control-allow-origin: *`, so the browser may read it directly.
+  const MIRROR_RAW_BASE = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data';
+
   window.fetch = async function (input, init) {
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     const name = apiNameFrom(url);
@@ -78,21 +84,33 @@
       // network error — fall through to mirror
     }
 
-    // Live API is down or served HTML. Try the static mirror.
-    try {
-      const mirrorRes = await _origFetch(
-        `/data/${name}.json?_m=${Date.now()}`,
-        { cache: 'no-store' }
-      );
-      if (mirrorRes.ok && isJsonResponse(mirrorRes)) {
-        const data = await mirrorRes.json();
+    // Live API is down or served HTML. Fall back, freshest source first:
+    //
+    //   1. GitHub raw  — rewritten every 15 min by the mirror workflow, so
+    //      it is live even when nothing has been redeployed. Served with
+    //      `access-control-allow-origin: *` so the browser can read it.
+    //   2. /data/*.json — the copy baked into this deploy. Always present,
+    //      but only as fresh as the last publish.
+    //
+    // GitHub raw returns `content-type: text/plain`, so these are parsed
+    // by attempting JSON.parse on the body rather than trusting the header
+    // (the earlier json-only header check silently rejected every one).
+    const sources = [
+      `${MIRROR_RAW_BASE}/${name}.json?_m=${Date.now()}`,
+      `/data/${name}.json?_m=${Date.now()}`,
+    ];
+    for (const src of sources) {
+      try {
+        const res = await _origFetch(src, { cache: 'no-store' });
+        if (!res.ok) continue;
+        const text = await res.text();
+        const head = text.trim().charAt(0);
+        if (head !== '{' && head !== '[') continue;   // HTML / 404 page
+        let data;
+        try { data = JSON.parse(text); } catch { continue; }
         if (data && typeof data === 'object' && !Array.isArray(data)) {
-          data._source = 'cf-static-mirror';
+          data._source = src.startsWith('http') ? 'github-mirror' : 'cf-static-mirror';
         }
-        // v428d — mirror payloads use the server-side signal shape; fill in
-        // the pip fields the card renderer expects so levels don't render
-        // as "undefinedp". Guarded: the normaliser is defined later in this
-        // file, so only call it once it exists.
         if (data && Array.isArray(data.signals) && typeof window._v428dNormaliseSignal === 'function') {
           data.signals.forEach(window._v428dNormaliseSignal);
         }
@@ -101,13 +119,13 @@
           status: 200,
           headers: {
             'Content-Type': 'application/json',
-            'x-forexsight-source': 'mirror',
+            'x-forexsight-source': data?._source || 'mirror',
           },
         });
-      }
-    } catch {}
+      } catch {}
+    }
 
-    // Mirror also unavailable — hand back whatever the live call gave us
+    // Every mirror unavailable — hand back whatever the live call gave us
     // (or a synthetic empty-but-valid JSON so callers don't explode).
     if (liveRes) return liveRes;
     return new Response(JSON.stringify({ ok: false, signals: [], _source: 'unavailable' }), {
@@ -5441,19 +5459,28 @@ async function _v427cFetchSignalsWithMirror() {
       }
     }
   } catch {}
-  // Mirror fallback
-  try {
-    const r = await fetch('/data/latest-signals.json?_bust=' + Date.now(), { cache: 'no-store' });
-    const ct = r.headers.get('content-type') || '';
-    if (r.ok && ct.includes('json')) {
-      const d = await r.json();
+  // v430 — mirror fallback, freshest first: GitHub raw (rewritten every
+  // 15 min by the mirror workflow) then the deploy-baked /data copy.
+  // Content-type is not trusted — GitHub raw serves text/plain.
+  const mirrors = [
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/latest-signals.json?_b=' + Date.now(),
+    '/data/latest-signals.json?_b=' + Date.now(),
+  ];
+  for (const url of mirrors) {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const text = await r.text();
+      const head = text.trim().charAt(0);
+      if (head !== '{' && head !== '[') continue;
+      const d = JSON.parse(text);
       if (d && typeof d === 'object') {
-        d._source = 'cf-static-mirror';
+        d._source = url.startsWith('http') ? 'github-mirror' : 'cf-static-mirror';
         if (Array.isArray(d.signals)) d.signals.forEach(_v428dNormaliseSignal);
         return d;
       }
-    }
-  } catch {}
+    } catch {}
+  }
   return null;
 }
 window._v427cFetchSignalsWithMirror = _v427cFetchSignalsWithMirror;
