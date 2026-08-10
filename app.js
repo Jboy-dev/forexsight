@@ -6371,7 +6371,81 @@ function _autoAnalyseRenderedSignals(signals) {
     el.innerHTML = `<div class="cav-tap-to-analyse" data-signal-key="${_signalCacheKey(s)}" style="cursor:pointer;padding:6px 10px;color:#94a3b8;font-size:12px;text-align:center;background:rgba(255,255,255,0.03);border-radius:6px">🧠 Tap to analyse — top-3 signals auto-analysed to save cost/lag</div>`;
     el.querySelector('.cav-tap-to-analyse')?.addEventListener('click', () => _analyseSingleSignal(s, el));
   }
+
+  // v431 — NO PERPETUAL FAKE LOADING.
+  //
+  // Cards whose verdict element could not be matched above (the
+  // `if (!el) continue` path, e.g. the signal key changed between render
+  // and this pass) were left showing "🧠 AI analyst loading…" forever.
+  // Nothing was loading — the spinner was decoration for work that would
+  // never happen. That is exactly the kind of state a user reads as
+  // "broken" or, worse, believes is still coming.
+  //
+  // A one-shot timer here would lose the race: the grid re-renders on every
+  // poll, which resets each card back to the loading placeholder. The sweep
+  // is therefore a standing interval (installed once, below) rather than
+  // per-render.
+  _v431StartLoaderSweep();
 }
+
+// v431 — records how long each verdict element has been showing a loader,
+// so the sweep only rewrites ones that have genuinely stalled rather than
+// stomping a request that is legitimately in flight.
+// Keyed by the signal's stable cache key, NOT by element. The grid replaces
+// its DOM on every poll, so an element-keyed WeakMap reset the timer on each
+// re-render and the staleness threshold was never reached — loaders sat on
+// screen indefinitely while the sweep believed they were newly created.
+const _v431LoaderFirstSeen = new Map();
+let _v431SweepTimer = null;
+
+function _v431SweepStuckLoaders() {
+  const STALE_MS = 9000;
+  const now = Date.now();
+  document.querySelectorAll('#signals-grid .card-ai-verdict').forEach(el => {
+    const key = el.dataset.signalKey || `${el.dataset.pair}_${el.dataset.direction}`;
+    if (!el.querySelector('.cav-loading')) {
+      _v431LoaderFirstSeen.delete(key);
+      return;                                  // resolved — leave it alone
+    }
+    const since = _v431LoaderFirstSeen.get(key);
+    if (since == null) { _v431LoaderFirstSeen.set(key, now); return; }
+    if (now - since < STALE_MS) return;         // still plausibly in flight
+
+    // Rebuild just enough of the signal from the rendered card. Reading the
+    // DOM rather than `state.signals` matters: signals painted straight from
+    // the mirror never populate that array, so a state-based lookup would
+    // mislabel every card "unavailable" while real, tappable setups were on
+    // screen.
+    const pair = el.dataset.pair;
+    const dir = el.dataset.direction;
+    const card = el.closest('.card');
+    const num = sel => {
+      const t = card?.querySelector(sel)?.textContent?.replace(/[^0-9.\-]/g, '');
+      const v = t ? parseFloat(t) : NaN;
+      return Number.isFinite(v) ? v : undefined;
+    };
+    const vals = card ? [...card.querySelectorAll('.levels .val')].map(e => parseFloat(e.textContent)) : [];
+    const sig = {
+      pair, direction: dir,
+      entry: vals[0], sl: vals[1], tp1: vals[2], tp2: vals[3], tp3: vals[4],
+      confidence: num('.conf-label span:last-child'),
+      strategies: undefined,
+    };
+    el.innerHTML = `<div class="cav-tap-to-analyse" style="cursor:pointer;padding:6px 10px;color:#94a3b8;font-size:12px;text-align:center;background:rgba(255,255,255,0.03);border-radius:6px">🧠 Tap to analyse this setup</div>`;
+    el.querySelector('.cav-tap-to-analyse')?.addEventListener('click', () => _analyseSingleSignal(sig, el));
+    _v431LoaderFirstSeen.delete(key);
+  });
+}
+
+function _v431StartLoaderSweep() {
+  if (_v431SweepTimer) return;                  // install once
+  _v431SweepTimer = setInterval(_v431SweepStuckLoaders, 3000);
+}
+// Install independently of the render path. _autoAnalyseRenderedSignals
+// returns early when it is handed an empty array, so wiring the sweep only
+// from inside it meant the sweep frequently never started at all — which is
+// precisely the case where stale loaders are left on screen.
+document.addEventListener('DOMContentLoaded', () => setTimeout(_v431StartLoaderSweep, 2000));
 
 function cardHTML(s) {
   const col = s.direction === 'BUY' ? 'var(--buy)' : s.direction === 'SELL' ? 'var(--sell)' : 'var(--hold)';
@@ -10455,7 +10529,12 @@ function tickClock() {
   // Per-card signal expiry
   document.querySelectorAll('.card-timer').forEach(el => {
     const exp = el.dataset.expires;
-    if (!exp) return;
+    // v431 — signals from the server/mirror snapshot carry no expiresAt, so
+    // this bailed out early and left a permanently empty "⏱ —" bar on every
+    // card: a countdown widget counting nothing. Hide the element when there
+    // is no expiry to show rather than render an empty control.
+    if (!exp) { el.style.display = 'none'; return; }
+    el.style.display = '';
     const left = new Date(exp).getTime() - now.getTime();
     if (left <= 0) {
       el.innerHTML = '⏰ <strong>EXPIRED</strong> — wait for fresh signal';
