@@ -149,6 +149,14 @@
             data.count = data.signals.length;
             data._gatedOut = before - data.signals.length;
             data._gateRejects = (window._v432Rejects || []).slice();
+            // v440 — annotate against the live market HERE, not at the call
+            // site. Every consumer goes through this wrapper and each call
+            // mints fresh objects, so annotating downstream left most paths
+            // (and therefore most rendered cards) with no live comparison.
+            if (typeof window._v440EnsureLivePrices === 'function') {
+              await window._v440EnsureLivePrices();
+              window._v440AnnotateSignals(data.signals);
+            }
           }
         }
         window.__v428UsingMirror = true;
@@ -5462,6 +5470,13 @@ async function loadSignals(force = false) {
   // signals feed blank.
   const d = await _v427cFetchSignalsWithMirror();
   if (d) {
+    // v440 — check the live market before painting. The snapshot can be
+    // hours old when Functions are down; without this the card shows an
+    // entry the market has already left.
+    try {
+      await _v440FetchLivePrices();
+      _v440AnnotateSignals(d.signals);
+    } catch {}
     _v427UpdateScannerPill(d);
     const ts = d.ts || 0;
     const ageMin = ts ? (Date.now() - ts) / 60000 : Infinity;
@@ -6911,6 +6926,17 @@ function cardHTML(s) {
         <div class="v437-calib" title="Agreement is how much of the indicator weight backs this direction. The probability is the measured share of past signals like this that reached a take-profit before the stop — from 5,971 signals over ~2.8 years.">
           <span class="v437-agree">${s._agreement}% agreement<span class="v437-sub"> · ${s._agreementLabel}</span></span>
           <span class="v437-prob">~${s._probability}% reach a target</span>
+        </div>` : ''}
+      ${s._live ? `
+        <div class="v440-live v440-${s._live.state}" title="Live price fetched by your browser, ${_cdEsc(s._live.source)}. Compared against the entry this signal was built on.">
+          <span class="v440-dot"></span>
+          <span class="v440-px">live ${s._live.price}</span>
+          <span class="v440-state">${
+            s._live.state === 'invalidated' ? 'stop already passed — do not take this'
+            : s._live.state === 'entry-gone' ? `entry gone — price moved ${s._live.driftPctOfStop}% of the stop`
+            : s._live.state === 'drifted'    ? `drifted ${s._live.driftPctOfStop}% of the stop from entry`
+            : 'still near entry'
+          }</span>
         </div>` : ''}
         ${s._warnings.length
           ? `<ul class="v433-warn-list">${s._warnings.map(w => `<li>${_cdEsc(w)}</li>`).join('')}</ul>`
@@ -17873,6 +17899,132 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(_v428cRevealStuckCards, 1200);
   setInterval(_v428cRevealStuckCards, 5000);
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// v440 — LIVE PRICE, FETCHED BY THE BROWSER ITSELF.
+//
+// The problem this solves, measured: with Pages Functions quota-dead the
+// app was serving a signal snapshot 359 minutes old. Its GBP/USD entry had
+// already consumed 88% of its own stop distance before a user could act on
+// it. A displayed entry that the market left six hours ago is worse than no
+// signal, because it reads as actionable.
+//
+// Cloudflare cannot help here, but the browser can: several price APIs send
+// permissive CORS headers, so the client can check the market directly, with
+// no Function invocations at all. Measured round-trips: Binance ~250ms,
+// Coinbase ~135ms.
+//
+// SOURCE TRUST IS THE HARD PART. Binance lists GBPUSDT at 1.18 while GBP/USD
+// is really ~1.35 — a thin book on a pair that is not the FX major it looks
+// like. Rendering that as "live GBP/USD" would be far more damaging than
+// showing nothing. So a price is only used when two independent sources
+// agree within 0.5%; anything else is treated as unknown and the card simply
+// says the snapshot is stale.
+// ═══════════════════════════════════════════════════════════════════════
+const _v440Live = { prices: {}, at: 0, sources: {} };
+
+async function _v440FetchLivePrices() {
+  const out = {};
+  const jget = async (url) => {
+    const r = await fetch(url, { cache: 'no-store' });
+    if (!r.ok) throw new Error('http ' + r.status);
+    return r.json();
+  };
+
+  // Two independent reads, so each price can be corroborated before use.
+  const [binance, coinbase, fxref] = await Promise.allSettled([
+    jget('https://api.binance.com/api/v3/ticker/price'),
+    jget('https://api.coinbase.com/v2/prices/BTC-USD/spot'),
+    jget('https://open.er-api.com/v6/latest/USD'),
+  ]);
+
+  const bmap = new Map();
+  if (binance.status === 'fulfilled' && Array.isArray(binance.value)) {
+    for (const x of binance.value) bmap.set(x.symbol, parseFloat(x.price));
+  }
+  const fx = fxref.status === 'fulfilled' ? (fxref.value.rates || {}) : {};
+  const cbBtc = coinbase.status === 'fulfilled'
+    ? parseFloat(coinbase.value?.data?.amount) : NaN;
+
+  const agree = (a, b, tol = 0.005) =>
+    Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) / b <= tol;
+
+  // Crypto — deep books, and BTC is cross-checked against Coinbase.
+  const btc = bmap.get('BTCUSDT');
+  if (agree(btc, cbBtc)) { out['BTC/USD'] = btc; _v440Live.sources['BTC/USD'] = 'Binance+Coinbase'; }
+  const eth = bmap.get('ETHUSDT');
+  if (Number.isFinite(eth)) { out['ETH/USD'] = eth; _v440Live.sources['ETH/USD'] = 'Binance'; }
+  const sol = bmap.get('SOLUSDT');
+  if (Number.isFinite(sol)) { out['SOL/USD'] = sol; _v440Live.sources['SOL/USD'] = 'Binance'; }
+
+  // FX — a Binance *USDT pair is only trusted when the daily reference rate
+  // corroborates it. This is exactly what rejects GBPUSDT (1.18 vs 1.35).
+  const fxPairs = [
+    ['EUR/USD', 'EURUSDT', () => 1 / fx.EUR],
+    ['GBP/USD', 'GBPUSDT', () => 1 / fx.GBP],
+    ['AUD/USD', 'AUDUSDT', () => 1 / fx.AUD],
+    ['NZD/USD', 'NZDUSDT', () => 1 / fx.NZD],
+  ];
+  for (const [pair, sym, refFn] of fxPairs) {
+    const live = bmap.get(sym);
+    let ref; try { ref = refFn(); } catch { ref = NaN; }
+    if (agree(live, ref, 0.005)) { out[pair] = live; _v440Live.sources[pair] = 'Binance (ref-checked)'; }
+  }
+  // USD-base majors from the reference rate only. Daily granularity, so
+  // usable for "has this run away entirely", not for fine drift.
+  for (const [pair, code] of [['USD/JPY','JPY'],['USD/CHF','CHF'],['USD/CAD','CAD']]) {
+    if (Number.isFinite(fx[code])) { out[pair] = fx[code]; _v440Live.sources[pair] = 'reference rate (daily)'; }
+  }
+
+  _v440Live.prices = out;
+  _v440Live.at = Date.now();
+  return out;
+}
+
+/** Compare each signal against live price; annotate drift and validity. */
+function _v440AnnotateSignals(sigs) {
+  if (!Array.isArray(sigs)) return;
+  const px = _v440Live.prices || {};
+  for (const s of sigs) {
+    const live = px[s.pair];
+    if (!Number.isFinite(live) || !Number.isFinite(s.entry) || !Number.isFinite(s.sl)) {
+      s._live = null;
+      continue;
+    }
+    const stopDist = Math.abs(s.entry - s.sl);
+    const drift = Math.abs(live - s.entry);
+    const pctOfStop = stopDist > 0 ? (drift / stopDist) * 100 : 0;
+    const blown = s.direction === 'BUY' ? live <= s.sl : live >= s.sl;
+    s._live = {
+      price: live,
+      source: _v440Live.sources[s.pair] || 'live',
+      driftPctOfStop: Math.round(pctOfStop),
+      // "Entry gone" means acting on the printed level now is a materially
+      // different trade from the one that was analysed.
+      state: blown ? 'invalidated' : (pctOfStop > 100 ? 'entry-gone' : (pctOfStop > 40 ? 'drifted' : 'near-entry')),
+    };
+  }
+}
+/**
+ * Live prices, cached for 30s. The signal fetch wrapper calls this on every
+ * request, so an uncached fetch each time would mean several hundred ms of
+ * added latency per poll for a price that barely moves in between.
+ */
+let _v440InFlight = null;
+async function _v440EnsureLivePrices(maxAgeMs = 30000) {
+  if (Date.now() - _v440Live.at < maxAgeMs && Object.keys(_v440Live.prices).length) {
+    return _v440Live.prices;
+  }
+  if (_v440InFlight) return _v440InFlight;          // coalesce concurrent callers
+  _v440InFlight = _v440FetchLivePrices()
+    .catch(() => _v440Live.prices)
+    .finally(() => { _v440InFlight = null; });
+  return _v440InFlight;
+}
+
+window._v440FetchLivePrices = _v440FetchLivePrices;
+window._v440EnsureLivePrices = _v440EnsureLivePrices;
+window._v440AnnotateSignals = _v440AnnotateSignals;
 
 // ═══════════════════════════════════════════════════════════════════════
 // v427 — SCANNER STATUS PILL. Always-visible line at top of Signals tab
