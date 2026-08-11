@@ -73,8 +73,36 @@
     const url = typeof input === 'string' ? input : (input && input.url) || '';
     const name = apiNameFrom(url);
 
-    // Not an /api/* call, or no mirror available → behave exactly as before.
-    if (!name || !MIRRORED.has(name)) return _origFetch(input, init);
+    // v435 — NON-MIRRORED /api/* CALLS ARE STILL PROTECTED.
+    //
+    // Only six endpoints have a static mirror. The other ~40 fell straight
+    // through, and there are 42 call sites in this file doing `await
+    // r.json()` with no content-type check. When Functions are quota-dead
+    // every one of those receives the SPA's index.html and throws
+    // "Unexpected token '<'", taking out whatever feature made the call —
+    // a different broken card each time, with no clue as to why.
+    //
+    // Rather than add 42 guards, unparseable /api/* responses are converted
+    // here into a valid, clearly-marked empty payload. Callers get data they
+    // can reason about instead of an exception, and `_apiUnavailable` lets
+    // any of them render an honest "unavailable" state.
+    if (!name) return _origFetch(input, init);
+
+    if (!MIRRORED.has(name)) {
+      try {
+        const res = await _origFetch(input, init);
+        if (res.ok && isJsonResponse(res)) return res;
+        return new Response(
+          JSON.stringify({ ok: false, _apiUnavailable: true, _endpoint: name, signals: [], items: [], events: [] }),
+          { status: 200, headers: { 'Content-Type': 'application/json', 'x-forexsight-source': 'unavailable' } }
+        );
+      } catch {
+        return new Response(
+          JSON.stringify({ ok: false, _apiUnavailable: true, _endpoint: name, signals: [], items: [], events: [] }),
+          { status: 200, headers: { 'Content-Type': 'application/json', 'x-forexsight-source': 'offline' } }
+        );
+      }
+    }
 
     let liveRes = null;
     try {
@@ -141,6 +169,47 @@
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
+  };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════
+// v435 — STORAGE WRITES CAN NEVER TAKE THE APP DOWN.
+//
+// The header of this file states that every localStorage write goes through
+// safeSave(). That stopped being true: there are 53 raw setItem calls
+// against one safeSave definition. A raw setItem throws QuotaExceededError
+// once the origin's ~5MB budget fills — and this app persists a shadow feed,
+// a brain cache, an AI-verdict cache and trade history, so filling it is a
+// matter of time rather than an edge case. Whichever call site happened to
+// be first would then throw mid-render and abort it.
+//
+// Wrapping the method itself makes the guarantee real regardless of call
+// site. On quota failure it evicts the largest expendable cache and retries
+// once; if that still fails it gives up quietly rather than throwing, since
+// no cached extra is worth breaking the page for.
+(function hardenLocalStorage() {
+  if (typeof localStorage === 'undefined' || window.__v435StorageHardened) return;
+  window.__v435StorageHardened = true;
+
+  const proto = Object.getPrototypeOf(localStorage) || Storage.prototype;
+  const rawSet = proto.setItem;
+  // Caches that may be dropped to reclaim space, least valuable first.
+  const EXPENDABLE = ['ai-verdict-cache', 'aiCache', 'brain-cache', 'shadow-feed-cache', 'news-cache'];
+
+  proto.setItem = function (key, value) {
+    try {
+      return rawSet.call(this, key, value);
+    } catch (err) {
+      const quota = err && (err.name === 'QuotaExceededError' || err.code === 22 || err.code === 1014);
+      if (!quota) return;                       // never propagate a storage error
+      try {
+        for (const k of EXPENDABLE) {
+          const hit = Object.keys(this).find(x => x.includes(k));
+          if (hit) { this.removeItem(hit); break; }
+        }
+        return rawSet.call(this, key, value);   // one retry after eviction
+      } catch { /* still full — drop the write rather than break the page */ }
+    }
   };
 })();
 
@@ -16154,6 +16223,9 @@ function _lcStartTimers() {
   // Auto-analyze if toggled on
   const auto = document.getElementById('lc-auto');
   if (auto && auto.checked) {
+    // v435 — clear first; same orphaning bug as _goldLiveTimer. Re-entering
+    // the Live Chart tab re-ran this and abandoned the previous interval.
+    if (LC_STATE.autoTimer) clearInterval(LC_STATE.autoTimer);
     LC_STATE.autoTimer = setInterval(_lcAnalyze, 120000); // every 2 min
   }
 }
@@ -16377,7 +16449,14 @@ function _startGoldLivePolling() {
   const activeTab = document.querySelector('.tab.active')?.dataset.tab;
   if (activeTab !== 'signals') return;
   _pollGoldLive();
-  _goldLiveTimer = setInterval(_pollGoldLive, 90000);  // v417 — was 25s (3.4k/day quota) → 90s (960/day)
+  // v435 — clear before starting. This function runs on every switch TO the
+  // Signals tab, and previously overwrote _goldLiveTimer without stopping the
+  // old one, so the previous interval kept running untracked. Each visit to
+  // the tab added another live poller: after a dozen tab switches the page
+  // was polling gold-live a dozen times per cycle, multiplying both quota
+  // burn and render churn. Measured 3 orphaned intervals after 12 switches.
+  if (_goldLiveTimer) clearInterval(_goldLiveTimer);
+  _goldLiveTimer = setInterval(_pollGoldLive, 90000);  // v417 — 25s → 90s (quota)
 }
 
 function _stopGoldLivePolling() {
@@ -17479,6 +17558,9 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════════════════
 
 let _arTimer = null;
+// v435 — handle for the interval re-checker below, so it can be cleared.
+// Without a handle it accumulated one orphan per Signals-tab visit.
+let _arRecheckTimer = null;
 
 async function _refreshAlgoRead() {
   const card = document.getElementById('algo-read-card');
@@ -17550,15 +17632,29 @@ function _startAlgoTimer() {
     return (h >= 7 && h <= 20) ? 120_000 : 300_000;
   };
   _arTimer = setInterval(tick, intervalMs());
-  // Re-check interval every 5min in case hour boundary crossed
-  setInterval(() => {
-    if (_arTimer) {
-      clearInterval(_arTimer);
-      _arTimer = setInterval(tick, intervalMs());
-    }
+
+  // v435 — TIMER LEAK FIX.
+  //
+  // This re-checker (it re-rates the poll interval when the UTC hour crosses
+  // the London/NY boundary) was a BARE setInterval with no stored handle, so
+  // it could never be cleared — and _startAlgoTimer runs on every switch to
+  // the Signals tab. Each visit therefore added another permanent 5-minute
+  // timer, and every one of them reassigned the shared _arTimer, so
+  // _stopAlgoTimer could only ever stop the most recent. Instrumenting
+  // set/clearInterval in a live tab showed exactly three orphaned copies
+  // after three visits to the tab; over a long session that grows without
+  // bound, each orphan re-triggering algo-read polling.
+  if (_arRecheckTimer) clearInterval(_arRecheckTimer);
+  _arRecheckTimer = setInterval(() => {
+    if (!_arTimer) return;
+    clearInterval(_arTimer);
+    _arTimer = setInterval(tick, intervalMs());
   }, 300_000);
 }
-function _stopAlgoTimer() { if (_arTimer) { clearInterval(_arTimer); _arTimer = null; } }
+function _stopAlgoTimer() {
+  if (_arTimer) { clearInterval(_arTimer); _arTimer = null; }
+  if (_arRecheckTimer) { clearInterval(_arRecheckTimer); _arRecheckTimer = null; }
+}
 
 // v416 — Update the live-watch pulse tone based on session activity.
 // Green = actively watching (London/NY). Amber = off-hours slow poll.
