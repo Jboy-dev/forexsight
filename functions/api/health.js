@@ -37,18 +37,33 @@ export async function onRequest(context) {
     checks.signals = { ok: false, error: e.message }; allGreen = false;
   }
 
-  // v237 — Parallelize scan, prices, latest-signals checks. Was sequential —
-  // each could take 10+ seconds, total /api/health latency was 30+ seconds.
-  const [scanRes, pricesRes] = await Promise.allSettled([
-    fetch(`${origin}/api/check-signals`, {
-      headers: env.CRON_KEY ? { 'x-cron-key': env.CRON_KEY } : {},
-    }).then(async r => ({ r, data: await r.json() })),
-    fetch(`${origin}/api/prices?symbol=EURUSD=X`).then(async r => ({ r, data: await r.json() })),
-  ]);
+  // v434 — DEEP CHECKS ARE NOW OPT-IN via ?deep=1.
+  //
+  // This endpoint used to fire check-signals on every call. check-signals
+  // fans out to ~13 endpoints, several of which fan out again, so a single
+  // /api/health cost ~94 Function invocations. Anything polling health on a
+  // timer therefore exhausted the 100k/day free tier on its own — which is
+  // exactly what kept taking the site down.
+  //
+  // The default response now reports status from KV and bindings only, which
+  // is what a health check actually needs. Pass ?deep=1 to run the live scan
+  // and price probes when you genuinely want them (manual diagnostics, the
+  // cron heartbeat), not on every automated poll.
+  const deep = url.searchParams.get('deep') === '1';
+  const [scanRes, pricesRes] = deep
+    ? await Promise.allSettled([
+        fetch(`${origin}/api/check-signals`, {
+          headers: env.CRON_KEY ? { 'x-cron-key': env.CRON_KEY } : {},
+        }).then(async r => ({ r, data: await r.json() })),
+        fetch(`${origin}/api/prices?symbol=EURUSD=X`).then(async r => ({ r, data: await r.json() })),
+      ])
+    : [{ status: 'skipped' }, { status: 'skipped' }];
 
   // 2) Live scan smoke test — for gold-only mode, 0 signals is valid
   // (nothing meeting criteria right now). Only failure if HTTP not OK.
-  if (scanRes.status === 'fulfilled') {
+  if (scanRes.status === 'skipped') {
+    checks.scan = { ok: true, skipped: true, msg: 'deep scan not run — add ?deep=1 (avoids ~94 Function invocations per call)' };
+  } else if (scanRes.status === 'fulfilled') {
     const { r, data } = scanRes.value;
     const withStrats = (data.signals || []).filter(s => (s.strategies || 0) >= 2).length;
     checks.scan = {
@@ -66,7 +81,9 @@ export async function onRequest(context) {
   }
 
   // 3) Prices endpoint
-  if (pricesRes.status === 'fulfilled') {
+  if (pricesRes.status === 'skipped') {
+    checks.prices = { ok: true, skipped: true, msg: 'price probe not run — add ?deep=1' };
+  } else if (pricesRes.status === 'fulfilled') {
     const { r, data } = pricesRes.value;
     checks.prices = {
       ok: r.ok && Array.isArray(data.ohlc) && data.ohlc.length > 50,
@@ -108,6 +125,7 @@ export async function onRequest(context) {
   //     TP3 ≥ 2R (real edge)
   //     TP1 < TP3 (correct ordering)
   try {
+    if (!deep) throw { _skip: true };
     const r = await fetch(`${origin}/api/latest-signals`);
     const data = await r.json();
     const s = (data.signals || [])[0];
@@ -135,13 +153,15 @@ export async function onRequest(context) {
       checks.math = { ok: true, msg: 'no signals currently — math check skipped' };
     }
   } catch (e) {
-    checks.math = { ok: false, error: e.message };
+    checks.math = e && e._skip
+      ? { ok: true, skipped: true, msg: 'math check not run — add ?deep=1' }
+      : { ok: false, error: e.message };
   }
 
   return new Response(JSON.stringify({
     status: allGreen ? 'GREEN' : 'YELLOW',
     timestamp: new Date().toISOString(),
-    version: 'v433-classify-not-hide',
+    version: 'v434-quota-cascade-fix',
     summary: allGreen ? 'All systems operational' : 'Some checks need attention',
     checks,
   }, null, 2), {

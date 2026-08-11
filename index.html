@@ -10,7 +10,7 @@
      opened that (now stale, un-deployable) site regardless of where the
      app was installed from. It is now host-relative; the ?v= forces
      browsers and the Cloudflare edge past the cached copy. -->
-<link rel="manifest" href="/manifest.json?v=433" />
+<link rel="manifest" href="/manifest.json?v=434" />
 <meta name="theme-color" content="#0b1220" media="(prefers-color-scheme: dark)" />
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -24,19 +24,19 @@
 <!-- v232 — Premium typography (Inter variable font, used by Linear, Vercel, Stripe) -->
 <link rel="preconnect" href="https://rsms.me/" crossorigin>
 <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
-<link rel="stylesheet" href="style.css?v=433" />
+<link rel="stylesheet" href="style.css?v=434" />
 </head>
 <body>
-<!-- v427b — AUTO-HARD-REFRESH on new deploy. Two signals, whichever
-     fires first triggers a hard reload:
-       (A) /api/health version differs from ours   (works when Functions up)
-       (B) /?_v= cache-bust on served index differs (works even when
-           Functions down — HTML is a Pages static asset).
-     Runs every 60s AND on tab-focus (visibilitychange) so a user who
-     switched away and came back gets the fresh code immediately. Uses
-     a cache-busted URL on reload + sessionStorage guard against loops. -->
+<!-- v434 — AUTO-HARD-REFRESH on new deploy.
+     Detects a new build by cache-busting the served index and reading the
+     ?v= tag off its app.js reference. HTML is a Pages STATIC asset, so this
+     costs zero Function invocations — which matters, because the /api/health
+     probe this used to also run cost ~94 invocations per call and was itself
+     exhausting the daily quota.
+     Runs every 60s and on tab-focus, reloads with a cache-buster, and guards
+     against loops with sessionStorage. -->
 <script>
-window._APP_VERSION_AT_LOAD = 'v433';
+window._APP_VERSION_AT_LOAD = 'v434';
 (function(){
   var CHECK_MS = 60 * 1000;   // v427b — 5min → 60s
   var currentUrlV = new URLSearchParams(
@@ -62,24 +62,21 @@ window._APP_VERSION_AT_LOAD = 'v433';
       .then(function(html){
         var m = html && html.match(/app\.js\?v=([^"'\s]+)/);
         var servedV = m && m[1];
-        if (servedV && servedV !== currentUrlV) {
-          hardReload('static_' + servedV);
-          return null;   // stop chain
-        }
-        // Signal A — Functions-based version stamp
-        return fetch('/api/health', { cache: 'no-store' }).catch(function(){ return null; });
-      })
-      .then(function(r){
-        if (!r) { IN_FLIGHT = false; return; }
-        var ct = r.headers.get('content-type') || '';
-        if (ct.indexOf('json') < 0) { IN_FLIGHT = false; return; }
-        return r.json().then(function(d){
-          if (d && d.version) {
-            var deployedV = (d.version || '').split('-')[0];
-            if (deployedV && deployedV !== currentUrlV) hardReload('api_' + deployedV);
-          }
-          IN_FLIGHT = false;
-        });
+        if (servedV && servedV !== currentUrlV) hardReload('static_' + servedV);
+        IN_FLIGHT = false;
+        // v434 — the /api/health probe that used to run here is GONE.
+        //
+        // /api/health fans out to check-signals + prices + latest-signals,
+        // and check-signals itself fans out to ~13 more endpoints, several of
+        // which fan out again. One health request costs ~94 Function
+        // invocations. Calling it every 60s burned ~135,000 invocations/day
+        // from a SINGLE open tab against a 100,000/day free-tier limit — the
+        // version check was the main cause of the outages it was written to
+        // recover from.
+        //
+        // The HTML probe above already detects every deploy (it reads the
+        // ?v= tag off the served index) and costs zero invocations, because
+        // Pages serves HTML as a static asset. It is strictly sufficient.
       })
       .catch(function(){ IN_FLIGHT = false; });
   }
@@ -1004,6 +1001,6 @@ window._APP_VERSION_AT_LOAD = 'v433';
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=433"></script>
+<script src="app.js?v=434"></script>
 </body>
 </html>

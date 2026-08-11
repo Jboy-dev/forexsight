@@ -17666,7 +17666,13 @@ async function _refreshSetupRadar() {
 function _startSetupRadarTimer() {
   _refreshSetupRadar();
   if (_srTimer) clearInterval(_srTimer);
-  _srTimer = setInterval(_refreshSetupRadar, 300000);  // v417 — 90s → 5min (setup-radar fans out 15 requests per call; was 21k/day)
+  // v434 — 5min → 15min. Measured properly, setup-radar costs ~92 Function
+  // invocations per call (it calls check-signals, latest-signals and
+  // predict-next, each of which fans out again), so a 5-minute cadence was
+  // 26,500 invocations/day on its own — a quarter of the entire free tier
+  // for a panel that lists slow-moving pending setups. 15 minutes matches
+  // how fast that list actually changes and costs ~8,800/day.
+  _srTimer = setInterval(_refreshSetupRadar, 900000);
 }
 function _stopSetupRadarTimer() { if (_srTimer) { clearInterval(_srTimer); _srTimer = null; } }
 
@@ -17773,24 +17779,31 @@ window._v427UpdateScannerPill = _v427UpdateScannerPill;
 // Poll the pill every 45s independently so it stays fresh even when the
 // signal renderer doesn't fire (e.g. user watching, no signal change).
 let _v427PillTimer = null;
+
+// v434 — the pill used to poll /api/latest-signals every 45s. That endpoint
+// fans out to algo-read + calendar + check-signals + conditions-score +
+// live-analysis, costing ~23 Function invocations per poll — about 44,000
+// invocations/day from one open tab, against a 100,000/day free-tier limit.
+//
+// The pill is a status line, not the signal source: the signal loader
+// already refreshes state on its own schedule. So the pill now reads the
+// STATIC mirror (zero invocations) and simply reflects whatever the loader
+// last obtained. Freshness of the pill was never the point — knowing the
+// scanner is alive is.
 async function _v427PollPill() {
   try {
-    const r = await fetch('/api/latest-signals', { cache: 'no-store' });
+    const r = await fetch('/data/latest-signals.json?_p=' + Date.now(), { cache: 'no-store' });
     if (!r.ok) return;
-    const ct = r.headers.get('content-type') || '';
-    if (!ct.includes('json')) {
-      // API down — try mirror
-      const m = await (window._v426MirrorFetch ? window._v426MirrorFetch('latest-signals') : null);
-      if (m) _v427UpdateScannerPill(m);
-      return;
-    }
-    _v427UpdateScannerPill(await r.json());
+    const text = await r.text();
+    const head = text.trim().charAt(0);
+    if (head !== '{' && head !== '[') return;
+    _v427UpdateScannerPill(JSON.parse(text));
   } catch {}
 }
 function _v427StartPillTimer() {
   _v427PollPill();
   if (_v427PillTimer) clearInterval(_v427PillTimer);
-  _v427PillTimer = setInterval(_v427PollPill, 45000);
+  _v427PillTimer = setInterval(_v427PollPill, 120000);   // 45s -> 2min
 }
 document.addEventListener('DOMContentLoaded', () => setTimeout(_v427StartPillTimer, 800));
 
