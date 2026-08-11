@@ -9726,3 +9726,54 @@ body.light-theme #signals [data-collapsible="true"] {
 .live-watch-pulse .lwp-dot { box-shadow: 0 0 8px rgba(34,197,94,0.4); }
 
 /* v423 end */
+
+/* ── v433 — per-signal quality grade + honest warnings ──────────────────
+   Replaces the v432 behaviour of silently dropping setups. Everything the
+   scanner produced is shown; anything questionable carries its reason so
+   the user can judge it rather than having the decision made for them. */
+.v433-quality {
+  margin: 10px 0 4px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(148, 163, 184, 0.05);
+}
+.v433-grade-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 12px;
+}
+.v433-grade-chip {
+  width: 22px; height: 22px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 6px;
+  font-weight: 800; font-size: 12px;
+  color: #0b1220;
+  flex-shrink: 0;
+}
+.v433-grade-score { color: rgba(226,232,240,0.85); font-variant-numeric: tabular-nums; }
+.v433-rr {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: rgba(148,163,184,0.9);
+  font-size: 11px;
+}
+.v433-warn-list {
+  margin: 7px 0 0; padding-left: 16px;
+  font-size: 11px; line-height: 1.5;
+  color: rgba(251, 191, 36, 0.92);
+}
+.v433-warn-list li { margin: 2px 0; }
+.v433-clean { margin-top: 5px; font-size: 11px; color: rgba(52, 211, 153, 0.9); }
+
+.v433-grade-A .v433-grade-chip { background: #34d399; }
+.v433-grade-B .v433-grade-chip { background: #60a5fa; }
+.v433-grade-C .v433-grade-chip { background: #fbbf24; }
+.v433-grade-D .v433-grade-chip { background: #f87171; }
+.v433-grade-A { border-color: rgba(52, 211, 153, 0.30); background: rgba(52, 211, 153, 0.06); }
+.v433-grade-C { border-color: rgba(251, 191, 36, 0.30); background: rgba(251, 191, 36, 0.06); }
+.v433-grade-D { border-color: rgba(248, 113, 113, 0.30); background: rgba(248, 113, 113, 0.06); }
+
+body.light-theme .v433-grade-score { color: #0f172a; }
+body.light-theme .v433-warn-list { color: #b45309; }

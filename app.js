@@ -5447,84 +5447,101 @@ const _v432Rejects = [];
 
 function _v432PipSize(pair) { return _v428dPipSizeFor(pair); }
 
+// v433 — CLASSIFY, DON'T HIDE.
+//
+// v432 rejected 7 of 9 signals outright. Hiding a setup is itself a
+// decision made on the user's behalf, and most of those rejections were
+// judgement calls (tier history, correlation, dollar coherence) rather than
+// facts. Those now travel WITH the signal as warnings and a graded score,
+// so the user sees everything and decides.
+//
+// Exactly one class is still withheld: signals that cannot be placed at a
+// broker at all — zero stop distance, or a stop/target on the wrong side of
+// entry. "Enter at 0.81, stop at 0.81" has no risk to size and no exit; it
+// is not a cautious trade, it is an undefined one. Those are reported in
+// the rejects list so nothing disappears silently.
 function _v432GateSignals(sigs) {
   _v432Rejects.length = 0;
   if (!Array.isArray(sigs) || !sigs.length) return [];
   const reject = (s, why) => { _v432Rejects.push({ pair: s.pair, direction: s.direction, why }); return false; };
 
-  // ── Gate 1: geometry must be tradeable ────────────────────────────────
+  // ── The only hard stop: geometry that cannot be traded ────────────────
   let out = sigs.filter(s => {
     const { entry: e, sl, tp1, tp3 } = s;
-    if (![e, sl, tp1].every(v => typeof v === 'number' && isFinite(v))) return reject(s, 'missing entry/SL/TP');
+    if (![e, sl, tp1].every(v => typeof v === 'number' && isFinite(v))) return reject(s, 'missing entry/SL/TP — cannot place');
     const pip = _v432PipSize(s.pair);
     const slPips = Math.abs(e - sl) / pip;
-    if (slPips < 1) return reject(s, `SL distance ${slPips.toFixed(1)} pips — levels collapsed by rounding`);
-    // Direction sanity: SL must sit the correct side of entry
-    if (s.direction === 'BUY' && sl >= e) return reject(s, 'BUY with SL at/above entry');
-    if (s.direction === 'SELL' && sl <= e) return reject(s, 'SELL with SL at/below entry');
+    if (slPips < 1) return reject(s, `stop distance ${slPips.toFixed(1)} pips — no risk to size, cannot place`);
+    if (s.direction === 'BUY' && sl >= e) return reject(s, 'BUY with stop at/above entry — cannot place');
+    if (s.direction === 'SELL' && sl <= e) return reject(s, 'SELL with stop at/below entry — cannot place');
     if (typeof tp3 === 'number' && isFinite(tp3)) {
-      if (s.direction === 'BUY' && tp3 <= e) return reject(s, 'BUY with TP3 at/below entry');
-      if (s.direction === 'SELL' && tp3 >= e) return reject(s, 'SELL with TP3 at/above entry');
-      const rr = Math.abs(tp3 - e) / Math.abs(e - sl);
-      if (rr < 2.5) return reject(s, `R:R ${rr.toFixed(2)} below the 2.5 floor`);
+      if (s.direction === 'BUY' && tp3 <= e) return reject(s, 'BUY with target below entry — cannot place');
+      if (s.direction === 'SELL' && tp3 >= e) return reject(s, 'SELL with target above entry — cannot place');
     }
     return true;
   });
 
-  // ── Gate 2: drop the tier v413 removed for a 71% loss rate ────────────
-  out = out.filter(s => {
-    const tier = String(s.tier || '').toLowerCase();
-    if (tier === 'chart-read') return reject(s, 'chart-read tier (removed in v413 — 71% loss rate)');
-    return true;
-  });
-
-  // ── Gate 3: one coherent view of the US dollar ────────────────────────
-  // Every FX pair here is USD-quoted or USD-based, so each signal implies a
-  // long or short dollar. Holding both at once is not diversification, it is
-  // two bets that cannot both win. Keep the side carrying more conviction.
+  // ── Everything below annotates instead of removing ────────────────────
   const usdSideOf = (s) => {
     const p = String(s.pair || '');
     if (!p.includes('/')) return null;
     const [base, quote] = p.split('/');
-    if (base === 'XAU' || base === 'BTC' || base === 'ETH') return null;  // not FX conviction
+    if (['XAU', 'BTC', 'ETH'].includes(base)) return null;
     if (quote === 'USD') return s.direction === 'BUY' ? 'short' : 'long';
     if (base === 'USD') return s.direction === 'BUY' ? 'long' : 'short';
     return null;
   };
+
   const strength = {};
   for (const s of out) {
     const side = usdSideOf(s);
-    if (!side) continue;
-    strength[side] = (strength[side] || 0) + (s.confidence || 0);
+    if (side) strength[side] = (strength[side] || 0) + (s.confidence || 0);
   }
-  if (strength.long && strength.short) {
-    const keep = strength.long >= strength.short ? 'long' : 'short';
-    out = out.filter(s => {
-      const side = usdSideOf(s);
-      if (!side || side === keep) return true;
-      return reject(s, `contradicts the stronger ${keep}-USD view`);
-    });
-  }
+  const majorityUsd = (strength.long && strength.short)
+    ? (strength.long >= strength.short ? 'long' : 'short')
+    : null;
 
-  // ── Gate 4: correlation dedup ─────────────────────────────────────────
-  // AUD/USD and NZD/USD (and EUR/GBP-family pairs) move together; two such
-  // signals in the same direction is one idea counted twice, not confluence.
-  const CLUSTERS = [
-    ['AUD/USD', 'NZD/USD'],
-    ['EUR/USD', 'GBP/USD'],
-    ['USD/CHF', 'EUR/USD'],
-  ];
+  const CLUSTERS = [['AUD/USD', 'NZD/USD'], ['EUR/USD', 'GBP/USD'], ['USD/CHF', 'EUR/USD']];
+  const clusterLeader = {};
   for (const cluster of CLUSTERS) {
     const members = out.filter(s => cluster.includes(s.pair));
     if (members.length < 2) continue;
     members.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
-    const [, ...drop] = members;
-    for (const d of drop) {
-      out = out.filter(s => s !== d);
-      reject(d, `correlated with ${members[0].pair} — kept the stronger one`);
-    }
+    for (const m of members.slice(1)) clusterLeader[m.pair] = members[0].pair;
   }
 
+  for (const s of out) {
+    const warnings = [];
+    let score = 100;
+
+    const rr = (typeof s.tp3 === 'number' && s.sl !== s.entry)
+      ? Math.abs(s.tp3 - s.entry) / Math.abs(s.entry - s.sl) : null;
+    if (rr != null && rr < 2.5) { warnings.push(`R:R ${rr.toFixed(2)} — below the 2.5 target`); score -= 20; }
+
+    if (String(s.tier || '').toLowerCase() === 'chart-read') {
+      warnings.push('chart-read tier — historically 71% losses; size down or skip');
+      score -= 35;
+    }
+
+    const side = usdSideOf(s);
+    if (majorityUsd && side && side !== majorityUsd) {
+      warnings.push(`opposes the dominant ${majorityUsd}-USD read across today's setups`);
+      score -= 15;
+    }
+
+    if (clusterLeader[s.pair]) {
+      warnings.push(`moves with ${clusterLeader[s.pair]} — treat as one position, not two`);
+      score -= 10;
+    }
+
+    s._warnings = warnings;
+    s._qualityScore = Math.max(0, score);
+    s._grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 50 ? 'C' : 'D';
+    s._rr = rr;
+  }
+
+  // Best-first, so the strongest setup is what the eye lands on.
+  out.sort((a, b) => (b._qualityScore - a._qualityScore) || ((b.confidence || 0) - (a.confidence || 0)));
   return out;
 }
 window._v432GateSignals = _v432GateSignals;
@@ -6464,9 +6481,12 @@ function _autoAnalyseRenderedSignals(signals) {
   // strongest signals — the user always sees an AI verdict on what
   // actually matters. Every card still gets an immediate cache hit if we
   // have one; only NEW top-3 fires an actual LLM call.
-  // v387 — on cold load fire only 1 (was 3) to prevent browser choke.
-  // User can tap remaining to analyse on demand.
-  const MAX_FRESH_CALLS = 1;
+  // v433 — cap lifted from 1 to 6. The 1-call limit was a cold-load
+  // protection from when every card fired a concurrent LLM request; calls
+  // are now staggered 500ms apart and cached per signal, so the choke that
+  // motivated it no longer applies. Anything past 6 still gets the
+  // tap-to-analyse control rather than firing unprompted.
+  const MAX_FRESH_CALLS = 6;
   // First pass: paint cached verdicts on every card immediately (no wait)
   const cache = _loadAiCache();
   const toAnalyse = [];
@@ -6764,6 +6784,17 @@ function cardHTML(s) {
         ⏱ Expected hold: <strong>${s.expectedHoldHours < 1 ? '<1' : s.expectedHoldHours.toFixed(1)} hrs</strong>
         ${s.expectedHoldHours <= 4 ? '· <span class="ht-tag">⚡ FAST</span>' : s.expectedHoldHours <= 8 ? '· <span class="ht-tag">Day-trade-able</span>' : '· <span class="ht-tag">Swing setup</span>'}
         ${s.isDayTraderSetup ? '<span class="dt-badge" title="Passes all Day Trader criteria: ≤8hr hold, 2+ strategies, London/NY session, HTF-aligned, ADX≥18">⚡ DAY TRADER ✓</span>' : ''}
+      </div>` : ''}
+      ${Array.isArray(s._warnings) ? `
+      <div class="v433-quality v433-grade-${s._grade || 'A'}">
+        <div class="v433-grade-row">
+          <span class="v433-grade-chip">${s._grade || 'A'}</span>
+          <span class="v433-grade-score">${s._qualityScore != null ? s._qualityScore : 100}/100 quality</span>
+          ${s._rr != null ? `<span class="v433-rr">R:R ${s._rr.toFixed(2)}</span>` : ''}
+        </div>
+        ${s._warnings.length
+          ? `<ul class="v433-warn-list">${s._warnings.map(w => `<li>${_cdEsc(w)}</li>`).join('')}</ul>`
+          : `<div class="v433-clean">No flags — passes every check</div>`}
       </div>` : ''}
       <div class="levels">
         <span class="lbl">Entry</span><span class="val">${s.entry}</span><span class="pips">now · spread ~${s.spread_pips}p</span>
