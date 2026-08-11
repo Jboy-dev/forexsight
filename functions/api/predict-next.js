@@ -444,10 +444,33 @@ export async function onRequest(context) {
     // For 3:1 R:R at 30% WR → EV = 0.9 - 0.7 = 0.2 (below threshold)
     // For 3:1 R:R at 40% WR → EV = 1.2 - 0.6 = 0.6 (passes)
     // For 5:1 R:R at 25% WR → EV = 1.25 - 0.75 = 0.5 (passes)
-    const wrProxy = Math.max(0.25, Math.min(0.85, finalConfidence / 100));
+    // v439 — USE THE MEASURED HIT RATE, NOT THE AGREEMENT SCORE.
+    //
+    // This previously used finalConfidence/100 as the win-rate term. That
+    // score is the share of indicator weight backing the direction, not a
+    // probability: measured over 5,971 signals, the 90-100 band reaches a
+    // target 22.5% of the time, not 90%.
+    //
+    // The effect was that the gate meant to block thin-edge trades was
+    // computing edge from a number roughly four times too high, so almost
+    // nothing failed it. At confidence 90 and R:R 4.67 it produced
+    // EV +3.82; the same trade at the measured 21% hit rate is +0.19.
+    //
+    // Now uses the calibrated rate, with the small adjustments that
+    // survived out-of-sample testing (see _calibration.js). The threshold
+    // moves 0.30 -> 0.12 to match: on real numbers a full-ladder trade
+    // scores roughly +0.19 to +0.33, so 0.30 would have rejected virtually
+    // every signal once the input was corrected. 0.12 keeps trades with a
+    // genuine positive edge and drops the marginal ones.
+    let wrProxy = 0.21;
+    if (finalConfidence >= 80) wrProxy += 0.01;
+    if (adx != null) {
+      if (adx < 20) wrProxy += 0.01;
+      else if (adx >= 30) wrProxy -= 0.02;
+    }
     const rr = tp3Dist / slDist;
     const ev = rr * wrProxy - (1 - wrProxy);
-    if (ev < 0.3) {
+    if (ev < 0.12) {
       // Negative or thin edge — downgrade to HOLD, kill levels
       levels = null;
       finalDirection = 'HOLD';
