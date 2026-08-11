@@ -9777,3 +9777,27 @@ body.light-theme #signals [data-collapsible="true"] {
 
 body.light-theme .v433-grade-score { color: #0f172a; }
 body.light-theme .v433-warn-list { color: #b45309; }
+
+/* v437 — agreement vs calibrated probability, shown as two distinct things.
+   The raw score was previously rendered as if it were a win probability;
+   measured, it is not (4 points of real spread across a 40-point range). */
+.v437-calib {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 7px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(148,163,184,0.14);
+  font-size: 11px;
+}
+.v437-agree { color: rgba(226,232,240,0.9); font-variant-numeric: tabular-nums; }
+.v437-sub   { color: rgba(148,163,184,0.75); }
+.v437-prob  {
+  color: #93c5fd;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+body.light-theme .v437-agree { color: #0f172a; }
+body.light-theme .v437-sub   { color: #64748b; }
+body.light-theme .v437-prob  { color: #1d4ed8; }

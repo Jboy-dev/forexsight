@@ -5607,6 +5607,32 @@ function _v432GateSignals(sigs) {
     s._qualityScore = Math.max(0, score);
     s._grade = score >= 85 ? 'A' : score >= 70 ? 'B' : score >= 50 ? 'C' : 'D';
     s._rr = rr;
+
+    // v437 — CALIBRATED PROBABILITY, separate from agreement.
+    //
+    // `confidence` is the share of indicator weight on this side. It was
+    // being rendered as though it were a probability of success; measured
+    // over 5,971 signals it is not. The 90-100 band reached a TP 22.5% of
+    // the time and the 50-60 band 18.1% — four points of spread across a
+    // forty-point displayed range.
+    //
+    // A logistic model over score/ADX/RSI/HTF/structure/hour/pair was
+    // fitted and rejected: out-of-sample it scored AUC 0.492 (below
+    // chance) with its top decile winning LESS than its bottom decile.
+    // Only the base rate plus a couple of measured points survives.
+    let prob = 21;
+    if ((s.confidence || 0) >= 80) prob += 1;
+    const adxv = s.algoStrength != null ? null : s.adx;   // adx when we have it
+    if (typeof adxv === 'number') {
+      if (adxv < 20) prob += 1;
+      else if (adxv >= 30) prob -= 2;
+    }
+    s._probability = Math.max(12, Math.min(32, Math.round(prob)));
+    s._agreement = s.confidence;
+    s._agreementLabel = (s.confidence >= 90) ? 'near-unanimous'
+      : (s.confidence >= 80) ? 'strong'
+      : (s.confidence >= 70) ? 'moderate'
+      : (s.confidence >= 60) ? 'mixed' : 'weak';
   }
 
   // Best-first, so the strongest setup is what the eye lands on.
@@ -6861,6 +6887,11 @@ function cardHTML(s) {
           <span class="v433-grade-score">${s._qualityScore != null ? s._qualityScore : 100}/100 quality</span>
           ${s._rr != null ? `<span class="v433-rr">R:R ${s._rr.toFixed(2)}</span>` : ''}
         </div>
+        ${s._probability != null ? `
+        <div class="v437-calib" title="Agreement is how much of the indicator weight backs this direction. The probability is the measured share of past signals like this that reached a take-profit before the stop — from 5,971 signals over ~2.8 years.">
+          <span class="v437-agree">${s._agreement}% agreement<span class="v437-sub"> · ${s._agreementLabel}</span></span>
+          <span class="v437-prob">~${s._probability}% reach a target</span>
+        </div>` : ''}
         ${s._warnings.length
           ? `<ul class="v433-warn-list">${s._warnings.map(w => `<li>${_cdEsc(w)}</li>`).join('')}</ul>`
           : `<div class="v433-clean">No flags — passes every check</div>`}
