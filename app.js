@@ -4884,6 +4884,11 @@ function isForexClosed() {
 // v214 — render the shadow-tracker feed. Shows every recent signal the
 // system fired and whether it WOULD have won/lost if the user took it.
 // Continuously updated by /api/shadow-tracker which checks TP1/SL hits.
+// v438 — true until the Signal Feed has rendered once in this page load.
+// Guarantees the panel opens collapsed on every visit, matching the other
+// cards, while still letting the user's own toggle survive re-renders.
+let _v438ShadowFirstRender = true;
+
 async function loadShadowFeed() {
   try {
     const res = await fetch('/api/shadow-tracker', { cache: 'no-store' });
@@ -4895,6 +4900,8 @@ async function loadShadowFeed() {
     window._lastShadowFeed = data.feed || [];
     const grid = document.getElementById('signals-grid');
     if (!grid) return;
+    // v438 — see the openAttr note below: true only until the Signal Feed has
+    // rendered once this page load, which forces it closed on open.
     // v216 — mutate in place instead of remove+append so the page doesn't
     // jump every 30 seconds. If the card doesn't exist yet, create it once.
     let wrap = document.getElementById('shadow-feed-card');
@@ -5009,7 +5016,20 @@ async function loadShadowFeed() {
           ${lessonsHtml}
         </div>`
       : '';
-    const openAttr = wasOpen || isNew ? 'open' : '';
+    // v438 — Signal Feed starts CLOSED on every page load.
+    //
+    // `isNew` (a signal arrived) previously forced the panel open, so a fresh
+    // load could land with a long feed already expanded — the opposite of the
+    // "everything closed until I open it" behaviour applied to the other
+    // cards in v374/v388/v422. `wasOpen` alone is not enough either: the
+    // first render of a session has no previous <details> to read, and the
+    // arrival of a signal would re-open it underneath the user.
+    //
+    // First render of a session is always closed. After that the user's own
+    // toggle is preserved across re-renders, and a new signal no longer
+    // overrides it — the unread cue is the count in the summary line.
+    const openAttr = (_v438ShadowFirstRender ? false : wasOpen) ? 'open' : '';
+    _v438ShadowFirstRender = false;
     wrap.innerHTML = `
       <details class="shadow-details" ${openAttr}>
         <summary class="shadow-summary">
