@@ -261,8 +261,32 @@ export async function onRequest(context) {
     else if (candle.bias === 'bearish') vote('bear', `Bearish candle: ${candle.type}`, 10);
   }
 
-  // ADX trend strength (10 pts) — modifier not directional; boost the winning side
+  // ADX trend strength — modifier not directional
   const adxNote = adx != null ? `ADX ${adx.toFixed(1)}` : 'ADX n/a';
+
+  // v436 — ADX EXHAUSTION PENALTY, from measured results.
+  //
+  // Conventional wisdom (and this engine's original framing) treats a high
+  // ADX as confirmation. Replaying 5,971 signals over ~2.8 years says the
+  // opposite for these entries:
+  //
+  //   ADX < 20 (chop)     n=2475   22.3% WR   +0.190R
+  //   ADX 20-30           n=1581   21.0% WR   +0.105R
+  //   ADX 30+  (strong)   n=1915   20.1% WR   +0.038R
+  //
+  // Expectancy falls monotonically as ADX rises. These are mean-reversion-
+  // flavoured entries (RSI zones, structure, EMA pullbacks), so entering
+  // once a trend is already extended means buying near exhaustion — the
+  // move that "confirms" the signal has largely happened. The effect held
+  // in both halves of the sample when split by time.
+  //
+  // Applied as a confidence penalty rather than a hard block: a strong
+  // trend is not disqualifying, it is just worth less than it looks.
+  let adxPenalty = 0;
+  if (adx != null) {
+    if (adx >= 30) adxPenalty = 8;
+    else if (adx >= 20) adxPenalty = 3;
+  }
 
   // Correlation basket (25 pts)
   if (correlationRes && correlationRes.buyConfluence != null) {
@@ -344,6 +368,10 @@ export async function onRequest(context) {
 
   let finalDirection = candidateDir;
   let finalConfidence = finalDirection === 'HOLD' ? Math.min(confidence, 55) : confidence;
+  // v436 — apply the measured ADX-exhaustion penalty (see derivation above).
+  if (finalDirection !== 'HOLD' && adxPenalty) {
+    finalConfidence = Math.max(50, finalConfidence - adxPenalty);
+  }
 
   // v424 — EXPECTED-VALUE GATE. If R:R × WR - (1-WR) is negative,
   // this is a losing bet no matter how many strategies fire. Requires

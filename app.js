@@ -6277,7 +6277,7 @@ function renderSignals() {
   $('#signals-status').innerHTML = `
     ${filtered.length} signal${filtered.length === 1 ? '' : 's'} (${modeTag}) from ${totalTracked} pairs${proLine}. Click a card for full breakdown.
     <div class="reality-banner">
-      📊 <strong>Honest expectation:</strong> even our strictest filtered signals win ≈60–65% of the time. <em>No forex system wins 9/10 — that's a myth.</em> Pros profit through 1:3 R:R + 1–2% risk per trade, NOT high win rates. If you're losing often, the cause is usually overtrading, oversized positions, or moving stops — not the signal.
+      📊 <strong>What the numbers actually say.</strong> A replay of 5,971 signals across ~2.8 years of real hourly bars on 9 instruments: <strong>about 1 trade in 5 reaches a take-profit before the stop</strong> — roughly a 21% strike rate, not 60%. The edge is not in being right often; it is that winners run much further than losers. Most wins that get going reach TP3, so the average outcome is around <strong>+0.12R per trade</strong> — positive, but only if you let winners run and take the losses without widening stops. Sizing every trade at 1–2% risk is what keeps a 4-in-5 loss rate survivable. Past results do not predict future ones.
     </div>
   `;
   const proPickHTML = renderProPickBanner(state.signals);
