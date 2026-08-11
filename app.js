@@ -113,6 +113,15 @@
         }
         if (data && Array.isArray(data.signals) && typeof window._v428dNormaliseSignal === 'function') {
           data.signals.forEach(window._v428dNormaliseSignal);
+          // v432 — re-gate here: this payload was produced by a build that
+          // predates the current quality filters (see _v432GateSignals).
+          if (name === 'latest-signals' && typeof window._v432GateSignals === 'function') {
+            const before = data.signals.length;
+            data.signals = window._v432GateSignals(data.signals);
+            data.count = data.signals.length;
+            data._gatedOut = before - data.signals.length;
+            data._gateRejects = (window._v432Rejects || []).slice();
+          }
         }
         window.__v428UsingMirror = true;
         return new Response(JSON.stringify(data), {
@@ -5410,6 +5419,117 @@ function _v428dPipSizeFor(pair) {
   return 0.0001;
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// v432 — CLIENT-SIDE QUALITY GATE.
+//
+// The signals reaching users are produced by the justice deployment, which
+// still runs v365. Everything built since then — the FX rounding fix
+// (v401), the chart-read tier removal (v413), the R:R>=3 floor (v419), the
+// EV and MTF gates (v424) — lives in code that deployment never received,
+// and preview's Functions are quota-dead, so nothing re-gates the snapshot
+// on its way through the mirror.
+//
+// Observed consequences in live data:
+//   • USD/CHF BUY  entry=0.81 sl=0.81 tp1=0.81 tp2=0.81 tp3=0.81
+//     USD/CAD SELL entry=1.39 sl=1.39 ... — every level rounded to 2dp and
+//     collapsed to one number. SL distance 0, R:R 0. Untradeable.
+//   • 6 of 9 signals were tier `chart-read`, the tier v413 removed from the
+//     feed after it produced a 71% loss rate.
+//   • Six signals implied LONG USD while three implied SHORT USD at the
+//     same moment — taking the feed as given means betting both ways on the
+//     same currency.
+//
+// The browser is the one place still under our control that sees this data,
+// so the gate runs here. Anything that fails is dropped with a recorded
+// reason rather than silently hidden, and the reasons surface in the UI.
+// ═══════════════════════════════════════════════════════════════════════
+const _v432Rejects = [];
+
+function _v432PipSize(pair) { return _v428dPipSizeFor(pair); }
+
+function _v432GateSignals(sigs) {
+  _v432Rejects.length = 0;
+  if (!Array.isArray(sigs) || !sigs.length) return [];
+  const reject = (s, why) => { _v432Rejects.push({ pair: s.pair, direction: s.direction, why }); return false; };
+
+  // ── Gate 1: geometry must be tradeable ────────────────────────────────
+  let out = sigs.filter(s => {
+    const { entry: e, sl, tp1, tp3 } = s;
+    if (![e, sl, tp1].every(v => typeof v === 'number' && isFinite(v))) return reject(s, 'missing entry/SL/TP');
+    const pip = _v432PipSize(s.pair);
+    const slPips = Math.abs(e - sl) / pip;
+    if (slPips < 1) return reject(s, `SL distance ${slPips.toFixed(1)} pips — levels collapsed by rounding`);
+    // Direction sanity: SL must sit the correct side of entry
+    if (s.direction === 'BUY' && sl >= e) return reject(s, 'BUY with SL at/above entry');
+    if (s.direction === 'SELL' && sl <= e) return reject(s, 'SELL with SL at/below entry');
+    if (typeof tp3 === 'number' && isFinite(tp3)) {
+      if (s.direction === 'BUY' && tp3 <= e) return reject(s, 'BUY with TP3 at/below entry');
+      if (s.direction === 'SELL' && tp3 >= e) return reject(s, 'SELL with TP3 at/above entry');
+      const rr = Math.abs(tp3 - e) / Math.abs(e - sl);
+      if (rr < 2.5) return reject(s, `R:R ${rr.toFixed(2)} below the 2.5 floor`);
+    }
+    return true;
+  });
+
+  // ── Gate 2: drop the tier v413 removed for a 71% loss rate ────────────
+  out = out.filter(s => {
+    const tier = String(s.tier || '').toLowerCase();
+    if (tier === 'chart-read') return reject(s, 'chart-read tier (removed in v413 — 71% loss rate)');
+    return true;
+  });
+
+  // ── Gate 3: one coherent view of the US dollar ────────────────────────
+  // Every FX pair here is USD-quoted or USD-based, so each signal implies a
+  // long or short dollar. Holding both at once is not diversification, it is
+  // two bets that cannot both win. Keep the side carrying more conviction.
+  const usdSideOf = (s) => {
+    const p = String(s.pair || '');
+    if (!p.includes('/')) return null;
+    const [base, quote] = p.split('/');
+    if (base === 'XAU' || base === 'BTC' || base === 'ETH') return null;  // not FX conviction
+    if (quote === 'USD') return s.direction === 'BUY' ? 'short' : 'long';
+    if (base === 'USD') return s.direction === 'BUY' ? 'long' : 'short';
+    return null;
+  };
+  const strength = {};
+  for (const s of out) {
+    const side = usdSideOf(s);
+    if (!side) continue;
+    strength[side] = (strength[side] || 0) + (s.confidence || 0);
+  }
+  if (strength.long && strength.short) {
+    const keep = strength.long >= strength.short ? 'long' : 'short';
+    out = out.filter(s => {
+      const side = usdSideOf(s);
+      if (!side || side === keep) return true;
+      return reject(s, `contradicts the stronger ${keep}-USD view`);
+    });
+  }
+
+  // ── Gate 4: correlation dedup ─────────────────────────────────────────
+  // AUD/USD and NZD/USD (and EUR/GBP-family pairs) move together; two such
+  // signals in the same direction is one idea counted twice, not confluence.
+  const CLUSTERS = [
+    ['AUD/USD', 'NZD/USD'],
+    ['EUR/USD', 'GBP/USD'],
+    ['USD/CHF', 'EUR/USD'],
+  ];
+  for (const cluster of CLUSTERS) {
+    const members = out.filter(s => cluster.includes(s.pair));
+    if (members.length < 2) continue;
+    members.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+    const [, ...drop] = members;
+    for (const d of drop) {
+      out = out.filter(s => s !== d);
+      reject(d, `correlated with ${members[0].pair} — kept the stronger one`);
+    }
+  }
+
+  return out;
+}
+window._v432GateSignals = _v432GateSignals;
+window._v432Rejects = _v432Rejects;
+
 function _v428dNormaliseSignal(s) {
   if (!s || typeof s !== 'object') return s;
   const pip = _v428dPipSizeFor(s.pair);
@@ -5476,7 +5596,14 @@ async function _v427cFetchSignalsWithMirror() {
       const d = JSON.parse(text);
       if (d && typeof d === 'object') {
         d._source = url.startsWith('http') ? 'github-mirror' : 'cf-static-mirror';
-        if (Array.isArray(d.signals)) d.signals.forEach(_v428dNormaliseSignal);
+        if (Array.isArray(d.signals)) {
+          d.signals.forEach(_v428dNormaliseSignal);
+          const before = d.signals.length;
+          d.signals = _v432GateSignals(d.signals);   // v432 — see gate rationale
+          d.count = d.signals.length;
+          d._gatedOut = before - d.signals.length;
+          d._gateRejects = _v432Rejects.slice();
+        }
         return d;
       }
     } catch {}
@@ -17589,6 +17716,16 @@ function _v427UpdateScannerPill(data) {
     count = data.signals.length;
     if (count > 0) badgeText = `${count} live`;
   }
+  // v432 — say plainly when the client gate removed signals, and why.
+  // Silently dropping them would leave the user wondering where a setup
+  // they saw earlier went.
+  if (data && data._gatedOut > 0) {
+    const n = data._gatedOut;
+    msg = count > 0
+      ? `${count} setup${count > 1 ? 's' : ''} passed · ${n} rejected on quality`
+      : `${n} setup${n > 1 ? 's' : ''} rejected on quality — nothing meets the bar right now`;
+    state = count > 0 ? 'firing' : 'watching';
+  }
   if (data && data._source === 'cf-static-mirror') {
     badgeText = badgeText || 'cached snapshot';
     state = state === 'watching' ? 'mirror' : state;
@@ -17650,18 +17787,30 @@ async function _refreshTrustBadge() {
     // gates below ship in this bundle, so the client can state it directly
     // and correctly regardless of which backend answered.
     if (!d.readiness) {
+      // v432 — HONESTY CORRECTION. This previously reported all 11 gates as
+      // active and scored 100/100. That was wrong whenever signals arrive via
+      // the mirror: those gates live in Pages Functions that are quota-dead,
+      // and the snapshot is produced by a build predating most of them. The
+      // card was asserting protection the displayed signals had never passed.
+      //
+      // Only the gates that genuinely run in THIS browser are marked active.
+      // The server-side ones are reported inactive while we are on mirror
+      // data, so the score reflects real protection rather than intent.
+      const onMirror = !!window.__v428UsingMirror;
       const gates = [
-        { name: 'R:R ≥ 3 gate',        pts: 10, active: true },
-        { name: 'Positive EV gate',    pts: 10, active: true },
-        { name: 'Hard MTF agreement',  pts: 10, active: true },
-        { name: 'News blackout',       pts: 10, active: true },
-        { name: 'Patience gate (90s)', pts: 10, active: true },
-        { name: 'Algo-read confirm',   pts: 10, active: true },
-        { name: 'Conditions floor 65', pts: 10, active: true },
-        { name: 'Session guard',       pts:  8, active: true },
-        { name: 'Loss-pattern filter', pts:  8, active: true },
-        { name: 'Correlation dedup',   pts:  7, active: true },
-        { name: 'SL sanity ceiling',   pts:  7, active: true },
+        // Enforced client-side by _v432GateSignals — always on.
+        { name: 'Tradeable geometry (SL/TP sanity)', pts: 12, active: true },
+        { name: 'R:R floor',                         pts: 12, active: true },
+        { name: 'Chart-read tier removed',           pts: 12, active: true },
+        { name: 'USD coherence',                     pts: 12, active: true },
+        { name: 'Correlation dedup',                 pts: 10, active: true },
+        // Server-side gates — only real when live Functions produce the feed.
+        { name: 'Positive EV gate',    pts:  8, active: !onMirror },
+        { name: 'Hard MTF agreement',  pts:  8, active: !onMirror },
+        { name: 'News blackout',       pts:  8, active: !onMirror },
+        { name: 'Patience gate (90s)', pts:  6, active: !onMirror },
+        { name: 'Algo-read confirm',   pts:  6, active: !onMirror },
+        { name: 'Conditions floor 65', pts:  6, active: !onMirror },
       ];
       d.readiness = {
         score: gates.reduce((a, g) => a + (g.active ? g.pts : 0), 0),
