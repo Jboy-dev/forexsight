@@ -9861,3 +9861,68 @@ body.light-theme .v440-state { color: #475569; }
 body.light-theme .v442-steps { color: #0f172a; }
 body.light-theme .v442-steps strong { color: #000; }
 body.light-theme .v442-why { color: #475569; }
+
+/* ── v443 — STOP THE PAGE JUMPING ON REFRESH ────────────────────────────
+   Measured CLS during a normal refresh cycle was 35.7 (anything above 0.25
+   is rated poor). Individual elements were moving over 1300px. The cause is
+   structural, not cosmetic: the shadow feed and brain cards are created by
+   JS and inserted ABOVE the signal grid, and each re-render replaces their
+   innerHTML. Every size change shoved the entire page below them.
+
+   Three fixes, in order of how much they matter:
+
+   1. Reserve height up front. A collapsed card is ~70px; declaring that as
+      min-height means the slot exists before content arrives, so filling it
+      changes nothing below.
+   2. contain: layout. A height change inside a card can no longer trigger
+      reflow of its siblings.
+   3. Stable min-height on the grid itself, so going from 3 cards to 5 does
+      not drag the footer around.                                          */
+
+#shadow-feed-card,
+#brain-status-card,
+#trust-badge-card,
+#conditions-card,
+#algo-read-card,
+#setup-radar-card {
+  min-height: 70px;          /* the collapsed height — reserved from paint */
+  contain: layout;           /* internal changes cannot reflow siblings    */
+  content-visibility: auto;
+  contain-intrinsic-size: auto 70px;
+}
+
+/* Expanded cards must be free to size naturally — the reservation only
+   applies while collapsed, which is the default state on every load. */
+#shadow-feed-card:has(details[open]),
+[data-collapsible="true"].collapsible-open {
+  min-height: 0;
+  contain: none;
+  content-visibility: visible;
+}
+
+/* The grid holds its own vertical space so card-count changes don't move
+   the disclaimer and footer beneath it. */
+#signals-grid {
+  min-height: 320px;
+  contain: layout;
+}
+
+/* The status line reflows constantly as text length changes; fixing its
+   height stops a one-line/two-line flip from nudging the whole grid. */
+#signals-status {
+  min-height: 44px;
+  display: block;
+}
+
+/* Skeletons must match the real card height, otherwise swapping a skeleton
+   for a card is itself a layout shift. */
+.skeleton-card { min-height: 527px; }
+
+/* Respect users who ask for reduced motion — no pulses, no transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}

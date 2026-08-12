@@ -88,6 +88,22 @@
     // any of them render an honest "unavailable" state.
     if (!name) return _origFetch(input, init);
 
+    // v443 — NEVER FAKE SUCCESS FOR A WRITE.
+    //
+    // The synthetic 200 below exists so read-only cards degrade quietly
+    // instead of throwing on `r.json()`. Applying it to writes was a
+    // serious mistake: /api/sync-data POST returned HTTP 200, the client
+    // checked `res.ok`, and reported "synced" while the payload went
+    // nowhere. Silent data loss is worse than a visible failure, because
+    // the user stops keeping their own copy.
+    //
+    // Anything that mutates state, and the sync endpoints specifically,
+    // now surface the real failure so callers can tell the user.
+    const method = String((init && init.method) || (typeof input === 'object' && input && input.method) || 'GET').toUpperCase();
+    const STATE_CHANGING = method !== 'GET' && method !== 'HEAD';
+    const PERSISTENCE = name === 'sync-data' || name === 'trades' || name === 'push-subscribe';
+    if (STATE_CHANGING || PERSISTENCE) return _origFetch(input, init);
+
     if (!MIRRORED.has(name)) {
       try {
         const res = await _origFetch(input, init);
