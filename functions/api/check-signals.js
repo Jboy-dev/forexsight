@@ -4166,11 +4166,24 @@ async function _checkSignalsInner(context) {
     if (slDist === 0) errs.push('zero-sl-distance');
     else {
       if (tp1Dist < slDist * 0.95) errs.push(`tp1-below-1R (${(tp1Dist/slDist).toFixed(2)}R)`);
-      // v419 — R:R hard gate raised 2.0 → 3.0. Real-world edge maths:
-      // to be net profitable at 40% WR you need R:R ≥ 1.5. At 30% WR
-      // you need R:R ≥ 2.33. Setting the floor at 3.0 gives break-even
-      // at 25% WR — a much safer buffer against WR degradation.
-      if (tp3Dist < slDist * 3.0) errs.push(`tp3-below-3R (${(tp3Dist/slDist).toFixed(2)}R)`);
+      // v441 — R:R floor 3.0 -> 2.5.
+      //
+      // v419 set this at 3.0 reasoning that a higher ratio buys safety
+      // against a falling win rate. The arithmetic is right; the mistake is
+      // treating R:R as free. Widening targets or tightening stops to hit a
+      // ratio changes the probability of reaching them, and the excursion
+      // study quantified that: at a 1.5 ATR stop (R:R 4.67) the stop is hit
+      // on 80.8% of trades; at 2.5 ATR (R:R 2.80) on 14.1%.
+      //
+      // Measured expectancy per trade, held to the furthest target:
+      //   1.5 ATR stop, R:R 4.67  ->  +0.073R
+      //   2.5 ATR stop, R:R 2.80  ->  +0.106R
+      //
+      // The lower ratio is the better trade, because it is actually
+      // reachable. A 3.0 floor would now reject the stop geometry that
+      // measures best, so it moves to 2.5 — still break-even at a ~29% hit
+      // rate, comfortably above the ~21-23% observed.
+      if (tp3Dist < slDist * 2.5) errs.push(`tp3-below-2.5R (${(tp3Dist/slDist).toFixed(2)}R)`);
     }
 
     // v398 — SL sanity ceiling. Defense-in-depth against any code path
