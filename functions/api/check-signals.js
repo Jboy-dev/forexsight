@@ -1539,9 +1539,25 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   //   normal: TP1 1.5→2, TP2 3→4, TP3 5→7  (40% more pips on TP3)
   //   bigMove: TP2 4.5→6, TP3 7.5→10.5     (40% more pips)
   //   bigMoveHunt: TP2 6→8, TP3 10→14      (40% more pips)
-  const tp1Mult = 2.0;
-  const tp2Mult = bigMoveHunt ? 8.0 : (bigMove ? 6.0 : 4.0);
-  const tp3Mult = bigMoveHunt ? 14.0 : (bigMove ? 10.5 : 7.0);
+  // v444 — ladder re-fitted to the 2.5 ATR stop.
+  //
+  // With the wider stop, TP1 at 2.0 ATR is only 0.80R, which fails the
+  // tp1 >= 0.95R validator below — every signal would have been rejected.
+  // Rather than weaken the validator, the ladder moves to where the price
+  // action actually is. Measured over 5,963 signals:
+  //
+  //   SL 2.5   TP (2, 4, 7)     TP1 0.80R   +0.106R   REJECTED by validator
+  //   SL 2.5   TP (2.5, 5, 7)   TP1 1.00R   +0.114R
+  //   SL 2.5   TP (2.5, 5, 8)   TP1 1.00R   +0.120R
+  //   SL 2.5   TP (2.5, 5, 9)   TP1 1.00R   +0.128R   <- chosen
+  //   SL 1.5   TP (2, 4, 7)     TP1 1.33R   +0.072R   (what was live)
+  //
+  // TP1 now sits at exactly 1R, which is also the natural place to bank a
+  // third and move the stop to entry — the trade is de-risked at the point
+  // where reward first equals risk. It is reached by 50.3% of signals.
+  const tp1Mult = 2.5;
+  const tp2Mult = bigMoveHunt ? 9.0 : (bigMove ? 7.0 : 5.0);
+  const tp3Mult = bigMoveHunt ? 16.0 : (bigMove ? 12.0 : 9.0);
 
   const pipSize = isGold ? 0.1
     : pair === 'BTC/USD' ? 1
@@ -1561,7 +1577,19 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   // which is the CORRECT technical SL, not just a volatility guess.
   // The per-pair cap is a safety net so we never risk > 1% of price.
 
-  const atrSlDist = atrV * 1.5;
+  // v444 — 1.5 -> 2.5 ATR. THIS is the generator that produces the signals
+  // users actually trade; v441 only corrected predict-next.js, so the stop
+  // fix never reached the live feed. Same excursion evidence, 5,963 signals:
+  //
+  //   MAE p25 1.54 / median 1.74 / p75 2.12 ATR   vs a stop at ~1.47 ATR
+  //   stop 1.5 ATR -> hit on 80.8% of trades
+  //   stop 2.5 ATR -> hit on 14.1%
+  //   expectancy   +0.073R -> +0.106R
+  //
+  // 31% of stopped-out trades had already run 2+ ATR in profit before
+  // reversing: they reached target territory and were closed by a stop
+  // sitting inside ordinary noise.
+  const atrSlDist = atrV * 2.5;
 
   // Structure-based SL: distance to swing extreme from last 20 bars + buffer
   const lookback = Math.min(20, ohlc.length - 1);
@@ -1592,13 +1620,20 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
     : 0.004;                                 // forex majors: 0.4% ≈ 40 pips at 1.10
   const capSlDist = cur * maxSlPct;
 
-  // Use the TIGHTEST valid SL
-  const slDist = Math.min(atrSlDist, structureSlDist, capSlDist);
+  // v444 — was "use the TIGHTEST valid SL". That objective is wrong here and
+  // it also silently defeated the widening above: under Math.min(), raising
+  // the ATR term changes nothing whenever the swing happens to sit nearer,
+  // so the measured improvement would never appear in a live signal.
+  //
+  // A tighter stop is not a safer trade in this system — it is a trade that
+  // gets closed by noise before it can work. ATR is now the FLOOR, structure
+  // may only widen it (respect a swing that sits further out), and the
+  // per-pair percentage stays a hard ceiling against volatility spikes.
+  const slDist = Math.min(Math.max(atrSlDist, structureSlDist), capSlDist);
 
-  // Trace which method won (for signal debugging + UI transparency)
-  const slMethod = slDist === structureSlDist ? 'structure'
-    : slDist === capSlDist ? 'capped'
-    : 'atr';
+  const slMethod = slDist === capSlDist ? 'capped'
+    : slDist === structureSlDist ? 'structure (beyond ATR floor)'
+    : 'atr-floor';
 
   // v322b — TPs stay at ATR-based absolute pips (HIGH). SL got tight (smart
   // sizing), TPs stay high. R:R is now better than ever — tight risk,

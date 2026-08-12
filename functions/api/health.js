@@ -161,7 +161,7 @@ export async function onRequest(context) {
   return new Response(JSON.stringify({
     status: allGreen ? 'GREEN' : 'YELLOW',
     timestamp: new Date().toISOString(),
-    version: 'v443-steady-layout',
+    version: 'v444-real-generator-fixed',
     summary: allGreen ? 'All systems operational' : 'Some checks need attention',
     checks,
   }, null, 2), {
