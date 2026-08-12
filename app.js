@@ -6927,6 +6927,16 @@ function cardHTML(s) {
           <span class="v437-agree">${s._agreement}% agreement<span class="v437-sub"> · ${s._agreementLabel}</span></span>
           <span class="v437-prob">~${s._probability}% reach a target</span>
         </div>` : ''}
+      ${(Number.isFinite(s.entry) && Number.isFinite(s.tp1)) ? `
+        <div class="v442-plan">
+          <div class="v442-plan-title">Trade management — protects the win</div>
+          <ol class="v442-steps">
+            <li><strong>At TP1 (${s.tp1})</strong> — close <strong>1/3</strong> and move the stop to your entry (${s.entry}). From here the trade cannot lose.</li>
+            <li><strong>At TP2 (${s.tp2 ?? '—'})</strong> — close another <strong>1/3</strong>. Leave the stop at entry.</li>
+            <li><strong>Let the last 1/3 run to TP3 (${s.tp3 ?? '—'})</strong> — this is the part that pays for the losing trades.</li>
+          </ol>
+          <div class="v442-why">Measured over 5,963 signals: without this, 42.7% of trades that reached TP1 came back and finished as losses. Banking a third and moving to break-even removes that entirely and leaves 55.3% of all trades profitable, versus 31.7% holding the full position. It does cost raw expectancy (+0.106R to +0.043R) — the runner is what earns, so never cut the last third early.</div>
+        </div>` : ''}
       ${s._live ? `
         <div class="v440-live v440-${s._live.state}" title="Live price fetched by your browser, ${_cdEsc(s._live.source)}. Compared against the entry this signal was built on.">
           <span class="v440-dot"></span>
