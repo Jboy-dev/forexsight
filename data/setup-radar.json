@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-08-12T00:04:36.568Z",
+  "timestamp": "2026-08-12T02:40:41.828Z",
   "scanned": 15,
   "setupsFound": 9,
   "passedMainGate": 0,
@@ -9,16 +9,16 @@
   "minStrengthFilter": 30,
   "radar": [
     {
-      "pair": "AUD/USD",
-      "direction": "BUY",
-      "confidence": 81,
-      "strength": 78,
-      "verdict": "STRONG LONG — 81% conviction",
+      "pair": "NZD/USD",
+      "direction": "SELL",
+      "confidence": 78,
+      "strength": 85,
+      "verdict": "MODERATE SHORT — 78% conviction",
       "timeHorizon": "30 min",
-      "entry": 0.70681,
-      "sl": 0.70613,
-      "tp1": 0.70772,
-      "tp3": 0.70999,
+      "entry": 0.58713,
+      "sl": 0.58782,
+      "tp1": 0.58621,
+      "tp3": 0.5839,
       "slPips": 7,
       "tp1Pips": 9,
       "tp3Pips": 32,
@@ -29,7 +29,60 @@
       "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
       "topFactors": [
         {
-          "name": "Correlation basket supports BUY (100/100)",
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "News flow bearish for NZD vs USD",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 36.4 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 0,
+        "bear": 70,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors SHORT with 78% conviction. Top drivers: Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF flat. Structure downtrend. Manage risk with the levels below."
+    },
+    {
+      "pair": "XAU/USD",
+      "direction": "BUY",
+      "confidence": 81,
+      "strength": 78,
+      "verdict": "STRONG LONG — 81% conviction",
+      "timeHorizon": "30 min",
+      "entry": 4459.5,
+      "sl": 4437.74,
+      "tp1": 4488.51,
+      "tp3": 4561.04,
+      "slPips": 218,
+      "tp1Pips": 290,
+      "tp3Pips": 1015,
+      "rrTP1": 1.33,
+      "rrTP3": 4.67,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "ADX 17 < 20 (choppy)",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports BUY (67/100)",
           "weight": 25,
           "note": ""
         },
@@ -49,7 +102,7 @@
           "note": ""
         },
         {
-          "name": "RSI 57.9 — bullish momentum zone",
+          "name": "RSI 61.6 — bullish momentum zone",
           "weight": 10,
           "note": ""
         }
@@ -59,33 +112,28 @@
         "bear": 15,
         "marginPct": 70
       },
-      "reasoning": "Weighted consensus favors LONG with 81% conviction. Top drivers: Correlation basket supports BUY (100/100); Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack). HTF up. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 81% conviction. Top drivers: Correlation basket supports BUY (67/100); Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack). HTF up. Structure range. Manage risk with the levels below."
     },
     {
-      "pair": "USD/CAD",
+      "pair": "BTC/USD",
       "direction": "SELL",
-      "confidence": 81,
-      "strength": 78,
-      "verdict": "STRONG SHORT — 81% conviction",
-      "timeHorizon": "30 min",
-      "entry": 1.39193,
-      "sl": 1.39355,
-      "tp1": 1.38978,
-      "tp3": 1.38439,
-      "slPips": 16,
-      "tp1Pips": 22,
-      "tp3Pips": 75,
+      "confidence": 73,
+      "strength": 70,
+      "verdict": "MODERATE SHORT — 73% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 63719.96,
+      "sl": 64014.63,
+      "tp1": 63327.07,
+      "tp3": 62344.83,
+      "slPips": 295,
+      "tp1Pips": 393,
+      "tp3Pips": 1375,
       "rrTP1": 1.33,
       "rrTP3": 4.67,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "ADX 17 < 20 (choppy)",
+      "heldBackReason": "only lagging strategies fired (TREND, VWAP) — no predictive edge",
       "topFactors": [
-        {
-          "name": "Correlation basket supports SELL (100/100)",
-          "weight": 25,
-          "note": ""
-        },
         {
           "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
@@ -102,32 +150,32 @@
           "note": ""
         },
         {
-          "name": "RSI 41.0 — bearish momentum zone",
-          "weight": 10,
+          "name": "News flow bearish for BTC vs USD",
+          "weight": 15,
           "note": ""
         }
       ],
       "bullVsBear": {
         "bull": 15,
-        "bear": 85,
-        "marginPct": 70
+        "bear": 65,
+        "marginPct": 63
       },
-      "reasoning": "Weighted consensus favors SHORT with 81% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH). HTF down. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF down. Structure downtrend. Manage risk with the levels below."
     },
     {
-      "pair": "GBP/USD",
+      "pair": "USD/CHF",
       "direction": "BUY",
-      "confidence": 69,
-      "strength": 66,
-      "verdict": "MODERATE LONG — 69% conviction",
+      "confidence": 75,
+      "strength": 69,
+      "verdict": "MODERATE LONG — 75% conviction",
       "timeHorizon": "30 min",
-      "entry": 1.35113,
-      "sl": 1.35017,
-      "tp1": 1.35242,
-      "tp3": 1.35562,
+      "entry": 0.8115,
+      "sl": 0.81045,
+      "tp1": 0.8129,
+      "tp3": 0.81639,
       "slPips": 10,
-      "tp1Pips": 13,
-      "tp3Pips": 45,
+      "tp1Pips": 14,
+      "tp3Pips": 49,
       "rrTP1": 1.33,
       "rrTP3": 4.67,
       "passedMainGate": false,
@@ -137,6 +185,11 @@
         {
           "name": "Higher timeframe (4H) trend UP",
           "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — uptrend (HH+HL)",
+          "weight": 15,
           "note": ""
         },
         {
@@ -150,75 +203,32 @@
           "note": ""
         },
         {
-          "name": "RSI 56.3 — bullish momentum zone",
-          "weight": 10,
+          "name": "News flow bullish for USD vs CHF",
+          "weight": 15,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 60,
-        "bear": 15,
-        "marginPct": 60
+        "bull": 90,
+        "bear": 25,
+        "marginPct": 57
       },
-      "reasoning": "Weighted consensus favors LONG with 69% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); MACD histogram positive (bullish momentum). HTF up. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 75% conviction. Top drivers: Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF up. Structure uptrend. Manage risk with the levels below."
     },
     {
-      "pair": "USD/CHF",
-      "direction": "BUY",
-      "confidence": 60,
-      "strength": 56,
-      "verdict": "WEAK LONG — 60% conviction",
-      "timeHorizon": "30 min",
-      "entry": 0.81105,
-      "sl": 0.80997,
-      "tp1": 0.8125,
-      "tp3": 0.81611,
-      "slPips": 11,
-      "tp1Pips": 14,
-      "tp3Pips": 51,
-      "rrTP1": 1.33,
-      "rrTP3": 4.67,
-      "passedMainGate": false,
-      "mainTier": null,
-      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
-      "topFactors": [
-        {
-          "name": "Market structure — uptrend (HH+HL)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "Price > EMA20 > EMA50 (bullish stack)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "RSI 55.8 — bullish momentum zone",
-          "weight": 10,
-          "note": ""
-        }
-      ],
-      "bullVsBear": {
-        "bull": 40,
-        "bear": 15,
-        "marginPct": 45
-      },
-      "reasoning": "Weighted consensus favors LONG with 60% conviction. Top drivers: Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack); RSI 55.8 — bullish momentum zone. HTF flat. Structure uptrend. Manage risk with the levels below."
-    },
-    {
-      "pair": "NZD/USD",
+      "pair": "EUR/USD",
       "direction": "SELL",
-      "confidence": 58,
-      "strength": 51,
-      "verdict": "WEAK SHORT — 58% conviction",
+      "confidence": 62,
+      "strength": 58,
+      "verdict": "WEAK SHORT — 62% conviction",
       "timeHorizon": "30 min",
-      "entry": 0.58817,
-      "sl": 0.58884,
-      "tp1": 0.58726,
-      "tp3": 0.585,
+      "entry": 1.15433,
+      "sl": 1.15505,
+      "tp1": 1.15339,
+      "tp3": 1.15101,
       "slPips": 7,
       "tp1Pips": 9,
-      "tp3Pips": 32,
+      "tp3Pips": 33,
       "rrTP1": 1.33,
       "rrTP3": 4.67,
       "passedMainGate": false,
@@ -234,26 +244,74 @@
           "name": "Price < EMA20 < EMA50 (bearish stack)",
           "weight": 15,
           "note": ""
+        },
+        {
+          "name": "News flow bearish for EUR vs USD",
+          "weight": 15,
+          "note": ""
         }
       ],
       "bullVsBear": {
         "bull": 15,
-        "bear": 30,
-        "marginPct": 33
+        "bear": 45,
+        "marginPct": 50
       },
-      "reasoning": "Weighted consensus favors SHORT with 58% conviction. Top drivers: Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF flat. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 62% conviction. Top drivers: Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack); News flow bearish for EUR vs USD. HTF flat. Structure downtrend. Manage risk with the levels below."
     },
     {
       "pair": "USD/JPY",
       "direction": "BUY",
-      "confidence": 58,
-      "strength": 48,
-      "verdict": "WEAK LONG — 58% conviction",
+      "confidence": 59,
+      "strength": 56,
+      "verdict": "WEAK LONG — 59% conviction",
+      "timeHorizon": "1-2 hours",
+      "entry": 159.392,
+      "sl": 159.226,
+      "tp1": 159.613,
+      "tp3": 160.165,
+      "slPips": 17,
+      "tp1Pips": 22,
+      "tp3Pips": 77,
+      "rrTP1": 1.33,
+      "rrTP3": 4.67,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only 1 strategies (need ≥2 with 1 leading) · ADX 18 < 20 (choppy)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 68.2 — bullish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 45,
+        "bear": 15,
+        "marginPct": 50
+      },
+      "reasoning": "Weighted consensus favors LONG with 59% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); RSI 68.2 — bullish momentum zone. HTF up. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "USD/CAD",
+      "direction": "SELL",
+      "confidence": 56,
+      "strength": 45,
+      "verdict": "WEAK SHORT — 56% conviction",
       "timeHorizon": "30 min",
-      "entry": 159.23,
-      "sl": 159.07,
-      "tp1": 159.443,
-      "tp3": 159.976,
+      "entry": 1.39274,
+      "sl": 1.39434,
+      "tp1": 1.3906,
+      "tp3": 1.38526,
       "slPips": 16,
       "tp1Pips": 21,
       "tp3Pips": 75,
@@ -264,65 +322,22 @@
       "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
       "topFactors": [
         {
-          "name": "Higher timeframe (4H) trend UP",
-          "weight": 20,
-          "note": ""
-        },
-        {
-          "name": "Market structure — uptrend (HH+HL)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "Price > EMA20 > EMA50 (bullish stack)",
-          "weight": 15,
-          "note": ""
-        }
-      ],
-      "bullVsBear": {
-        "bull": 50,
-        "bear": 30,
-        "marginPct": 25
-      },
-      "reasoning": "Weighted consensus favors LONG with 58% conviction. Top drivers: Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF up. Structure uptrend. Manage risk with the levels below."
-    },
-    {
-      "pair": "XAU/USD",
-      "direction": "BUY",
-      "confidence": 56,
-      "strength": 45,
-      "verdict": "WEAK LONG — 56% conviction",
-      "timeHorizon": "30 min",
-      "entry": 4428.4,
-      "sl": 4412.06,
-      "tp1": 4457.54,
-      "tp3": 4530.38,
-      "slPips": 163,
-      "tp1Pips": 291,
-      "tp3Pips": 1020,
-      "rrTP1": 1.78,
-      "rrTP3": 6.24,
-      "passedMainGate": false,
-      "mainTier": null,
-      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
-      "topFactors": [
-        {
-          "name": "Correlation basket supports BUY (100/100)",
+          "name": "Correlation basket supports SELL (100/100)",
           "weight": 25,
           "note": ""
         },
         {
-          "name": "Higher timeframe (4H) trend UP",
+          "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 45,
-        "bear": 30,
+        "bull": 30,
+        "bear": 45,
         "marginPct": 20
       },
-      "reasoning": "Weighted consensus favors LONG with 56% conviction. Top drivers: Correlation basket supports BUY (100/100); Higher timeframe (4H) trend UP. HTF up. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 56% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN. HTF down. Structure range. Manage risk with the levels below."
     },
     {
       "pair": "EUR/JPY",
@@ -331,12 +346,12 @@
       "strength": 45,
       "verdict": "WEAK LONG — 56% conviction",
       "timeHorizon": "30 min",
-      "entry": 183.82,
-      "sl": 183.645,
-      "tp1": 184.054,
-      "tp3": 184.637,
+      "entry": 183.925,
+      "sl": 183.749,
+      "tp1": 184.16,
+      "tp3": 184.748,
       "slPips": 18,
-      "tp1Pips": 23,
+      "tp1Pips": 24,
       "tp3Pips": 82,
       "rrTP1": 1.33,
       "rrTP3": 4.67,
@@ -355,7 +370,7 @@
           "note": ""
         },
         {
-          "name": "RSI 58.0 — bullish momentum zone",
+          "name": "RSI 64.5 — bullish momentum zone",
           "weight": 10,
           "note": ""
         }
@@ -365,7 +380,7 @@
         "bear": 30,
         "marginPct": 20
       },
-      "reasoning": "Weighted consensus favors LONG with 56% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); RSI 58.0 — bullish momentum zone. HTF up. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 56% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); RSI 64.5 — bullish momentum zone. HTF up. Structure range. Manage risk with the levels below."
     },
     {
       "pair": "GBP/JPY",
@@ -374,13 +389,13 @@
       "strength": 45,
       "verdict": "WEAK LONG — 56% conviction",
       "timeHorizon": "30 min",
-      "entry": 215.129,
-      "sl": 214.901,
-      "tp1": 215.433,
-      "tp3": 216.192,
+      "entry": 215.294,
+      "sl": 215.062,
+      "tp1": 215.603,
+      "tp3": 216.376,
       "slPips": 23,
-      "tp1Pips": 30,
-      "tp3Pips": 106,
+      "tp1Pips": 31,
+      "tp3Pips": 108,
       "rrTP1": 1.33,
       "rrTP3": 4.67,
       "passedMainGate": false,
@@ -398,7 +413,7 @@
           "note": ""
         },
         {
-          "name": "RSI 58.3 — bullish momentum zone",
+          "name": "RSI 64.9 — bullish momentum zone",
           "weight": 10,
           "note": ""
         }
@@ -408,7 +423,7 @@
         "bear": 30,
         "marginPct": 20
       },
-      "reasoning": "Weighted consensus favors LONG with 56% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); RSI 58.3 — bullish momentum zone. HTF up. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 56% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); RSI 64.9 — bullish momentum zone. HTF up. Structure range. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
