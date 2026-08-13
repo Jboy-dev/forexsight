@@ -41,11 +41,28 @@ jobs:
           fetch-depth: 1
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
       - name: Fetch each endpoint from whichever URL is healthy
         run: |
           set +e
           mkdir -p data
-          BASES="https://forexsight-justice.pages.dev https://forexsight-preview.pages.dev"
+          # v447 — ORDER MATTERS, AND IT WAS WRONG.
+          #
+          # forexsight-justice was first, so it won every race — and it still
+          # runs v365, about eighty versions behind. The app has therefore
+          # been showing its output, which included a USD/CHF signal whose
+          # entry equalled its stop (zero risk, untradeable) and three
+          # "chart-read" tier signals that v413 banned from the feed as a 71%
+          # loser. Its FX prices were rounded to 2dp on 5dp pairs (the v401
+          # bug, fixed here, still live there).
+          #
+          # preview runs current code, so it goes first. justice stays as a
+          # backstop, but nothing from either is trusted without passing
+          # tools/validate-signals.mjs below.
+          BASES="https://forexsight-preview.pages.dev https://forexsight-justice.pages.dev"
           ENDPOINTS="latest-signals shadow-tracker self-trust conditions-score algo-read setup-radar"
           OK_COUNT=0
           FAIL_LIST=""
@@ -63,6 +80,16 @@ jobs:
               # Must be non-trivial (an error blob is usually < 100 bytes)
               size=$(printf %s "$body" | wc -c)
               [ "$size" -lt 60 ] && continue
+              # v447 — signals must also be TRADEABLE, not merely well-formed
+              # JSON. An old deployment served entry==sl (zero risk) and
+              # banned chart-read tiers, and the mirror copied it verbatim.
+              if [ "$ep" = "latest-signals" ]; then
+                printf '%s' "$body" > /tmp/candidate.json
+                if ! node tools/validate-signals.mjs /tmp/candidate.json; then
+                  echo "  ⚠ ${ep} from ${BASE} failed validation — trying next source"
+                  continue
+                fi
+              fi
               printf '%s' "$body" > "data/${ep}.json"
               echo "  ✓ ${ep}.json  ${size}b  from ${BASE}"
               GOT=1
@@ -103,15 +130,10 @@ jobs:
       # imported from check-signals.js, fed by Yahoo bars — so the app has
       # current signals regardless of Cloudflare's state. It only runs when
       # the live mirror failed, so a healthy deployment always wins.
-      - uses: actions/setup-node@v4
-        if: env.SIGNALS_STALE == '1'
-        with:
-          node-version: '20'
-
-      - name: Generate signals locally (Cloudflare unavailable)
+      - name: Generate signals locally (no healthy, valid source)
         if: env.SIGNALS_STALE == '1'
         run: |
-          echo "live mirror could not reach latest-signals — running the engine here"
+          echo "no deployment returned valid signals — running the engine here instead"
           node tools/generate-signals.mjs
           python3 -c "
           import json
