@@ -31,6 +31,100 @@ async function fetchOHLC(origin, sym, timeoutMs = 8000) {
   finally { clearTimeout(timer); }
 }
 
+// v445 — WALK A TRADE BAR BY BAR AND RECORD WHAT ACTUALLY HAPPENED.
+//
+// The old resolver broke the moment TP1 was touched, so a trade that ran on
+// to TP3 was written to history identically to one that tagged TP1 and
+// reversed. The record carried no size at all — no R value, no which-target,
+// no drawdown. A history of W/L counts tells you how often the system is
+// right, not whether it makes money, and at a ~21% strike rate that is the
+// less useful half.
+//
+// This walks every bar and resolves the trade the way the app TELLS you to
+// trade it (the v442 plan printed on every card): a third out at TP1 with
+// the stop moved to break-even, a third at TP2, the last third running to
+// TP3. Scoring the whole position at the furthest target would overstate
+// every partial winner, so `bankedR` is the managed figure and `holdR`
+// records hold-it-all for comparison.
+//
+// Returns { outcome, atBar, tpReached, mae, mfe, bankedR, openFraction,
+//           holdR, slDist, lastClose } — outcome null means still running.
+function _walkTrade(s, bars) {
+  const isBuy = s.direction === 'BUY';
+  const slDist = Math.abs(s.entry - s.sl);
+  const rOf = (px) => (slDist > 0 && typeof px === 'number')
+    ? Math.abs(px - s.entry) / slDist : null;
+  const r1 = rOf(s.tp1), r2 = rOf(s.tp2), r3 = rOf(s.tp3);
+
+  let outcome = null, atBar = null, tpReached = 0;
+  let mae = 0, mfe = 0;
+  let bankedR = 0;        // R already taken off the table
+  let openFraction = 1;   // how much of the position is still running
+  let stopPx = s.sl;      // moves to entry once TP1 is banked
+  let holdR = null;       // hold-the-whole-position comparison
+  let lastClose = null;
+
+  for (let i = 0; i < bars.length; i++) {
+    const bar = bars[i];
+    lastClose = bar.c;
+    const adverse = isBuy ? (s.entry - bar.l) : (bar.h - s.entry);
+    const favour  = isBuy ? (bar.h - s.entry) : (s.entry - bar.l);
+    if (adverse > mae) mae = adverse;
+    if (favour  > mfe) mfe = favour;
+
+    const stopHit = isBuy ? bar.l <= stopPx : bar.h >= stopPx;
+    let reached = 0;
+    if (r1 != null && (isBuy ? bar.h >= s.tp1 : bar.l <= s.tp1)) reached = 1;
+    if (r2 != null && (isBuy ? bar.h >= s.tp2 : bar.l <= s.tp2)) reached = 2;
+    if (r3 != null && (isBuy ? bar.h >= s.tp3 : bar.l <= s.tp3)) reached = 3;
+
+    // A single bar spanning both the stop and a target is ambiguous at this
+    // resolution — there is no way to know which filled first. Take the
+    // pessimistic read: the stop went first, and nothing reached on THIS bar
+    // counts. Only targets banked on strictly earlier bars do.
+    if (stopHit) {
+      // Remaining size exits at stopPx: the original stop (−1R of whatever
+      // is still open) before TP1, or break-even (0R) after it.
+      bankedR += openFraction * (tpReached === 0 ? -1 : 0);
+      openFraction = 0;
+      holdR = tpReached === 0 ? -1
+            : tpReached === 3 ? r3 : tpReached === 2 ? r2 : r1;
+      outcome = tpReached > 0 ? 'won' : 'lost';
+      atBar = i + 1;
+      break;
+    }
+
+    // Bank each newly reached third and protect the rest.
+    while (reached > tpReached) {
+      const next = tpReached + 1;
+      const rHere = next === 1 ? r1 : next === 2 ? r2 : r3;
+      if (rHere == null) break;   // target not defined — nothing to bank
+      tpReached = next;
+      bankedR += (1 / 3) * rHere;
+      openFraction = Math.max(0, openFraction - 1 / 3);
+      if (tpReached === 1) stopPx = s.entry; // from here the trade cannot lose
+    }
+
+    if (tpReached === 3) {
+      holdR = r3;
+      outcome = 'won';
+      atBar = i + 1;
+      break;
+    }
+  }
+
+  return { outcome, atBar, tpReached, mae, mfe, bankedR, openFraction, holdR, slDist, lastClose };
+}
+
+// Write the excursion figures from a walk onto the signal record.
+function _recordExcursion(s, w) {
+  s.tpReached = w.tpReached;
+  s.maePips = w.slDist > 0 ? Math.round((w.mae / w.slDist) * 100) / 100 : null; // in R
+  s.mfeR    = w.slDist > 0 ? Math.round((w.mfe / w.slDist) * 100) / 100 : null;
+  s.resultR = Math.round(w.bankedR * 100) / 100;   // managed — what you'd bank
+  s.resultRHold = w.holdR != null ? Math.round(w.holdR * 100) / 100 : null;
+}
+
 // v260 — Analyze a WON signal to determine WHY it won. Returns an array of
 // success tags symmetric to _computeFailureReasons. Brain aggregates these
 // into a winsByTag store so future signals matching successful profiles get
@@ -308,9 +402,16 @@ async function _shadowInner(context) {
     if (!openByPair[s.pair]) openByPair[s.pair] = [];
     openByPair[s.pair].push(s);
   }
+  // v445 — expired signals that still carry no R need bars too, otherwise the
+  // expiry sweep below silently no-ops whenever nothing is open (which is most
+  // of the time) and every expiry stays missing from the ledger forever.
+  const needBars = new Set(Object.keys(openByPair));
+  for (const s of shadow) {
+    if (s.status === 'expired' && s.resultR == null && s.pair) needBars.add(s.pair);
+  }
   // v237 — Parallelize OHLC fetches. Sequential = 8 pairs × up to 7s each =
   // 56s worst case. Promise.all = bounded by the slowest single fetch.
-  const pairList = Object.keys(openByPair);
+  const pairList = [...needBars];
   const ohlcMap = {};
   await Promise.all(pairList.map(async (pair) => {
     const sym = PAIR_TO_SYMBOL[pair] || pair.replace('/', '') + '=X';
@@ -338,7 +439,7 @@ async function _shadowInner(context) {
   for (const pair of pairList) {
     const ohlc = ohlcMap[pair];
     if (!ohlc || ohlc.length < 5) continue;
-    for (const s of openByPair[pair]) {
+    for (const s of (openByPair[pair] || [])) {
       if (s.status !== 'open') continue; // v409 — skip if already expired above
       const firedMs = Date.parse(s.firedAt || '');
       if (!Number.isFinite(firedMs)) continue;
@@ -346,18 +447,33 @@ async function _shadowInner(context) {
       const relevantBars = ohlc.filter(b => b.t > firedMs);
       if (!relevantBars.length) continue;
       const isBuy = s.direction === 'BUY';
-      let outcome = null, atBar = null;
-      for (let i = 0; i < relevantBars.length; i++) {
-        const bar = relevantBars[i];
-        if (isBuy) {
-          if (bar.l <= s.sl) { outcome = 'lost'; atBar = i + 1; break; }
-          if (bar.h >= s.tp1) { outcome = 'won'; atBar = i + 1; break; }
-        } else {
-          if (bar.h >= s.sl) { outcome = 'lost'; atBar = i + 1; break; }
-          if (bar.l <= s.tp1) { outcome = 'won'; atBar = i + 1; break; }
-        }
-      }
+      // v445 — RECORD WHAT ACTUALLY HAPPENED, NOT JUST WON/LOST.
+      //
+      // This loop used to break the moment TP1 was touched, so a trade that
+      // ran on to TP3 was written to history identically to one that tagged
+      // TP1 and reversed. The record carried no size at all: no R value, no
+      // which-target-was-reached, no drawdown. A history of W/L counts
+      // cannot tell you whether the strategy makes money, only how often it
+      // is right — and at a ~21% strike rate that is the less useful half.
+      //
+      // Now it walks every bar to resolution, tracking:
+      //   • the furthest take-profit reached (1/2/3)
+      //   • MAE — how far the trade went against you before resolving
+      //   • MFE — how far it went in your favour
+      //   • resultR — the realised R multiple
+      // It also resolves the trade the way the app TELLS you to trade it —
+      // the v442 plan on every card: a third out at TP1 with the stop to
+      // break-even, a third at TP2, the last third running to TP3. Scoring
+      // the whole position at the furthest target would have overstated
+      // every partial winner. resultRHold records the hold-it-all figure
+      // alongside, so the plan can be judged against doing nothing.
+      const walk = _walkTrade(s, relevantBars);
+      const outcome = walk.outcome;
+      const atBar = walk.atBar;
+      // No resolution inside the window — leave it open; the expiry sweep
+      // above deals with it once 48h passes.
       if (outcome) {
+        _recordExcursion(s, walk);
         s.status = outcome;
         s.barsToOutcome = atBar;
         s.checkedAt = new Date().toISOString();
@@ -383,13 +499,106 @@ async function _shadowInner(context) {
     }
   }
 
+  // v445 — EXPIRED TRADES ARE NO LONGER INVISIBLE.
+  //
+  // A signal that drifts against you for 48 hours and expires without
+  // tagging the stop was previously excluded from every statistic: the win
+  // rate counted only won/lost, so a trade sitting at -0.8R simply vanished
+  // from the record. That flatters the numbers — in a real account that
+  // position is either still open and losing, or you closed it at a loss.
+  //
+  // Expiries now run through the same bar walk as everything else. Anything
+  // still open at the cut-off is closed at the last price — the honest
+  // equivalent of flattening the position when you give up on it — so an
+  // expiry carries a real signed R and shows up in the ledger.
+  for (const s of shadow) {
+    if (s.status !== 'expired' || s.resultR != null) continue;
+    const ohlc = ohlcMap[s.pair];
+    const firedMs = Date.parse(s.firedAt || '');
+    if (!ohlc || !Number.isFinite(firedMs)) continue;
+    const after = ohlc.filter(b => b.t > firedMs);
+    if (!after.length) continue;
+    const w = _walkTrade(s, after);
+    if (!(w.slDist > 0) || w.lastClose == null) continue;
+    if (!w.outcome && w.openFraction > 0) {
+      // Still running at expiry — mark the remaining size out at last price.
+      const moved = s.direction === 'BUY' ? (w.lastClose - s.entry) : (s.entry - w.lastClose);
+      w.bankedR += w.openFraction * (moved / w.slDist);
+      w.holdR = moved / w.slDist;
+    }
+    _recordExcursion(s, w);
+    s.expiredInProfit = s.resultR > 0;
+    s.expiryClosedAtMarket = true;   // this R is a mark-to-market, not a fill
+  }
+
+  // v445 — RECONSTRUCT R FOR SIGNALS RESOLVED BEFORE THIS VERSION.
+  //
+  // The old resolver stopped at the first target and stored no magnitude, so
+  // ~180 historical rows carry a won/lost flag and nothing else. Both cases
+  // are recoverable from what WAS stored, without inventing anything:
+  //   • lost — the stop was hit with no target reached, which is −1R exactly.
+  //   • won  — the old loop broke at TP1, so a legacy win means precisely
+  //            "TP1 was touched" and nothing more. Under the trade plan that
+  //            banks a third at TP1 and moves the stop to entry, so the
+  //            conservative reconstruction is a third of TP1's R with the
+  //            remainder at break-even. Some of these may really have run to
+  //            TP2 or TP3, so this reconstruction understates rather than
+  //            flatters, which is the right direction to be wrong in.
+  // Reconstructed rows are flagged so nothing presents them as measured.
+  for (const s of shadow) {
+    if (s.resultR != null) continue;
+    if (s.status !== 'won' && s.status !== 'lost') continue;
+    const slDist = Math.abs(s.entry - s.sl);
+    if (!(slDist > 0)) continue;
+    if (s.status === 'lost') {
+      s.resultR = -1;
+      s.tpReached = 0;
+    } else {
+      if (typeof s.tp1 !== 'number') continue;
+      s.resultR = Math.round(((Math.abs(s.tp1 - s.entry) / slDist) / 3) * 100) / 100;
+      s.tpReached = 1;
+    }
+    s.rReconstructed = true;
+  }
+
   // Compute summary stats
   const resolved = shadow.filter(s => s.status === 'won' || s.status === 'lost');
   const wins = resolved.filter(s => s.status === 'won').length;
   const losses = resolved.filter(s => s.status === 'lost').length;
   const shadowWR = resolved.length ? (wins / resolved.length * 100) : null;
   const open = shadow.filter(s => s.status === 'open').length;
-  const expired = shadow.filter(s => s.status === 'expired').length;
+  const expiredList = shadow.filter(s => s.status === 'expired');
+  const expired = expiredList.length;
+
+  // Honest accounting: every signal that carries a real R, expiries included.
+  // Rows without an R are excluded rather than counted as zero — a missing
+  // figure is not a break-even result.
+  const accounted = [...resolved, ...expiredList].filter(s => typeof s.resultR === 'number');
+  const accountedWins = accounted.filter(s => s.resultR > 0).length;
+  const totalR = accounted.reduce((sum, s) => sum + s.resultR, 0);
+  const expectancyR = accounted.length ? totalR / accounted.length : null;
+  const expiredNegative = expiredList.filter(s => typeof s.resultR === 'number' && s.resultR < 0).length;
+  const reconstructedCount = accounted.filter(s => s.rReconstructed).length;
+
+  // Split measured from reconstructed. Reconstructed wins were floored at
+  // "TP1 touched, rest at break-even" because that is all the old resolver
+  // recorded — some of them really ran further, so their total is a lower
+  // bound, not an estimate. Reporting one blended number would present that
+  // floor as if it were measured. Report the bound instead.
+  const measured = accounted.filter(s => !s.rReconstructed);
+  const measuredTotalR = measured.reduce((sum, s) => sum + s.resultR, 0);
+  const measuredWins = measured.filter(s => s.resultR > 0).length;
+  // Upper bound on the legacy portion: every legacy win having run to TP3.
+  let legacyCeilingR = 0;
+  for (const s of accounted) {
+    if (!s.rReconstructed) continue;
+    if (s.resultR <= 0) { legacyCeilingR += s.resultR; continue; }
+    const slD = Math.abs(s.entry - s.sl);
+    const best = [s.tp1, s.tp2, s.tp3].filter(v => typeof v === 'number');
+    legacyCeilingR += (slD > 0 && best.length)
+      ? best.reduce((acc, px) => acc + (Math.abs(px - s.entry) / slD), 0) / 3
+      : s.resultR;
+  }
 
   // v331 — RECENT-ERA WR windows. Shows WR trajectory since major algo
   // improvements landed (v323 anti-fake guards, v325 regime weighting,
@@ -495,6 +704,54 @@ async function _shadowInner(context) {
     tracked: shadow.length,
     open, wins, losses, expired,
     shadowWinRate: shadowWR != null ? shadowWR.toFixed(1) + '%' : 'n/a (need resolved signals)',
+    // v445 — the honest ledger, alongside the strict won/lost rate above.
+    // shadowWinRate counts only signals that tagged a target or a stop.
+    // These figures also count expiries at their unrealised R, so a trade
+    // that spent 48h underwater without touching the stop can no longer
+    // disappear from the record.
+    accounting: {
+      n: accounted.length,
+      countedWins: accountedWins,
+      winRateInclExpired: accounted.length
+        ? Math.round((accountedWins / accounted.length) * 1000) / 10 : null,
+      totalR: Math.round(totalR * 100) / 100,
+      expectancyR: expectancyR != null ? Math.round(expectancyR * 1000) / 1000 : null,
+      expiredCounted: expiredList.filter(s => typeof s.resultR === 'number').length,
+      expiredUnderwater: expiredNegative,
+      reconstructed: reconstructedCount,
+      basis: 'managed — a third banked at each target with the stop at entry after TP1, matching the plan shown on every signal card',
+      // The only figures actually measured bar by bar. Everything else in
+      // this block is bounded, not observed. Trust this row first, and note
+      // how small n is before drawing anything from it.
+      measured: {
+        n: measured.length,
+        wins: measuredWins,
+        totalR: Math.round(measuredTotalR * 100) / 100,
+        expectancyR: measured.length
+          ? Math.round((measuredTotalR / measured.length) * 1000) / 1000 : null,
+      },
+      // The legacy rows cannot be pinned to a single number, so they are
+      // reported as the range they could occupy.
+      legacyBounds: reconstructedCount ? {
+        n: reconstructedCount,
+        floorTotalR: Math.round((totalR - measuredTotalR) * 100) / 100,
+        ceilingTotalR: Math.round(legacyCeilingR * 100) / 100,
+      } : null,
+      note: 'expectancyR is the average R per signal, expiries included at the R '
+          + 'they actually carried. A low strike rate with a positive expectancy '
+          + 'is the intended shape: most signals do not reach a target, and the '
+          + 'ones that do have to run further than the losers cost.'
+          + (reconstructedCount
+              ? ` IMPORTANT: ${reconstructedCount} of these ${accounted.length} were resolved `
+                + 'before outcome sizes were recorded. The old resolver stopped at TP1, so a '
+                + 'legacy win means only that TP1 was touched — whether it went on to TP2 or '
+                + 'TP3 was never stored and cannot be recovered. Those rows are floored at the '
+                + 'TP1-only value, which makes totalR and expectancyR above a LOWER BOUND, not '
+                + 'a measurement. See legacyBounds for the range, and measured for the only '
+                + 'figures observed bar by bar. Treat the headline as unproven either way until '
+                + 'enough signals resolve under the new accounting.'
+              : ''),
+    },
     // v331 — Recent-era WR windows so UI can show "24h WR: X%" and users
     // see the improvement trajectory since post-v323 pipeline changes.
     winRateWindows: recentWindows,
@@ -552,6 +809,21 @@ async function _shadowInner(context) {
         pipPotential: s.pipPotential,
         pWin: s.pWin,
         edge: s.edge,
+        // v445 — outcome magnitude, not just won/lost. resultR is the actual
+        // R-multiple (−1 for a stopped-out trade, +2.5/+5/+9 for TP1/2/3, and
+        // the unrealised figure for an expiry). tpReached says which target
+        // was actually tagged. maeR is worst drawdown in R — how deep the
+        // trade went against you before it worked, which is what tells you
+        // whether the stop was doing real work.
+        resultR: s.resultR != null ? s.resultR : null,
+        resultRHold: s.resultRHold != null ? s.resultRHold : null,
+        tpReached: s.tpReached != null ? s.tpReached : null,
+        maeR: s.maePips != null ? s.maePips : null,
+        mfeR: s.mfeR != null ? s.mfeR : null,
+        expiredInProfit: s.expiredInProfit === true ? true
+                       : (s.status === 'expired' && s.resultR != null ? false : null),
+        expiryClosedAtMarket: !!s.expiryClosedAtMarket,
+        rReconstructed: !!s.rReconstructed,
       }));
     })(),
   }, null, 2), {

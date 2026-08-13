@@ -3867,6 +3867,23 @@ function closeTrade(id, outcome, closePrice, opts = {}) {
   const pip = pairConfig(t.pair).pip;
   const direction = t.direction === 'BUY' ? 1 : -1;
   t.pnlPips = Number(((t.closePrice - t.entry) * direction / pip).toFixed(1));
+  // v445 — RECORD THE SIZE OF THE RESULT, NOT JUST ITS SIGN.
+  //
+  // History used to store the outcome and the pip count and nothing else, so
+  // there was no way to compare a +8-pip win against a -60-pip loss, and no
+  // way to tell whether the win rate was worth anything. resultR is the
+  // R-multiple: -1 is a full stop-out, +1 means you made exactly what you
+  // risked. maeR is the worst drawdown the trade went through before it
+  // resolved — that is the number that shows whether the stop was sitting
+  // where it needed to be, and it is what a trade that drifts underwater
+  // without ever tagging the stop leaves behind.
+  const riskDist = Math.abs(t.entry - t.sl);
+  t.riskPips = riskDist > 0 ? Number((riskDist / pip).toFixed(1)) : null;
+  t.resultR = opts.resultR != null
+    ? Number(opts.resultR.toFixed(3))
+    : (riskDist > 0 ? Number((((t.closePrice - t.entry) * direction) / riskDist).toFixed(3)) : null);
+  if (opts.maeR != null) t.maeR = Number(opts.maeR.toFixed(2));
+  if (opts.mfeR != null) t.mfeR = Number(opts.mfeR.toFixed(2));
   saveTrades(trades);
 }
 
@@ -4075,30 +4092,36 @@ function evaluateOpenTrades(pair, ohlc) {
       if (t.tp3 != null && lo <= t.tp3) tpReached = Math.max(tpReached, 3);
     }
 
-    // TIERED PROFIT LOCK-IN — improvement based on observed loss-of-profit
-    // pattern: AUD/JPY and GBP/AUD both hit TP1, then BE-trail caught them
-    // at exactly entry → wins of 0 pips. While that's a "win" in the database,
-    // it doesn't actually bank profit. The improvement:
-    //   • After TP1 hits → SL moves to entry + 25% of risk (LOCK IN 25% R)
-    //   • After TP2 hits → SL moves to TP1 (LOCK IN 1R = guaranteed profit)
-    //   • After TP3 hits → trade closes as full TP3 win
-    // This way every win captures meaningful pips. If price reverses hard
-    // after TP1, you still walk away with 25%R instead of 0.
+    // v445 — SCALE OUT IN THIRDS, exactly as the card instructs.
+    //
+    // This block used to close the whole position at one price, and its two
+    // "tiered lock-in" branches both set effectiveSL = t.tp1, so the tiering
+    // did nothing. Worse, it contradicted the trade-management plan printed
+    // on every signal card (a third at TP1 with the stop to break-even, a
+    // third at TP2, the last third running to TP3) — so History could never
+    // match what a user following that plan actually banked.
+    //
+    // Now the ladder is modelled properly: each target banks a third and the
+    // rest is protected at break-even. bankedR accumulates realised R and
+    // openFraction is what is still exposed.
     const dirSign = t.direction === 'BUY' ? 1 : -1;
     const riskDistance = Math.abs(t.entry - t.sl);
+    const rAt = (px) => (riskDistance > 0 && px != null)
+      ? Math.abs(px - t.entry) / riskDistance : 0;
+    let bankedR = 0;
+    let openFraction = 1;
+    for (let lvl = 1; lvl <= tpReached; lvl++) {
+      const px = lvl === 1 ? t.tp1 : lvl === 2 ? t.tp2 : t.tp3;
+      if (px == null) break;
+      bankedR += (1 / 3) * rAt(px);
+      openFraction = Math.max(0, openFraction - 1 / 3);
+    }
     let effectiveSL = t.sl;
-    if (tpReached >= 2) {
-      effectiveSL = t.tp1; // lock in 1R (= 2x TP1 distance since TP1 is 0.5R)
-    } else if (tpReached >= 1) {
-      // v196: ROOT-CAUSE FIX. After TP1 hits, lock SL at TP1 itself (not
-      // entry+50%R). Audit: 82 of 119 wins were TP1-only, only 2 of 324
-      // trades reached TP2. "Let runners go" thesis is broken — price
-      // almost never runs that far before reversing. Locking SL at TP1
-      // means: if price keeps running, still get TP2 chance; if it
-      // reverses, trade closes at TP1 (full 0.5R win = double the prior
-      // 0.25R lock). Math: avg winner doubles. At 37% WR with 0.5R
-      // per winner vs 9.7p avg loss (≈0.5R), this flips EV positive.
-      effectiveSL = t.tp1; // lock at TP1 — capture full 0.5R per winner
+    if (tpReached >= 1) {
+      // A third is already banked and the stop sits at entry — from here the
+      // trade cannot lose. The last third is what pays for the losers, so it
+      // is never cut early.
+      effectiveSL = t.entry;
     } else if (t.tp1 != null) {
       // v184: PRE-TP1 BREAKEVEN TRAIL TIGHTENED 50% → 35%.
       // Once price reaches 35% of the entry→TP1 distance, move SL to entry.
@@ -4116,25 +4139,27 @@ function evaluateOpenTrades(pair, ohlc) {
       }
     }
 
-    let outcome = null, price = null;
-    if (t.direction === 'BUY') {
-      if (lo <= effectiveSL) {
-        // Stop hit. The price we stopped at depends on which trail level we
-        // were on. If we trailed up to TP1 (tpReached >= 2), exit price is
-        // TP1. If we trailed to "entry + 25%R" (tpReached === 1), exit
-        // price is that 25%R locked-in level. Otherwise full original SL.
-        if (tpReached >= 1) { outcome = 'won'; price = effectiveSL; }
-        else                { outcome = 'lost'; price = effectiveSL; }
-      } else if (tpReached >= 3) {
-        outcome = 'won'; price = t.tp3;
-      }
-    } else if (t.direction === 'SELL') {
-      if (hi >= effectiveSL) {
-        if (tpReached >= 1) { outcome = 'won'; price = effectiveSL; }
-        else                { outcome = 'lost'; price = effectiveSL; }
-      } else if (tpReached >= 3) {
-        outcome = 'won'; price = t.tp3;
-      }
+    // v445 — the exit closes only what is still open. Realised R is
+    // bankedR (thirds already taken) plus whatever the remaining fraction
+    // exits at, and `price` is the blended price that produces that R, so
+    // the pips shown in History are the pips actually banked.
+    let outcome = null, price = null, realisedR = null;
+    const closeRemainingAt = (exitPx) => {
+      const exitR = riskDistance > 0
+        ? ((exitPx - t.entry) * dirSign) / riskDistance : 0;
+      realisedR = bankedR + openFraction * exitR;
+      price = t.entry + dirSign * realisedR * riskDistance;
+      outcome = realisedR > 0 ? 'won' : 'lost';
+    };
+    const stopTouched = t.direction === 'BUY' ? lo <= effectiveSL : hi >= effectiveSL;
+    if (stopTouched) {
+      // Before TP1 this is the real stop (−1R). After TP1 it is break-even,
+      // so the remaining third exits flat and the banked thirds stand.
+      closeRemainingAt(effectiveSL);
+    } else if (tpReached >= 3) {
+      realisedR = bankedR;              // all three thirds banked
+      price = t.entry + dirSign * realisedR * riskDistance;
+      outcome = 'won';
     }
 
     // TIME-STOP (v158) — TIERED by setup quality.
@@ -4164,30 +4189,34 @@ function evaluateOpenTrades(pair, ohlc) {
     // v188: underwater kill 60min → 30min. Faster damage control. Most
     // gold losers stop out within 30-45min of becoming underwater.
     const underwaterCutoffMs = tIsSuper ? Infinity : 30 * 60 * 1000;
+    // v445 — a time-stop is a real exit at the live price, so it goes
+    // through the same accounting: the open fraction is marked out at the
+    // last close and the realised R reflects the actual damage. A trade that
+    // spent two hours drifting underwater without ever tagging the stop is
+    // recorded at the loss it really carried, not written off as a flat -1R
+    // and not quietly excluded.
     if (!outcome && ageMs > hardLimitMs) {
       const lastBar = relevant[relevant.length - 1];
-      if (lastBar && Number.isFinite(lastBar.c)) {
-        const inProfit = t.direction === 'BUY'
-          ? lastBar.c > t.entry
-          : lastBar.c < t.entry;
-        outcome = inProfit ? 'won' : 'lost';
-        price = lastBar.c;
-      }
+      if (lastBar && Number.isFinite(lastBar.c)) closeRemainingAt(lastBar.c);
     } else if (!outcome && ageMs > underwaterCutoffMs) {
       const lastBar = relevant[relevant.length - 1];
       if (lastBar && Number.isFinite(lastBar.c)) {
         const inLoss = t.direction === 'BUY'
           ? lastBar.c < t.entry
           : lastBar.c > t.entry;
-        if (inLoss) {
-          outcome = 'lost';
-          price = lastBar.c;
-        }
+        if (inLoss) closeRemainingAt(lastBar.c);
       }
     }
 
     if (outcome) {
-      closeTrade(t.id, outcome, price, { tpReached });
+      // MAE/MFE over the life of the trade, in R. maeR is how deep it went
+      // against you before resolving — the number that tells you whether the
+      // stop was placed where it needed to be.
+      const maeR = riskDistance > 0
+        ? Math.max(0, (t.direction === 'BUY' ? t.entry - lo : hi - t.entry) / riskDistance) : null;
+      const mfeR = riskDistance > 0
+        ? Math.max(0, (t.direction === 'BUY' ? hi - t.entry : t.entry - lo) / riskDistance) : null;
+      closeTrade(t.id, outcome, price, { tpReached, resultR: realisedR, maeR, mfeR });
       transitioned.push({ ...t, newOutcome: outcome, closePrice: price, tpReached });
     } else if (tpReached !== prevTpReached) {
       // Trade still open but progressed to a new TP — persist the new level
@@ -4221,8 +4250,8 @@ function notifyTradeOutcome(trade) {
     // whether this was a partial-TP1 win or a full TP3 runner.
     const tpReached = trade.tpReached || 0;
     const tpLabel = tpReached === 3 ? 'TP3 (full run)'
-      : tpReached === 2 ? 'TP2 (1R locked)'
-      : tpReached === 1 ? 'TP1 (25%R locked)'
+      : tpReached === 2 ? 'TP2 (two thirds banked)'
+      : tpReached === 1 ? 'TP1 (a third banked, rest at break-even)'
       : '';
     const title = won
       ? `✅ ${trade.pair} ${tpLabel} — WIN`
@@ -7583,7 +7612,7 @@ async function renderSignalModal(s, options = {}) {
     <div class="plan-steps"><ol>
       <li>Go <strong>${dirWord}</strong> on ${s.pair} at <code>${s.entry}</code>.</li>
       <li><strong>Stop Loss</strong> at <code>${s.sl}</code> (${s.sl_pips} pips).</li>
-      <li><strong>TP1</strong> at <code>${s.tp1}</code> (${s.tp1_pips} pips · 1:1) — close half, SL trails to TP1 (full 1R locked).</li>
+      <li><strong>TP1</strong> at <code>${s.tp1}</code> (${s.tp1_pips} pips) — close a third, move the stop to entry. From here the trade cannot lose.</li>
       <li><strong>TP2</strong> at <code>${s.tp2}</code> (${s.tp2_pips} pips · 1:2.5).</li>
       <li><strong>TP3</strong> at <code>${s.tp3}</code> (${s.tp3_pips} pips · 1:4) — let final runner ride.</li>
       <li>Risk max 1–2% of your account. Calculator above does the math for you.</li>
@@ -9186,7 +9215,7 @@ function renderHistory() {
   // assignment, no layout, no paint. Closed-trade data rarely changes (only on
   // win/loss/delete) so most clicks land on this fast path.
   if (!window._historyFilter) window._historyFilter = 'all';
-  const fingerprint = `${closed.length}_${window._historyFilter}_${closed.map(t => t.id + ':' + t.status + ':' + (t.tpReached || 0)).join('|')}`;
+  const fingerprint = `${closed.length}_${window._historyFilter}_${closed.map(t => t.id + ':' + t.status + ':' + (t.tpReached || 0) + ':' + (t.resultR ?? '')).join('|')}`;
   if (container._lastRenderFingerprint === fingerprint && container.innerHTML) {
     return; // identical to last render — skip
   }
@@ -9224,16 +9253,79 @@ function renderHistory() {
     else winsByTp[1]++;
   }
 
+  // v445 — Backfill R on trades closed before this version. Entry, stop and
+  // close price were all already stored, so the figure is exact rather than
+  // estimated; it was simply never computed.
+  {
+    let changed = false;
+    const all = getTrades();
+    for (const t of all) {
+      if (t.status === 'open' || typeof t.resultR === 'number') continue;
+      const risk = Math.abs(t.entry - t.sl);
+      if (!(risk > 0) || t.closePrice == null || t.entry == null) continue;
+      const dir = t.direction === 'BUY' ? 1 : -1;
+      t.resultR = Number((((t.closePrice - t.entry) * dir) / risk).toFixed(3));
+      const pipSz = pairConfig(t.pair).pip;
+      if (pipSz > 0) t.riskPips = Number((risk / pipSz).toFixed(1));
+      changed = true;
+    }
+    if (changed) {
+      saveTrades(all);
+      for (const t of closed) {
+        const src = all.find(x => x.id === t.id);
+        if (src) { t.resultR = src.resultR; t.riskPips = src.riskPips; }
+      }
+    }
+  }
+
+  // THE LEDGER. A win rate on its own says how often the system is right,
+  // never whether it made money. These figures answer the question the win
+  // rate cannot: what did the account actually do.
+  const withR = closed.filter(t => typeof t.resultR === 'number' && isFinite(t.resultR));
+  const netR = withR.reduce((sum, t) => sum + t.resultR, 0);
+  const expectancyR = withR.length ? netR / withR.length : null;
+  const netPips = closed.reduce((sum, t) => sum + (typeof t.pnlPips === 'number' ? t.pnlPips : 0), 0);
+  const winsR = withR.filter(t => t.resultR > 0);
+  const lossesR = withR.filter(t => t.resultR <= 0);
+  const avgWinR = winsR.length ? winsR.reduce((s, t) => s + t.resultR, 0) / winsR.length : null;
+  const avgLossR = lossesR.length ? lossesR.reduce((s, t) => s + t.resultR, 0) / lossesR.length : null;
+  // Deepest drawdown any single trade survived, and the worst single result.
+  const worstR = withR.length ? Math.min(...withR.map(t => t.resultR)) : null;
+  const deepestMaeR = closed.reduce((m, t) => (typeof t.maeR === 'number' && t.maeR > m ? t.maeR : m), 0);
+  const fmtR = (v) => v == null ? '—' : `${v >= 0 ? '+' : ''}${v.toFixed(2)}R`;
+  const rColour = (v) => v == null ? 'var(--muted)' : v >= 0 ? 'var(--buy)' : 'var(--sell)';
+
   let html = `
     <div class="history-summary">
       <div class="hs-card hs-total"><span class="hs-num">${closed.length}</span><span class="hs-lbl">total closed</span></div>
       <div class="hs-card hs-won"><span class="hs-num" style="color:var(--buy)">${wonCount}</span><span class="hs-lbl">won</span></div>
       <div class="hs-card hs-lost"><span class="hs-num" style="color:var(--sell)">${lostCount}</span><span class="hs-lbl">lost</span></div>
       <div class="hs-card hs-rate"><span class="hs-num">${winRate}%</span><span class="hs-lbl">win rate</span></div>
+      <div class="hs-card hs-netr" title="Every closed trade added up, measured in R. 1R is what you risked per trade. This is the number that says whether the account is ahead — the win rate alone cannot."><span class="hs-num" style="color:${rColour(withR.length ? netR : null)}">${withR.length ? fmtR(netR) : '—'}</span><span class="hs-lbl">net result</span></div>
+      <div class="hs-card hs-exp" title="Average R per trade across ${withR.length} closed trade${withR.length === 1 ? '' : 's'}. Positive means the average trade makes money even if most individual trades lose."><span class="hs-num" style="color:${rColour(expectancyR)}">${fmtR(expectancyR)}</span><span class="hs-lbl">per trade</span></div>
+      <div class="hs-card hs-pips" title="Net pips across every closed trade, wins and losses together."><span class="hs-num" style="color:${netPips >= 0 ? 'var(--buy)' : 'var(--sell)'}">${netPips >= 0 ? '+' : ''}${netPips.toFixed(1)}</span><span class="hs-lbl">net pips</span></div>
       <div class="hs-card hs-tp3" title="Wins that ran all the way to TP3"><span class="hs-num" style="color:var(--buy)">${winsByTp[3]}</span><span class="hs-lbl">TP3 runners</span></div>
       <div class="hs-card hs-tp2"><span class="hs-num" style="color:var(--accent)">${winsByTp[2]}</span><span class="hs-lbl">TP2 wins</span></div>
       <div class="hs-card hs-tp1"><span class="hs-num" style="color:#fbbf24">${winsByTp[1]}</span><span class="hs-lbl">TP1 trims</span></div>
     </div>
+    ${withR.length ? `
+    <div class="history-ledger">
+      <div class="hl-line">
+        <span class="hl-k">Average win</span><span class="hl-v" style="color:var(--buy)">${fmtR(avgWinR)}</span>
+        <span class="hl-k">Average loss</span><span class="hl-v" style="color:var(--sell)">${fmtR(avgLossR)}</span>
+        <span class="hl-k">Worst single trade</span><span class="hl-v" style="color:var(--sell)">${fmtR(worstR)}</span>
+      </div>
+      ${deepestMaeR > 0 ? `<div class="hl-line">
+        <span class="hl-k" title="The deepest a trade went against you before it resolved, measured against the stop. Above 1.0R means price traded through the stop.">Deepest drawdown survived</span>
+        <span class="hl-v">${deepestMaeR.toFixed(2)}R</span>
+      </div>` : ''}
+      <div class="hl-note">${
+        netR > 0
+          ? `Across ${withR.length} closed trade${withR.length === 1 ? '' : 's'} the account is <strong>${fmtR(netR)}</strong> — ${expectancyR >= 0 ? 'up' : 'down'} an average of <strong>${fmtR(expectancyR)}</strong> per trade. A ${winRate}% win rate is fine as long as this number stays positive: the winners have to be bigger than the losers, not more frequent.`
+          : `Across ${withR.length} closed trade${withR.length === 1 ? '' : 's'} the account is <strong>${fmtR(netR)}</strong>, an average of <strong>${fmtR(expectancyR)}</strong> per trade. The win rate above does not tell you this on its own — that is why this row exists. ${withR.length < 30 ? 'This is still a small sample; short losing runs are normal and do not by themselves mean the system is broken.' : 'Over this many trades a negative figure is worth acting on.'}`
+      }</div>
+      <div class="hl-note hl-note-dim">Every closed trade counts here, including ones closed early by the time-stop while underwater. A trade that drifts against you without ever touching the stop is recorded at the loss it actually carried.</div>
+    </div>` : ''}
     <div class="history-filter">
       <button class="hf-chip ${filter === 'all'  ? 'active' : ''}" data-filter="all">All (${closed.length})</button>
       <button class="hf-chip ${filter === 'won'  ? 'active' : ''}" data-filter="won">Won (${wonCount})</button>
@@ -9665,8 +9757,8 @@ function renderTrades() {
       <div class="tpbd-head"><strong>🎯 How far wins ran</strong> <span class="muted">${won} winning trade${won === 1 ? '' : 's'}</span></div>
       <div class="tpbd-bars">
         <div class="tpbd-row"><span class="tpbd-lbl">TP3 (full run)</span><div class="tpbd-bar"><div class="tpbd-fill tpbd-tp3" style="width:${tp3Pct}%"></div></div><span class="tpbd-val">${winsByTp[3]} · ${tp3Pct}%</span></div>
-        <div class="tpbd-row"><span class="tpbd-lbl">TP2 (1R locked)</span><div class="tpbd-bar"><div class="tpbd-fill tpbd-tp2" style="width:${tp2Pct}%"></div></div><span class="tpbd-val">${winsByTp[2]} · ${tp2Pct}%</span></div>
-        <div class="tpbd-row"><span class="tpbd-lbl">TP1 (25%R locked)</span><div class="tpbd-bar"><div class="tpbd-fill tpbd-tp1" style="width:${tp1Pct}%"></div></div><span class="tpbd-val">${winsByTp[1]} · ${tp1Pct}%</span></div>
+        <div class="tpbd-row"><span class="tpbd-lbl">TP2 (two thirds banked)</span><div class="tpbd-bar"><div class="tpbd-fill tpbd-tp2" style="width:${tp2Pct}%"></div></div><span class="tpbd-val">${winsByTp[2]} · ${tp2Pct}%</span></div>
+        <div class="tpbd-row"><span class="tpbd-lbl">TP1 (a third banked)</span><div class="tpbd-bar"><div class="tpbd-fill tpbd-tp1" style="width:${tp1Pct}%"></div></div><span class="tpbd-val">${winsByTp[1]} · ${tp1Pct}%</span></div>
       </div>
     </div>`;
 
@@ -10023,6 +10115,11 @@ function tradeRowHTML(t) {
   const ageStr = age < 60 ? `${age}m ago` : age < 1440 ? `${(age/60).toFixed(1)}h ago` : `${(age/1440).toFixed(1)}d ago`;
   const statusColor = t.status === 'won' ? 'var(--buy)' : t.status === 'lost' ? 'var(--sell)' : t.status === 'open' ? 'var(--accent)' : 'var(--muted)';
   const pnl = t.pnlPips != null ? ` · ${t.pnlPips >= 0 ? '+' : ''}${t.pnlPips} pips` : '';
+  // v445 — R alongside the pips. Pips are not comparable between a 12-pip
+  // stop and a 90-pip stop; R is. −1.00R is a full stop-out.
+  const rTag = (typeof t.resultR === 'number' && isFinite(t.resultR) && t.status !== 'open')
+    ? `<span class="trade-r-tag" style="color:${t.resultR >= 0 ? 'var(--buy)' : 'var(--sell)'}" title="Result as a multiple of what you risked${t.riskPips ? ` (risk was ${t.riskPips} pips)` : ''}. −1.00R is a full stop-out.${typeof t.maeR === 'number' ? ` Went ${t.maeR.toFixed(2)}R against you at its worst before resolving.` : ''}">${t.resultR >= 0 ? '+' : ''}${t.resultR.toFixed(2)}R</span>`
+    : '';
   // TP-PROGRESS BADGE — shows which take-profit level price has reached.
   // For OPEN trades: highlights the highest TP touched so far (live progress).
   // For WON trades: shows whether it was a TP1 (breakeven trail), TP2, or TP3
@@ -10037,7 +10134,7 @@ function tradeRowHTML(t) {
     ? `<span class="tp-progress" title="TP progression: each ✓ = price has reached that TP since entry">${tpPill(1)}${tpPill(2)}${tpPill(3)}</span>`
     : '';
   // Status label gets enriched with the TP level for wins
-  const tpLabel = t.status === 'won' ? (tpHit === 3 ? ' (TP3 full run)' : tpHit === 2 ? ' (TP2 · 1R locked)' : tpHit === 1 ? ' (TP1 · 25%R locked)' : '') : '';
+  const tpLabel = t.status === 'won' ? (tpHit === 3 ? ' (TP3 full run)' : tpHit === 2 ? ' (TP2 · two thirds banked)' : tpHit === 1 ? ' (TP1 · a third banked)' : '') : '';
 
   // ── LOSS-RISK WARNING for OPEN trades ──────────────────────────────────
   // Surfaces open trades that match the patterns of every historical loss:
@@ -10139,7 +10236,7 @@ function tradeRowHTML(t) {
       <div class="trade-head">
         <span class="pair">${t.pair}</span>
         <span class="direction-badge dir-${t.direction}">${t.direction}</span>
-        <span class="trade-status" style="color:${statusColor}">${t.status.toUpperCase()}${tpLabel}${pnl}</span>
+        <span class="trade-status" style="color:${statusColor}">${t.status.toUpperCase()}${tpLabel}${pnl}</span>${rTag}
         ${tpProgress}
         ${lossRiskBadge}
         ${eliteBrainBadge}
