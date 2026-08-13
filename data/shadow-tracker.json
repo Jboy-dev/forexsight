@@ -3,220 +3,75 @@
   "ts": 1786654766767,
   "isoTime": "2026-08-13T20:59:26.767Z",
   "tracked": 3,
-  "open": 0,
-  "wins": 1,
-  "losses": 2,
+  "open": 3,
+  "wins": 0,
+  "losses": 0,
   "expired": 0,
-  "shadowWinRate": "33.3%",
-  "winRateWindows": {
-    "last24h": {
-      "n": 0,
-      "wins": 0,
-      "losses": 0,
-      "wr": null
-    },
-    "last7d": {
-      "n": 1,
-      "wins": 0,
-      "losses": 1,
-      "wr": 0
-    },
-    "last30d": {
-      "n": 3,
-      "wins": 1,
-      "losses": 2,
-      "wr": 33.3
-    },
-    "lifetime": {
-      "n": 3,
-      "wins": 1,
-      "losses": 2,
-      "wr": 33.3
-    }
+  "shadowWinRate": "n/a (need resolved signals)",
+  "accounting": {
+    "n": 0,
+    "countedWins": 0,
+    "totalR": 0,
+    "expectancyR": null,
+    "basis": "managed — a third banked at each target, stop to entry after TP1"
   },
-  "topFailureReasons": [
-    {
-      "reason": "mid-confidence",
-      "count": 1,
-      "pctOfLosses": 50
-    },
-    {
-      "reason": "pre-ny-volatility",
-      "count": 1,
-      "pctOfLosses": 50
-    },
-    {
-      "reason": "immediate-rejection",
-      "count": 1,
-      "pctOfLosses": 50
-    },
-    {
-      "reason": "london-open-volatility",
-      "count": 1,
-      "pctOfLosses": 50
-    }
-  ],
-  "topWinReasons": [
-    {
-      "reason": "strong-confidence-80plus",
-      "count": 1,
-      "pctOfWins": 100
-    },
-    {
-      "reason": "multi-strategy-3plus",
-      "count": 1,
-      "pctOfWins": 100
-    },
-    {
-      "reason": "london-open-momentum",
-      "count": 1,
-      "pctOfWins": 100
-    },
-    {
-      "reason": "quick-decisive-move",
-      "count": 1,
-      "pctOfWins": 100
-    },
-    {
-      "reason": "big-move-captured",
-      "count": 1,
-      "pctOfWins": 100
-    },
-    {
-      "reason": "brain-top-pick",
-      "count": 1,
-      "pctOfWins": 100
-    },
-    {
-      "reason": "strong-trend-30plus",
-      "count": 1,
-      "pctOfWins": 100
-    }
-  ],
-  "persisted": false,
-  "dirty": false,
-  "newResolutions": 0,
+  "note": "Watched by tools/watch-setups.mjs on the GitHub Actions runner. Every run re-walks each setup from the bar it fired on, so a slow cron delays publication but never changes the result.",
   "feed": [
     {
-      "key": "XAU/USD_BUY_2026-08-06T14",
-      "pair": "XAU/USD",
-      "direction": "BUY",
-      "entry": 4328.2,
-      "sl": 4297.83,
-      "tp1": 4358.58,
-      "tp2": 4388.95,
-      "tp3": 4429.45,
-      "confidence": 84,
-      "strategies": 4,
-      "firedAt": "2026-08-06T14:10:26.149Z",
-      "status": "lost",
-      "barsToOutcome": 1,
-      "checkedAt": "2026-08-07T00:20:32.080Z",
-      "failureReasons": [
-        "mid-confidence",
-        "pre-ny-volatility",
-        "immediate-rejection"
-      ],
-      "winReasons": null,
-      "brainScore": 93,
-      "acceptancePath": "standard",
-      "expectedR": 0.09,
-      "brainRecommended": false,
-      "isEliteBrainPattern": false,
-      "isTopPick": false,
-      "bigMove": false,
-      "inKillzone": true,
-      "namedStrategies": [
-        "MOMENTUM",
-        "TREND",
-        "VWAP",
-        "ICHIMOKU"
-      ],
-      "adx": 48,
-      "pipPotential": 1013,
-      "pWin": 68,
-      "edge": 29
+      "key": "BTC/USD_SELL_2026-08-13T21",
+      "pair": "BTC/USD",
+      "direction": "SELL",
+      "entry": 63389.14844,
+      "sl": 64099.03892,
+      "tp1": 62679.25795,
+      "tp2": 61969.36747,
+      "tp3": 60833.54269,
+      "confidence": 97,
+      "strategies": 1,
+      "firedAt": "2026-08-13T21:36:14.921Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "maeR": 0,
+      "mfeR": 0,
+      "checkedAt": "2026-08-13T21:36:20.060Z"
     },
     {
-      "key": "XAU/USD_BUY_2026-08-06T07",
-      "pair": "XAU/USD",
-      "direction": "BUY",
-      "entry": 4319.5,
-      "sl": 4289.02,
-      "tp1": 4349.98,
-      "tp2": 4380.46,
-      "tp3": 4421.11,
-      "confidence": 85,
+      "key": "USD/CAD_SELL_2026-08-13T21",
+      "pair": "USD/CAD",
+      "direction": "SELL",
+      "entry": 1.39263,
+      "sl": 1.39625,
+      "tp1": 1.38901,
+      "tp2": 1.38538,
+      "tp3": 1.37958,
+      "confidence": 97,
       "strategies": 3,
-      "firedAt": "2026-08-06T07:30:26.599Z",
-      "status": "lost",
-      "barsToOutcome": 6,
-      "checkedAt": "2026-08-06T14:10:26.063Z",
-      "failureReasons": [
-        "london-open-volatility"
-      ],
-      "winReasons": null,
-      "brainScore": 90,
-      "acceptancePath": "standard",
-      "expectedR": 0.07,
-      "brainRecommended": false,
-      "isEliteBrainPattern": false,
-      "isTopPick": false,
-      "bigMove": false,
-      "inKillzone": true,
-      "namedStrategies": [
-        "TREND",
-        "VWAP",
-        "ICHIMOKU"
-      ],
-      "adx": 60,
-      "pipPotential": 1016,
-      "pWin": 65,
-      "edge": 29
+      "firedAt": "2026-08-13T21:36:14.921Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "maeR": 0.03,
+      "mfeR": 0,
+      "checkedAt": "2026-08-13T21:36:20.060Z"
     },
     {
-      "key": "XAU/USD_BUY_2026-08-05T09",
+      "key": "XAU/USD_SELL_2026-08-13T21",
       "pair": "XAU/USD",
-      "direction": "BUY",
-      "entry": 4217.2,
-      "sl": 4191.52,
-      "tp1": 4242.88,
-      "tp2": 4294.25,
-      "tp3": 4345.61,
-      "confidence": 89,
-      "strategies": 4,
-      "firedAt": "2026-08-05T09:38:16.320Z",
-      "status": "won",
-      "barsToOutcome": 2,
-      "checkedAt": "2026-08-05T11:58:42.886Z",
-      "failureReasons": null,
-      "winReasons": [
-        "strong-confidence-80plus",
-        "multi-strategy-3plus",
-        "london-open-momentum",
-        "quick-decisive-move",
-        "big-move-captured",
-        "brain-top-pick",
-        "strong-trend-30plus"
-      ],
-      "brainScore": 115,
-      "acceptancePath": "endorsed",
-      "expectedR": 0.16,
-      "brainRecommended": true,
-      "isEliteBrainPattern": false,
-      "isTopPick": false,
-      "bigMove": true,
-      "inKillzone": true,
-      "namedStrategies": [
-        "ICT",
-        "TREND",
-        "VWAP",
-        "ICHIMOKU"
-      ],
-      "adx": 45,
-      "pipPotential": 1284,
-      "pWin": 62,
-      "edge": 24
+      "direction": "SELL",
+      "entry": 4407.1,
+      "sl": 4442.36,
+      "tp1": 4361.42,
+      "tp2": 4315.74,
+      "tp3": 4242.66,
+      "confidence": 97,
+      "strategies": 3,
+      "firedAt": "2026-08-13T21:36:14.921Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": null,
+      "maeR": null,
+      "mfeR": null
     }
   ]
 }

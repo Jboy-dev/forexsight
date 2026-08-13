@@ -73,7 +73,25 @@ await Promise.all(Object.entries(PAIR_SYMBOLS).map(async ([pair, sym]) => {
   }
 }));
 
-signals.sort((a, b) => (b.confidence || 0) - (a.confidence || 0));
+// v448 — DO NOT RANK BY CONFIDENCE.
+//
+// This sorted by confidence descending, which put the measurably worst
+// signals at the top of the feed. Replaying the live engine over 17,437
+// signals: the 90-99 confidence band returned -0.046R and the 70-79 band
+// +0.135R, and low-agreement signals beat high-agreement ones by +0.044R
+// (95% CI [+0.006, +0.081]). correlation(confidence, outcome) = -0.010.
+//
+// Ordering ascending would be acting on the reverse of that finding, which
+// the held-out split does not support strongly enough to bet on. So the list
+// is ordered by something that is a FACT about the setup rather than a
+// prediction about it: reward per unit of risk actually on offer at TP3.
+// Confidence is still shown, but it no longer decides what you see first.
+const rrOf = (s) => {
+  const risk = Math.abs(s.entry - s.sl);
+  if (!(risk > 0) || typeof s.tp3 !== 'number') return 0;
+  return Math.abs(s.tp3 - s.entry) / risk;
+};
+signals.sort((a, b) => rrOf(b) - rrOf(a));
 
 // The live path runs correlation dedup and a basket cap in latest-signals.js
 // before anything reaches the user. This path bypasses that endpoint, so the
@@ -93,7 +111,7 @@ function dedupeCorrelated(list) {
     for (const dir of ['BUY', 'SELL']) {
       const inGroup = out.filter(s => group.includes(s.pair) && s.direction === dir);
       if (inGroup.length > 1) {
-        const keep = inGroup[0];             // already sorted by confidence
+        const keep = inGroup[0];   // sorted by reward-to-risk, not confidence
         out = out.filter(s => s === keep || !inGroup.includes(s));
       }
     }

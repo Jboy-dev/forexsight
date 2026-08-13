@@ -143,6 +143,22 @@ jobs:
               print(f\"    {s['pair']} {s['direction']} entry={s['entry']} sl={s['sl']} tp1={s['tp1']}\")
           "
 
+      # v448 — WATCH THE SETUPS, ALWAYS.
+      #
+      # The outcome watcher (shadow-tracker) is a Cloudflare Function, so
+      # when the Function budget runs out nothing follows the setups that
+      # were already published. The feed then shows open trades that nobody
+      # is tracking, which is worse than showing none — it looks like it is
+      # watching when it is not.
+      #
+      # This runs unconditionally, not just on failover, so there is always
+      # one record that is complete. It re-walks every open setup from the
+      # bar it fired on, so GitHub throttling this cron to ~hourly (measured
+      # 46-72 min against the requested 15) delays publication without ever
+      # changing an outcome.
+      - name: Watch open setups
+        run: node tools/watch-setups.mjs
+
       - name: Commit + push if changed
         run: |
           cd $GITHUB_WORKSPACE
