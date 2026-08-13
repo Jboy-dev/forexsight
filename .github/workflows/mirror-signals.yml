@@ -86,7 +86,40 @@ jobs:
 
           echo ""
           echo "refreshed ${OK_COUNT} endpoint(s) this run"
+          echo "MIRROR_OK=${OK_COUNT}" >> $GITHUB_ENV
+          if [ -n "$(echo "$FAIL_LIST" | tr -d ' ' | grep -o 'latest-signals' || true)" ]; then
+            echo "SIGNALS_STALE=1" >> $GITHUB_ENV
+          fi
           ls -la data/
+
+      # v447 — STANDBY GENERATOR.
+      #
+      # The steps above mirror Cloudflare's output, so when Functions are
+      # quota-exhausted they have nothing to copy and the mirror silently
+      # freezes at its last good snapshot. On the day this was added it was
+      # serving signals seven hours old.
+      #
+      # This step runs the real engine here instead — same strictAnalyze()
+      # imported from check-signals.js, fed by Yahoo bars — so the app has
+      # current signals regardless of Cloudflare's state. It only runs when
+      # the live mirror failed, so a healthy deployment always wins.
+      - uses: actions/setup-node@v4
+        if: env.SIGNALS_STALE == '1'
+        with:
+          node-version: '20'
+
+      - name: Generate signals locally (Cloudflare unavailable)
+        if: env.SIGNALS_STALE == '1'
+        run: |
+          echo "live mirror could not reach latest-signals — running the engine here"
+          node tools/generate-signals.mjs
+          python3 -c "
+          import json
+          d = json.load(open('data/latest-signals.json'))
+          print(f\"  generated {d['count']} signals at {d['isoTime']}\")
+          for s in d['signals'][:5]:
+              print(f\"    {s['pair']} {s['direction']} entry={s['entry']} sl={s['sl']} tp1={s['tp1']}\")
+          "
 
       - name: Commit + push if changed
         run: |

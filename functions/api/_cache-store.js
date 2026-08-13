@@ -87,4 +87,28 @@ async function smartGet(env, kvKey, cacheKey) {
   return { data: null, via: 'none' };
 }
 
-export { cacheGet, cachePut, smartGet, smartPut };
+// v447 — WARM-IF-STALE. The single biggest consumer of the free tier's
+// 100k daily Function invocations was check-signals firing twelve
+// unconditional `waitUntil` cache-warmers on EVERY scan. Several of those
+// fan out again, so one scan cost roughly 27 invocations of pure warming
+// regardless of whether anything had gone stale. News was refetched every
+// few minutes; the economic calendar, which changes daily, was refetched
+// just as often. That is what kept taking the site down mid-afternoon.
+//
+// Each warmer now carries its own interval and only fires when its marker
+// has expired. The marker is written BEFORE the fetch so two concurrent
+// scans cannot both decide to warm the same endpoint.
+//
+// Returns true if the warm was actually dispatched.
+async function warmIfStale(ctx, origin, name, ttlSeconds, init) {
+  try {
+    const marker = `warm:${name}`;
+    if (await cacheGet(marker)) return false;      // still fresh — skip
+    await cachePut(marker, { at: Date.now() }, ttlSeconds);
+    const p = fetch(`${origin}/api/${name}`, init).catch(() => {});
+    if (ctx && ctx.waitUntil) ctx.waitUntil(p);
+    return true;
+  } catch { return false; }
+}
+
+export { cacheGet, cachePut, smartGet, smartPut, warmIfStale };

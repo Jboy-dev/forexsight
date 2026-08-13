@@ -4904,20 +4904,47 @@ async function hardRefresh() {
 })();
 $('#auto-refresh').addEventListener('change', (e) => { state.autoRefresh = e.target.checked; setupAutoRefresh(); });
 
+// v447 — POLL AT THE RATE THE DATA ACTUALLY CHANGES, AND ONLY WHEN WATCHED.
+//
+// These two timers ran every 30s for as long as a tab existed, including
+// tabs sitting in the background for days. Each tick hits /api/latest-signals
+// which fans out server-side, so one forgotten tab cost tens of thousands of
+// Function invocations a day against a 100k free-tier limit — and when that
+// limit was hit, every /api/* route started returning the static HTML shell
+// instead of JSON. That is the outage the user kept seeing.
+//
+// A new scan lands roughly every 15 minutes, so a 30-second poll refetched
+// the same snapshot about 30 times over. 90 seconds while the tab is in
+// front loses nothing perceptible; a hidden tab polls not at all and
+// refreshes the moment it is looked at again.
+const _AR_VISIBLE_MS = 90 * 1000;
+
+function _arPollingWanted() {
+  return state.autoRefresh && document.visibilityState === 'visible';
+}
+
 function setupAutoRefresh() {
   if (state.timer) clearInterval(state.timer);
-  // v348 — polling faster: 30 seconds (was 60s). Combined with server-side
-  // continuous checking via cron waitUntil, every 30s the user sees updated
-  // chart reads. The endpoints are heavily edge-cached (30s TTL) so this
-  // doesn't hammer any upstream.
-  if (state.autoRefresh) state.timer = setInterval(() => loadSignals(true), 30 * 1000);
-  // v214 — shadow feed also every 30s
   if (state._shadowTimer) clearInterval(state._shadowTimer);
-  if (state.autoRefresh) state._shadowTimer = setInterval(() => {
+  state.timer = null;
+  state._shadowTimer = null;
+  if (!_arPollingWanted()) return;
+  state.timer = setInterval(() => loadSignals(true), _AR_VISIBLE_MS);
+  state._shadowTimer = setInterval(() => {
     loadShadowFeed().catch(() => {});
     loadBrainStatus().catch(() => {});
-  }, 30 * 1000);
+  }, _AR_VISIBLE_MS);
 }
+
+// Stop the clock when the tab goes away, and catch up immediately when it
+// comes back so returning to the app never shows stale prices.
+document.addEventListener('visibilitychange', () => {
+  setupAutoRefresh();
+  if (document.visibilityState === 'visible' && state.autoRefresh) {
+    loadSignals(true);
+    loadShadowFeed().catch(() => {});
+  }
+});
 
 // Forex market hours: closed from Friday 22:00 UTC to Sunday 22:00 UTC.
 // Without this, the user sees an empty signals tab on weekends and may
@@ -15157,10 +15184,20 @@ async function pollServerSignals() {
 let serverPollTimer = null;
 function startServerPolling() {
   if (serverPollTimer) clearInterval(serverPollTimer);
-  // Initial poll, then every 30s
+  serverPollTimer = null;
+  // v447 — the second of the two 30s pollers. Same reasoning as
+  // setupAutoRefresh: a scan lands about every 15 minutes, so polling twice
+  // a minute from every open tab spent the Function budget on refetching a
+  // snapshot that had not moved. Paused entirely while the tab is hidden,
+  // with an immediate catch-up poll on return so nothing is missed.
+  if (document.visibilityState !== 'visible') return;
   pollServerSignals();
-  serverPollTimer = setInterval(pollServerSignals, 30 * 1000);
+  serverPollTimer = setInterval(pollServerSignals, 90 * 1000);
 }
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') startServerPolling();
+  else if (serverPollTimer) { clearInterval(serverPollTimer); serverPollTimer = null; }
+});
 
 // Also poll immediately when the tab becomes visible (e.g. user returns to PWA)
 document.addEventListener('visibilitychange', () => {

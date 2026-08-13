@@ -4,6 +4,8 @@
 // poll therefore self-triggers continual server-side checking as long as
 // SOMEONE has the PWA open. No external cron required.
 
+import { cacheGet, cachePut } from './_cache-store.js';
+
 const STALE_THRESHOLD_MS = 5 * 60 * 1000; // 5 minutes
 // v237 — Per-instance cooldown to prevent storms when KV writes are blocked.
 // If check-signals can't update latest-signals (e.g. quota), every poll would
@@ -121,7 +123,24 @@ export async function onRequest(context) {
     // was the wrong UX.
     const shouldFallback = !data || (data.signals && data.signals.length === 0);
     let liveAnalysisSignals = null;
-    if (shouldFallback) {
+    // v447 — CACHE THE FALLBACK CHAIN.
+    //
+    // This branch runs whenever the strict feed is empty, which — given how
+    // tight the gates are — is most of the time. It costs roughly eight
+    // Function invocations: live-analysis (which fans out to three more),
+    // conditions-score, algo-read and calendar. Every client poll paid that
+    // in full, so a couple of open tabs could drain the 100k/day free tier
+    // on their own and take every /api/* route down.
+    //
+    // The chain's inputs move on hourly bars, so a 90-second cache changes
+    // nothing a user can perceive while making the cost independent of how
+    // many people are polling, or how fast. This is deliberately server-side:
+    // browsers holding an older cached app.js still poll at the old rate, and
+    // this protects the budget from them too.
+    const _fbCached = await cacheGet('ls-fallback');
+    if (shouldFallback && _fbCached) {
+      liveAnalysisSignals = _fbCached.signals || null;
+    } else if (shouldFallback) {
       try {
         const url = new URL(request.url);
         const laRes = await fetch(`${url.protocol}//${url.host}/api/live-analysis?minConfidence=60`);
@@ -284,6 +303,9 @@ export async function onRequest(context) {
           }
         }
       } catch { /* fallback is non-fatal */ }
+      // Store whatever the chain produced — including an empty result, which
+      // is just as expensive to recompute and just as valid to reuse.
+      await cachePut('ls-fallback', { signals: liveAnalysisSignals || [] }, 90);
     }
 
     if (!data) {

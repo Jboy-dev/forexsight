@@ -4,6 +4,7 @@
 // client poller and Web Push pipeline can consume them.
 
 import { sendPush } from './_push-lib.js';
+import { warmIfStale } from './_cache-store.js';
 
 // v355 — RESTORE FULL FX UNIVERSE. The v188 gold-only restriction was
 // blocking 7 of 9 pairs the client shows and predict-next scans. Combined
@@ -1881,6 +1882,12 @@ function _runMonteCarlo(entry, slDist, tp1Dist, tp2Dist, tp3Dist, atrV, directio
   };
 }
 const quickAnalyze = strictAnalyze; // alias for callers
+
+// v447 — exported so tools/generate-signals.mjs can run the REAL engine
+// outside Cloudflare. One source of truth: the offline generator and the
+// live endpoint are the same function, so the fallback can never drift into
+// being a different, untested algorithm.
+export { strictAnalyze, PAIRS };
 
 // v246 — Fetch with timeout. Yahoo Finance can hang; 8s cap prevents a single
 // stuck pair from freezing the whole scan.
@@ -4513,67 +4520,38 @@ async function _checkSignalsInner(context) {
   // v318 — Also fire tp-monitor so it ingests any newly-emitted signals
   // and checks all open signals for TP/SL hits (pushes notifications when
   // levels are touched — even if the user's app is closed).
+  // v447 — WARMERS ARE THROTTLED TO THEIR OWN REFRESH RATES.
+  //
+  // These twelve used to fire unconditionally on every scan. Several fan
+  // out again, so a single scan cost ~27 Function invocations of pure
+  // cache-warming — enough on its own to exhaust the 100k/day free tier by
+  // mid-afternoon and take every /api/* route down. Refetching the economic
+  // calendar (which changes daily) every few minutes was the clearest
+  // example of paying for nothing.
+  //
+  // Each interval below is the rate at which that data can actually change.
+  // Nothing is dropped — everything still refreshes, just not pointlessly.
+  // The two that must track the market tick-for-tick keep the fastest rates.
   if (context.waitUntil) {
-    context.waitUntil(
-      fetch(`${origin}/api/learning-brain`, {
-        headers: env.CRON_KEY ? { 'x-cron-key': env.CRON_KEY } : {},
-      }).catch(() => {})
-    );
-    context.waitUntil(
-      fetch(`${origin}/api/shadow-tracker`).catch(() => {})
-    );
-    context.waitUntil(
-      fetch(`${origin}/api/tp-monitor`).catch(() => {})
-    );
-    // v348 — Continuous chart-checking. On every scan tick, warm the
-    // live-analysis + chart-pulse caches so subsequent user polls hit
-    // fresh data instantly (and each pair's chart read is computed even
-    // when no user is on the app).
-    context.waitUntil(
-      fetch(`${origin}/api/live-analysis?minConfidence=60`).catch(() => {})
-    );
-    context.waitUntil(
-      fetch(`${origin}/api/chart-pulse`).catch(() => {})
-    );
-    // v358 — chart-eye: always-on per-pair snapshot + shift detector.
-    // Fires every scan tick so we spot momentum ignition, 20-bar breakouts,
-    // EMA crosses, RSI-extreme reversals, EMA50 touches in real time.
-    // Cache API storage means unlimited writes without hitting KV quota.
-    context.waitUntil(
-      fetch(`${origin}/api/chart-eye`).catch(() => {})
-    );
-    // v359 — self-trust recompute. Blends historical backtest + live-trade
-    // WR + calibration accuracy into a trust score, then writes an
-    // auto-correction hint that the NEXT scan reads to adjust the gate.
-    // This is the "always correcting" loop.
-    context.waitUntil(
-      fetch(`${origin}/api/self-trust`).catch(() => {})
-    );
-    // v361 — pattern-match: on every tick, encode current market state as a
-    // fingerprint and check it against the pair's library of PROVEN repeating
-    // winner patterns (built by /api/pattern-library from 10yr history).
-    // When the current chart matches a proven ≥65% WR pattern, a signal fires
-    // with confidence capped by that pattern's Wilson lower bound.
-    context.waitUntil(
-      fetch(`${origin}/api/pattern-match`).catch(() => {})
-    );
-    // v349 — Continuous news checking. Every scan tick warms news + news
-    // sentiment + calendar. Guarantees news is never stale, even when
-    // no user is on the app. News-sentiment feeds directly into signal
-    // scoring (v293) so keeping it fresh means signals reflect the
-    // current news environment.
-    context.waitUntil(
-      fetch(`${origin}/api/news`).catch(() => {})
-    );
-    context.waitUntil(
-      fetch(`${origin}/api/news-sentiment`).catch(() => {})
-    );
-    context.waitUntil(
-      fetch(`${origin}/api/calendar`).catch(() => {})
-    );
-    context.waitUntil(
-      fetch(`${origin}/api/pro-consensus`).catch(() => {})
-    );
+    // Outcome tracking — must stay close to live so TP/SL hits are caught.
+    await warmIfStale(context, origin, 'shadow-tracker', 240);
+    await warmIfStale(context, origin, 'tp-monitor', 180);
+    // Chart reads — a fresh hourly bar cannot appear faster than this.
+    await warmIfStale(context, origin, 'chart-eye', 420);
+    await warmIfStale(context, origin, 'chart-pulse', 420);
+    await warmIfStale(context, origin, 'live-analysis?minConfidence=60', 420);
+    // Learning + self-correction — these aggregate history, so they gain
+    // nothing from sub-15-minute refreshes.
+    await warmIfStale(context, origin, 'learning-brain', 900,
+      { headers: env.CRON_KEY ? { 'x-cron-key': env.CRON_KEY } : {} });
+    await warmIfStale(context, origin, 'self-trust', 1800);
+    await warmIfStale(context, origin, 'pattern-match', 1800);
+    // News and sentiment — headlines do not turn over in minutes.
+    await warmIfStale(context, origin, 'news', 1800);
+    await warmIfStale(context, origin, 'news-sentiment', 1800);
+    await warmIfStale(context, origin, 'pro-consensus', 1800);
+    // The economic calendar is published a day ahead.
+    await warmIfStale(context, origin, 'calendar', 7200);
   }
 
   // ─────────────────────────────────────────────────────────────────────
