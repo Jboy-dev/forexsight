@@ -6937,10 +6937,17 @@ function cardHTML(s) {
             }).join('')}
             ${s.edgeScore != null ? `<span class="edge-score" title="Composite edge: backtest CI + pattern match + multi-strategy + regime + calibration.">⚡ ${s.edgeScore}</span>` : ''}
             <span class="smart-score sc-${smartnessScore(s) >= 9 ? 'high' : smartnessScore(s) >= 6 ? 'mid' : 'low'}" title="Smartness: ${smartnessScore(s)}/12 quality gates passed">🧠 ${smartnessScore(s)}/12</span>
-            <b>${s.confidence}%</b>
+            <b title="How many indicators currently agree. This is NOT a win probability — see the note below.">${s.confidence}% agree</b>
           </span>
         </div>
         <div class="conf-bar"><span style="width:${s.confidence}%;background:${col}"></span></div>
+        <div class="conf-truth" title="Measured by replaying the live signal engine over 17,437 signals across 10 instruments and 2.8 years of hourly bars.">
+          This bar is indicator agreement, not a chance of winning.
+          Measured over 17,437 historical signals, agreement did not predict
+          the outcome (correlation −0.02), and the most-agreed signals did
+          slightly <strong>worse</strong> than the least-agreed. Judge the
+          setup on the levels, not on this number.
+        </div>
       </div>
       ${s.regimeNote ? `<div class="regime-note">${s.regimeNote}</div>` : ''}
       ${s.calibrationSamples >= 10 ? `<div class="cal-note" title="Confidence calibrated against actual win rates from your closed trades. Raw model said ${s.rawConfidence}%, but signals at this level have actually won ${s.calibrationActualRate}% of the time over ${s.calibrationSamples} closed trades — so we show ${s.confidence}%.">🎯 Calibrated from ${s.calibrationSamples} closed trades</div>` : ''}
@@ -7513,7 +7520,7 @@ async function renderSignalModal(s, options = {}) {
       const breakdown = (s[`${sk}QualityBreakdown`] || []).join(' · ');
       return `<div class="strat-tag strat-tag-modal strat-tag-${sk} strat-grade-${g}">${cfg.icon} ${cfg.name.toUpperCase()} ${s[`${sk}Grade`] || ''} — ${s[`${sk}Diag`]?.passed}/${s[`${sk}Diag`]?.total} gates · ${s[`${sk}Quality`]}/100 quality<div class="grade-breakdown">${breakdown}</div></div>`;
     }).join('')}
-    <div class="conf"><div class="conf-label"><span>Weighted confluence</span><b>${s.confidence}%</b></div><div class="conf-bar"><span style="width:${s.confidence}%;background:${s.direction === 'BUY' ? 'var(--buy)' : 'var(--sell)'}"></span></div></div>
+    <div class="conf"><div class="conf-label"><span>Indicator agreement</span><b title="Not a win probability — measured over 17,437 signals, agreement did not predict outcome.">${s.confidence}%</b></div><div class="conf-bar"><span style="width:${s.confidence}%;background:${s.direction === 'BUY' ? 'var(--buy)' : 'var(--sell)'}"></span></div></div>
     ${(() => {
       // Confidence breakdown — show every adjustment that contributed to the
       // final number so the user understands WHY this signal is X%.
