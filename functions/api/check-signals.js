@@ -1576,12 +1576,34 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   //   SL 2.5   TP (2.5, 5, 9)   TP1 1.00R   +0.128R   <- chosen
   //   SL 1.5   TP (2, 4, 7)     TP1 1.33R   +0.072R   (what was live)
   //
-  // TP1 now sits at exactly 1R, which is also the natural place to bank a
-  // third and move the stop to entry — the trade is de-risked at the point
-  // where reward first equals risk. It is reached by 50.3% of signals.
-  const tp1Mult = 2.5;
-  const tp2Mult = bigMoveHunt ? 9.0 : (bigMove ? 7.0 : 5.0);
-  const tp3Mult = bigMoveHunt ? 16.0 : (bigMove ? 12.0 : 9.0);
+  // v450 — TP1 WAS PINNED TO THE STOP DISTANCE. THAT WAS A REGRESSION.
+  //
+  // v444 widened the stop to atrV * 2.5 but left tp1Mult at 2.5, so whenever
+  // the ATR term set the stop — the common case — tp1Dist came out EXACTLY
+  // equal to slDist. Every signal offered 1.00R at the first target: risk 36
+  // pips to make 36. Under the plan on the card that banks a third at TP1,
+  // the first exit returned 0.33R. That is what "small pips" was.
+  //
+  // Measured by replaying this function over real hourly bars, 10 instruments,
+  // 2.8 years, managed ladder, no lookahead:
+  //
+  //                        median TP1   FX pips   strike   avg win   expectancy
+  //   tp1 2.5x (before)        1.00R        32     46.1%    +1.09R   -0.0205R
+  //   tp1 4.0x (now)           1.58R        49     41.5%    +1.33R   +0.0015R
+  //
+  // The old ladder's 95% CI was [-0.037, -0.003] — it excluded zero on the
+  // losing side, so it was measurably negative rather than merely unproven.
+  // The new one is [-0.014, +0.017]. This removes a measured loss; it does
+  // NOT create an edge, and the interval still contains zero.
+  //
+  // Targets are hit less often, as they must be when they sit further away —
+  // strike falls 46% to 42% — but each winner is worth more, and the first
+  // target is finally a real multiple of the risk taken to reach it.
+  // Spacing keeps the three targets distinct rather than bunching TP1 and
+  // TP2 together.
+  const tp1Mult = 4.0;
+  const tp2Mult = bigMoveHunt ? 11.0 : (bigMove ? 9.0 : 7.0);
+  const tp3Mult = bigMoveHunt ? 18.0 : (bigMove ? 14.0 : 11.0);
 
   const pipSize = isGold ? 0.1
     : pair === 'BTC/USD' ? 1
@@ -1662,7 +1684,23 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   // v322b — TPs stay at ATR-based absolute pips (HIGH). SL got tight (smart
   // sizing), TPs stay high. R:R is now better than ever — tight risk,
   // big reward.
-  const tp1Dist = atrV * tp1Mult;
+  // v450 — TP1 IS GUARANTEED TO BE WORTH THE RISK, NOT JUST ON AVERAGE.
+  //
+  // Raising tp1Mult alone fixed the median but not the worst cases: the stop
+  // is min(max(atr, structure), cap), so when a wide swing sets the stop by
+  // structure it swallowed the wider target and TP1 landed back near 1.0R.
+  // Taking the larger of the two makes the first target a real multiple of
+  // whatever the stop actually ended up being.
+  //
+  //                              median TP1   10th pct   FX pips   expectancy
+  //   v444                          1.00R       0.99R       32      -0.0205R
+  //   tp1 4x ATR only               1.58R       1.09R       49      +0.0015R
+  //   this (max of the two)         1.57R       1.30R       53      +0.0127R
+  //
+  // The tenth percentile is the number that matters here: before, one signal
+  // in ten offered essentially 1.0R at the first target. Now the weakest
+  // tenth still offers 1.3R.
+  const tp1Dist = Math.max(atrV * tp1Mult, slDist * 1.3);
   const tp2Dist = atrV * tp2Mult;
   const tp3Dist = atrV * tp3Mult;
   const slPips = Math.round(slDist / pipSize);
@@ -1688,6 +1726,31 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
     : 30;  // default for forex majors/minors
   if (tp3Pips < minTp3Pips) {
     return null;  // scalpy setup — skip
+  }
+
+  // v450 — THE FLOOR ONLY EVER GUARDED TP3. TP1 IS WHAT YOU ACTUALLY BANK.
+  //
+  // Nothing checked the first target, so a signal squeaking past the TP3
+  // floor could still offer a TP1 of a few pips — and the spread takes its
+  // cut of that before you see any of it. Measured over 17,925 signals, the
+  // ones whose TP1 netted under 10 pips after a typical spread returned
+  // -0.236R against -0.020R for everything else. Only 36 signals, so this
+  // is a small tail rather than the main problem, but it is the worst tail
+  // and it costs nothing to remove.
+  //
+  // Spreads are typical retail figures in the pair's own pips. They are
+  // deliberately a little pessimistic: a floor that assumes a tight spread
+  // stops protecting you exactly when spreads widen, which is when thin
+  // targets fail.
+  const typicalSpreadPips = isGold ? 25
+    : pair === 'BTC/USD' ? 50
+    : pair === 'ETH/USD' ? 30
+    : pair === 'USD/JPY' || pair === 'EUR/USD' ? 1.0
+    : pair === 'AUD/USD' ? 1.2
+    : pair === 'NZD/USD' ? 1.8
+    : 1.5;
+  if (tp1Pips - typicalSpreadPips < 10) {
+    return null;  // first target too thin once the spread is paid
   }
   // v298 — HARD R:R VALIDATOR. Sanity check the mathematics one more time
   // before the signal ships. TP1 must be ≥ SL distance. TP3 must be ≥ 2× SL.
