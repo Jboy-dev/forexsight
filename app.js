@@ -37,6 +37,11 @@
   window.__v428MirrorInstalled = true;
 
   const _origFetch = window.fetch.bind(window);
+  // v451 — expose the unwrapped fetch so the liveness probe can bypass
+  // this wrapper. Probing through the wrapper is self-defeating: it
+  // converts a dead API's HTML into synthetic JSON, which the probe
+  // would then read as a healthy response.
+  window._v428OrigFetch = _origFetch;
 
   // Endpoints that have a static mirror counterpart in /data/.
   // Anything not listed simply fails through as before (no mirror exists).
@@ -104,7 +109,29 @@
     const PERSISTENCE = name === 'sync-data' || name === 'trades' || name === 'push-subscribe';
     if (STATE_CHANGING || PERSISTENCE) return _origFetch(input, init);
 
+    // v451 — when the API is known dead, don't issue the request at all.
+    //
+    // The wrapper already degraded gracefully, but it still fired a real
+    // request for every call and threw the result away. Across ~25 endpoints
+    // and repeated polls that is what filled the network log with failures
+    // and made the app feel like it had connection problems. It never did:
+    // the requests completed in 50ms with the static HTML shell, because
+    // Cloudflare is not routing /api/* to Functions on this project.
+    //
+    // The probe in _v451ApiAlive() answers that question once per session and
+    // rechecks every 5 minutes, so this skips straight to the mirror while
+    // the API is down and resumes using it the moment it returns.
+    const apiUp = (typeof _v451ApiAlive === 'function' && name !== 'ping')
+      ? await _v451ApiAlive().catch(() => true)
+      : true;
+
     if (!MIRRORED.has(name)) {
+      if (!apiUp) {
+        return new Response(
+          JSON.stringify({ ok: false, _apiUnavailable: true, _endpoint: name, signals: [], items: [], events: [] }),
+          { status: 200, headers: { 'Content-Type': 'application/json', 'x-forexsight-source': 'standby' } }
+        );
+      }
       try {
         const res = await _origFetch(input, init);
         if (res.ok && isJsonResponse(res)) return res;
@@ -121,11 +148,13 @@
     }
 
     let liveRes = null;
-    try {
-      liveRes = await _origFetch(input, init);
-      if (liveRes.ok && isJsonResponse(liveRes)) return liveRes;   // healthy
-    } catch {
-      // network error — fall through to mirror
+    if (apiUp) {                       // v451 — skip when known dead
+      try {
+        liveRes = await _origFetch(input, init);
+        if (liveRes.ok && isJsonResponse(liveRes)) return liveRes;   // healthy
+      } catch {
+        // network error — fall through to mirror
+      }
     }
 
     // Live API is down or served HTML. Fall back, freshest source first:
@@ -4962,6 +4991,10 @@ function _v449Resume() {
     }
   }, 250);
 }
+// v451 — establish connection state before the first data read, so the
+// app never issues a request it already knows will fail.
+try { _v451ApiAlive(); } catch {}
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') _v449Resume();
   else setupAutoRefresh();                    // tears the timers down
@@ -5881,8 +5914,103 @@ window._v428dNormaliseSignal = _v428dNormaliseSignal;
 
 // v427c — Try /api/latest-signals; if it returns HTML (Functions down),
 // fall over to the same-origin /data/*.json mirror. Never throws.
+// ═══════════════════════════════════════════════════════════════════════
+// v451 — STOP CALLING AN API THAT ISN'T THERE.
+//
+// Cloudflare is not routing /api/* to Functions on this project: a brand new
+// endpoint with no imports, no bindings and no fetches returns the static
+// HTML shell in 0.05s, so nothing is reaching the runtime. That is a project
+// setting, not a code fault, and the app cannot fix it from the browser.
+//
+// What the app CAN stop doing is pretending otherwise. Every data read tried
+// /api/* first, waited for it, got HTML back, and only then fell through to
+// the mirror. Multiply that by every poll and every panel and you get the
+// constant "network issues": dozens of failed requests, console errors, and
+// a delay in front of data that was available immediately.
+//
+// This probes once per session. If Functions are dead the app routes
+// straight to the static mirror for the rest of the session — no retries, no
+// failed requests, no waiting. It re-probes every 5 minutes so that the
+// moment Functions come back the app picks them up on its own without a
+// reload. The probe is /api/ping, which exists purely to answer this
+// question and costs one invocation.
+// ═══════════════════════════════════════════════════════════════════════
+window._v451Api = { alive: null, checkedAt: 0, probing: null };
+
+async function _v451ApiAlive() {
+  // Self-initialise. The fetch wrapper is installed near the top of this file
+  // and can call in before the assignment above has executed, so relying on
+  // it being present threw "Cannot read properties of undefined" on early
+  // requests. Function declarations hoist; plain assignments do not.
+  const st = (window._v451Api ||= { alive: null, checkedAt: 0, probing: null });
+  const RECHECK_MS = 5 * 60 * 1000;
+  if (st.alive !== null && Date.now() - st.checkedAt < RECHECK_MS) return st.alive;
+  if (st.probing) return st.probing;                 // coalesce concurrent probes
+  st.probing = (async () => {
+    let ok = false;
+    try {
+      const ctl = new AbortController();
+      const t = setTimeout(() => ctl.abort(), 6000);
+      // Use the UNWRAPPED fetch. window.fetch is the v428 wrapper, which
+      // turns a non-JSON API response into a synthetic JSON body — so
+      // probing through it would report the API healthy precisely when it is
+      // not. Fall back to window.fetch only if the original was never stashed.
+      const rawFetch = window._v428OrigFetch || window.fetch;
+      const r = await rawFetch('/api/ping?_p=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
+      clearTimeout(t);
+      const ct = r.headers.get('content-type') || '';
+      if (r.ok && ct.includes('json')) {
+        // Confirm it is OUR payload, not something shaped like JSON.
+        const body = await r.json().catch(() => null);
+        ok = !!(body && body.ok === true && body.pong);
+      }
+    } catch { ok = false; }
+    const was = st.alive;
+    st.alive = ok;
+    st.checkedAt = Date.now();
+    st.probing = null;
+    if (was !== null && was !== ok) {
+      // Only announce a genuine transition, not the first probe.
+      try { showToast(ok ? 'Live connection restored' : 'Live API unavailable — using standby data'); } catch {}
+    }
+    try { _v451RenderConnectionPill(); } catch {}
+    return ok;
+  })();
+  return st.probing;
+}
+
+// A single honest indicator. "Network error" was never accurate — the
+// network is fine and the data is current; it is the live API that is down.
+function _v451RenderConnectionPill() {
+  let el = document.getElementById('v451-conn');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'v451-conn';
+    el.className = 'v451-conn';
+    const host = document.querySelector('.market-bar') || document.body;
+    host.appendChild(el);
+  }
+  const st = (window._v451Api ||= { alive: null, checkedAt: 0, probing: null });
+  const src = (window.state && state._signalsSource) || null;
+  const ageMin = (window.state && state._signalsAt)
+    ? Math.round((Date.now() - state._signalsAt) / 60000) : null;
+  if (st.alive) {
+    el.className = 'v451-conn v451-live';
+    el.textContent = 'Live' + (ageMin != null ? ` · ${ageMin}m` : '');
+    el.title = 'Live API responding. Signals are generated on demand.';
+  } else {
+    el.className = 'v451-conn v451-standby';
+    el.textContent = 'Standby' + (ageMin != null ? ` · ${ageMin}m` : '');
+    el.title = 'The live API is not responding, so the app is reading the '
+      + 'standby feed instead. That feed is regenerated by a separate system '
+      + 'and is independent of it, so signals stay current. Nothing is broken '
+      + 'on your side and no data is lost.';
+  }
+}
+
 async function _v427cFetchSignalsWithMirror() {
-  try {
+  // v451 — skip the doomed call entirely when Functions are known down.
+  if (await _v451ApiAlive()) try {
     const r = await fetch('/api/latest-signals', { cache: 'no-store' });
     const ct = r.headers.get('content-type') || '';
     if (r.ok && ct.includes('json')) {

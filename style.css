@@ -9990,3 +9990,37 @@ body.light-theme .v442-why { color: #475569; }
   color: var(--muted);
 }
 .conf-truth strong { color: var(--text); }
+
+/* v451 — connection state indicator. Replaces the "network error" noise with
+   one honest word: the network is fine, the data is current, it is the live
+   API that is down. Standby is amber rather than red because it is a working
+   state, not a failure — signals are still fresh. */
+.v451-conn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: help;
+}
+.v451-conn::before {
+  content: '';
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.v451-live {
+  background: rgba(48,209,88,0.14);
+  color: var(--buy);
+  border: 1px solid rgba(48,209,88,0.35);
+}
+.v451-standby {
+  background: rgba(255,179,64,0.14);
+  color: #ffb340;
+  border: 1px solid rgba(255,179,64,0.35);
+}
