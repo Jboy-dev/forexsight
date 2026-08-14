@@ -3946,14 +3946,52 @@ async function fastEvaluateOpenTrades() {
     // Pair → Yahoo symbol — XAU/USD uses GC=F per v188
     if (!lookup['XAU/USD']) lookup['XAU/USD'] = 'GC=F';
     if (!lookup['GOLD'])    lookup['GOLD']    = 'GC=F';
-    const results = await Promise.allSettled(pairs.map(async (p) => {
-      const sym = lookup[p];
-      if (!sym) return null;
-      const r = await fetch(`/api/prices?symbol=${sym}`, { cache: 'no-store' });
-      if (!r.ok) return null;
-      const data = await r.json();
-      return { pair: p, ohlc: data.ohlc };
-    }));
+    // v452 — THE MONITOR STOPPED BECAUSE ITS ONLY PRICE SOURCE WAS THE DEAD API.
+    //
+    // This fetched /api/prices per pair. With Functions not running, that
+    // returns the wrapper's empty stand-in, data.ohlc is undefined, the loop
+    // below throws on it, and the catch painted "Monitor paused — connection
+    // issue". Nothing was wrong with the connection: the app was asking the
+    // one source that could not answer.
+    //
+    // It now falls back to the same CORS-direct feeds the signal cards use
+    // (Binance, Coinbase, and a reference rate that cross-checks the FX
+    // quotes) — none of which touch Cloudflare. Those give a spot price, not
+    // bars, so consecutive reads are accumulated into a running high/low per
+    // pair. That is what lets a stop or target touched BETWEEN two polls
+    // still register instead of being missed because price came back.
+    const apiUp = (typeof _v451ApiAlive === 'function')
+      ? await _v451ApiAlive().catch(() => false) : true;
+
+    let results;
+    if (apiUp) {
+      results = await Promise.allSettled(pairs.map(async (p) => {
+        const sym = lookup[p];
+        if (!sym) return null;
+        const r = await fetch(`/api/prices?symbol=${sym}`, { cache: 'no-store' });
+        if (!r.ok) return null;
+        const data = await r.json();
+        if (!Array.isArray(data.ohlc) || !data.ohlc.length) return null;
+        return { pair: p, ohlc: data.ohlc };
+      }));
+    } else {
+      let live = {};
+      try { live = (await _v440FetchLivePrices()) || {}; } catch {}
+      if (!Object.keys(live).length && _v440Live && _v440Live.prices) live = _v440Live.prices;
+      window._v452Range ||= {};
+      const now = Date.now();
+      results = pairs.map((p) => {
+        const px = live[p];
+        if (!Number.isFinite(px)) return { status: 'fulfilled', value: null };
+        const r = (window._v452Range[p] ||= { hi: px, lo: px });
+        if (px > r.hi) r.hi = px;
+        if (px < r.lo) r.lo = px;
+        // One synthetic bar spanning everything seen since monitoring began.
+        return { status: 'fulfilled', value: { pair: p, ohlc: [{ t: now, o: px, h: r.hi, l: r.lo, c: px }] } };
+      });
+      _v452Covered = pairs.filter(p => Number.isFinite(live[p]));
+      _v452Uncovered = pairs.filter(p => !Number.isFinite(live[p]));
+    }
     let totalClosed = 0;
     for (const res of results) {
       if (res.status !== 'fulfilled' || !res.value) continue;
@@ -3977,20 +4015,46 @@ async function fastEvaluateOpenTrades() {
     _fastTickInFlight = false;
   }
 }
+// v452 — which pairs the fallback feed can actually price this tick.
+let _v452Covered = [], _v452Uncovered = [];
+
 function _updateMonitorPulse(state, info) {
   const el = document.getElementById('trade-monitor-pulse');
   if (!el) return;
   el.classList.remove('mon-checking', 'mon-ok', 'mon-error');
+  const apiDown = window._v451Api && window._v451Api.alive === false;
   if (state === 'checking') {
     el.classList.add('mon-checking');
     el.textContent = '● Monitoring open trades · checking now';
+    el.title = '';
   } else if (state === 'ok') {
     el.classList.add('mon-ok');
     const secs = Math.round((Date.now() - _lastFastTickAt) / 1000);
-    el.textContent = `● Live monitor · last check ${secs}s ago${info && info.closed ? ` · ${info.closed} just closed` : ''}`;
+    const closed = info && info.closed ? ` · ${info.closed} just closed` : '';
+    if (apiDown) {
+      // Say plainly what is watching and what it can and cannot see. The old
+      // text claimed a "connection issue" while the monitor was in fact
+      // running; the opposite mistake — implying full bar coverage from a
+      // spot feed — would be worse.
+      el.textContent = `● Live monitor · direct price feed · checked ${secs}s ago${closed}`;
+      el.title = 'The live API is down, so trades are being watched using '
+        + 'direct market feeds (Binance, Coinbase, FX reference) instead. '
+        + 'These give the current price rather than full candles, so highs '
+        + 'and lows are accumulated between checks. A level touched and '
+        + 'reversed within a single check window can still be missed.'
+        + (_v452Uncovered.length
+            ? ` Not priced right now: ${_v452Uncovered.join(', ')}.`
+            : '');
+    } else {
+      el.textContent = `● Live monitor · last check ${secs}s ago${closed}`;
+      el.title = '';
+    }
   } else if (state === 'error') {
     el.classList.add('mon-error');
-    el.textContent = '● Monitor paused — connection issue';
+    el.textContent = '● Monitor retrying — no price feed reachable';
+    el.title = 'Neither the live API nor the direct market feeds responded on '
+      + 'this check. The monitor keeps retrying; your trades and levels are '
+      + 'unaffected and nothing has been closed or lost.';
   }
 }
 // v334 — SERVER-SYNC FALLBACK. The client-side monitor uses Yahoo OHLC
