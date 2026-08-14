@@ -4938,12 +4938,33 @@ function setupAutoRefresh() {
 
 // Stop the clock when the tab goes away, and catch up immediately when it
 // comes back so returning to the app never shows stale prices.
+// v449 — ONE COORDINATED RESUME, NOT FIVE RACING ONES.
+//
+// Returning to the tab used to fire five separate refreshes: this handler,
+// startServerPolling's, a literal duplicate of pollServerSignals right after
+// it, and _forceFreshScan from the gold poller. Several of them write the
+// signal list and re-render, so a single tab switch produced a burst of
+// competing paints — visible as the feed jumping.
+//
+// Now one debounced resume drives it. loadSignals is called WITHOUT force:
+// force clears the cache, which threw away perfectly good signals and made
+// the feed rebuild from scratch every time the user glanced away and back.
+let _v449ResumeTimer = null;
+function _v449Resume() {
+  if (_v449ResumeTimer) return;               // already scheduled — coalesce
+  _v449ResumeTimer = setTimeout(() => {
+    _v449ResumeTimer = null;
+    if (document.visibilityState !== 'visible') return;
+    setupAutoRefresh();
+    if (state.autoRefresh) {
+      loadSignals(false);
+      loadShadowFeed().catch(() => {});
+    }
+  }, 250);
+}
 document.addEventListener('visibilitychange', () => {
-  setupAutoRefresh();
-  if (document.visibilityState === 'visible' && state.autoRefresh) {
-    loadSignals(true);
-    loadShadowFeed().catch(() => {});
-  }
+  if (document.visibilityState === 'visible') _v449Resume();
+  else setupAutoRefresh();                    // tears the timers down
 });
 
 // Forex market hours: closed from Friday 22:00 UTC to Sunday 22:00 UTC.
@@ -5523,9 +5544,82 @@ function showWeekendBannerIfNeeded() {
   grid.parentNode.insertBefore(banner, grid);
 }
 
+// ═══════════════════════════════════════════════════════════════════════
+// v449 — STOP THE FEED FLICKERING.
+//
+// Signals were disappearing and reappearing. Six separate places assigned
+// `state.signals` and then called renderSignals(), and not one of them
+// checked whether it was about to replace real signals with nothing:
+//
+//   • the server/mirror fetch                    (good data)
+//   • the heavy client scan, twice — its final assignment replaced the set
+//     WHOLESALE, so if its 16 parallel fetches came back thin it wrote an
+//     empty array over signals that were already on screen
+//   • three visibility/refresh paths, one of which accepted any array at
+//     all: `if (Array.isArray(d.signals)) state.signals = d.signals`
+//
+// The worst of it was a six-second timer. After the server signals painted,
+// loadSignals scheduled the heavy client scan; six seconds later that scan
+// overwrote them with its own, usually shorter, result. Cards appeared, sat
+// for six seconds, vanished — then came back on the next poll. Exactly the
+// disappear/reappear the user reported.
+//
+// Every writer now goes through this one gate, and the rule is simple: a
+// result with no signals in it never blanks a feed that has signals. A
+// failed or thin fetch is not evidence that the setups are gone. Genuinely
+// finished setups still leave, because the source stops publishing them and
+// a NON-empty later result replaces the list normally.
+// ═══════════════════════════════════════════════════════════════════════
+function applySignals(next, source) {
+  const incoming = Array.isArray(next)
+    ? next.filter(s => s && s.pair && s.direction && s.entry != null)
+    : [];
+  const current = Array.isArray(state.signals) ? state.signals : [];
+
+  if (!incoming.length && current.length) {
+    // Hold what is on screen. Say so in the status line rather than
+    // silently showing stale data as if it were fresh.
+    state._signalsHeldAt = Date.now();
+    const el = $('#signals-status');
+    if (el) {
+      const ageMin = state._signalsAt ? Math.round((Date.now() - state._signalsAt) / 60000) : null;
+      el.textContent = `${current.length} signal${current.length === 1 ? '' : 's'}`
+        + ` · ${state._signalsSource || 'cached'}`
+        + (ageMin != null ? ` · ${ageMin}m ago` : '')
+        + ' · last check found no new setups';
+    }
+    return false;
+  }
+
+  // A weaker source must not shrink a fresh stronger one. The client scan
+  // applies different gates from the server, so it routinely returns a
+  // shorter list off the same market — and letting that through made the
+  // feed drop from three cards to one and back again on the next poll.
+  // While the server or mirror snapshot is still fresh it wins; once it goes
+  // stale the client scan is the better information and takes over.
+  const AUTHORITY = { server: 3, mirror: 2, 'client-scan': 1 };
+  const incomingRank = AUTHORITY[source] || 1;
+  const currentRank = AUTHORITY[state._signalsSource] || 0;
+  const currentAgeMin = state._signalsAt ? (Date.now() - state._signalsAt) / 60000 : Infinity;
+  if (incomingRank < currentRank && currentAgeMin < 10 && incoming.length < current.length) {
+    return false;
+  }
+
+  state.signals = incoming;
+  state._signalsSource = source;
+  state._signalsAt = Date.now();
+  if (typeof renderSignals === 'function') renderSignals();
+  return true;
+}
+
 async function loadSignals(force = false) {
   if (force) saveCache({});
-  $('#signals-status').textContent = 'Loading signals…';
+  // v449 — only claim to be loading when there is nothing to look at. This
+  // ran on every poll, so the status line flashed "Loading signals…" over a
+  // perfectly good feed every 90 seconds.
+  if (!(state.signals && state.signals.length)) {
+    $('#signals-status').textContent = 'Loading signals…';
+  }
   showWeekendBannerIfNeeded();
 
   // v391 — CRITICAL cold-load fix. Try server signals FIRST. If they're
@@ -5554,16 +5648,17 @@ async function loadSignals(force = false) {
     const ageMin = ts ? (Date.now() - ts) / 60000 : Infinity;
     const sigs = Array.isArray(d.signals) ? d.signals : [];
     if (sigs.length > 0) {
-      state.signals = sigs;
-      if (typeof renderSignals === 'function') renderSignals();
       const src = d._source === 'cf-static-mirror' ? 'mirror' : 'server';
+      applySignals(sigs, src);
       const ageStr = isFinite(ageMin) ? `${Math.round(ageMin)}m ago` : 'unknown age';
       $('#signals-status').textContent = `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`;
-      // Only kick heavy scan if we're on live API (not mirror) AND signals
-      // are fresh. Mirror runs on GH Actions, no need to burn quota re-scanning.
-      if (d._source !== 'cf-static-mirror' && ageMin < 5) {
-        setTimeout(() => { _loadSignalsHeavyScan(force).catch(() => {}); }, 6000);
-      }
+      // v449 — the six-second heavy-scan timer is gone. It was scheduled
+      // right after these signals painted, and when it finished it replaced
+      // them with its own result, which is usually shorter because the
+      // client gates differ from the server's. That is what made cards
+      // appear, hold for six seconds, and vanish. The server/mirror snapshot
+      // is the authority for what is on screen; the client scan now only
+      // fills in when there is nothing to show at all (below).
       return;
     }
   }
@@ -5843,8 +5938,7 @@ async function _loadSignalsHeavyScan(force = false) {
         const ageMin = d.ts ? (Date.now() - d.ts) / 60000 : Infinity;
         const sigs = Array.isArray(d.signals) ? d.signals : [];
         if (sigs.length > 0) {
-          state.signals = sigs;
-          if (typeof renderSignals === 'function') renderSignals();
+          applySignals(sigs, 'server');           // v449 — gated
           return; // skip the 16-price storm
         }
       }
@@ -6056,7 +6150,9 @@ async function _loadSignalsHeavyScan(force = false) {
     if (a.bestGradeRank !== b.bestGradeRank) return a.bestGradeRank - b.bestGradeRank;
     return (b.edgeScore || 0) - (a.edgeScore || 0);
   });
-  state.signals = signals;
+  // v449 — gated. This line used to replace the whole set unconditionally,
+  // so a scan whose upstream fetches came back thin wiped a populated feed.
+  applySignals(signals, 'client-scan');
   $('#last-updated').textContent = 'Updated ' + new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true });
   if (failures && !signals.length) {
     $('#signals-status').innerHTML = 'Temporarily no signals — upstream data sources recovering. Try again in a minute.';
@@ -6250,6 +6346,25 @@ function _v390ShowNewSignalToast(brandNewKeys, allSigs) {
 function renderSignals() {
   try { _v390CheckNewSignals(state.signals); } catch {}
   const grid = $('#signals-grid');
+  // v449 — SKIP THE REBUILD WHEN NOTHING CHANGED.
+  //
+  // Every poll called this, and it assigns grid.innerHTML, which destroys
+  // and recreates every card. Cards therefore flashed on a 90-second beat
+  // even when the data was byte-identical — and any card the user had
+  // expanded snapped shut. renderHistory already guards itself this way;
+  // the signal grid never did.
+  //
+  // The fingerprint covers everything that changes what is drawn: the levels,
+  // the filter, and the live-price annotation. If it matches the last paint,
+  // this returns without touching the DOM.
+  try {
+    const fp = `${state.filterMode}|${state.minConf}|` + (state.signals || []).map(s =>
+      `${s.pair}${s.direction}${s.entry}${s.sl}${s.tp1}${s.tp2}${s.tp3}`
+      + `${s.confidence}${s._live ? s._livePrice : ''}${s._liveStatus || ''}`
+    ).join(';');
+    if (grid && grid._lastFp === fp && grid.innerHTML) return;
+    if (grid) grid._lastFp = fp;
+  } catch {}
   let pool;
   if (state.filterMode === 'extreme') {
     pool = state.signals.filter(isExtremeSetup);
@@ -15199,10 +15314,9 @@ document.addEventListener('visibilitychange', () => {
   else if (serverPollTimer) { clearInterval(serverPollTimer); serverPollTimer = null; }
 });
 
-// Also poll immediately when the tab becomes visible (e.g. user returns to PWA)
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') pollServerSignals();
-});
+// v449 — removed: startServerPolling() above already polls immediately when
+// the tab becomes visible, so this was a second identical fetch on every
+// tab switch, racing the first to write the same list.
 
 // Init
 $('#conf-val').textContent = state.minConf + '%';
@@ -16732,10 +16846,9 @@ async function _forceFreshScan(opts = {}) {
       const cached = await fetch('/api/latest-signals', { cache: 'no-store' });
       if (cached.ok) {
         const d = await cached.json();
-        if (d && Array.isArray(d.signals)) {
-          state.signals = d.signals;
-          if (typeof renderSignals === 'function') renderSignals();
-        }
+        // v449 — gated. This accepted an empty array, so the moment the
+        // API came back reporting zero signals the feed went blank.
+        if (d) applySignals(d.signals, 'server');
       }
     } catch {}
 
@@ -16755,10 +16868,7 @@ async function _forceFreshScan(opts = {}) {
         const res = await fetch('/api/latest-signals', { cache: 'no-store' });
         if (!res.ok) return;
         const data = await res.json();
-        if (data && Array.isArray(data.signals)) {
-          state.signals = data.signals;
-          if (typeof renderSignals === 'function') renderSignals();
-        }
+        if (data) applySignals(data.signals, 'server');   // v449 — gated
       } catch {}
     }, 4500);
   } catch {}
@@ -16797,8 +16907,7 @@ _forceFreshScan = async function(opts = {}) {
         // API returning HTML fallback — use git mirror
         const mirror = await window._v426MirrorFetch('latest-signals');
         if (mirror && Array.isArray(mirror.signals) && mirror.signals.length) {
-          state.signals = mirror.signals;
-          if (typeof renderSignals === 'function') renderSignals();
+          applySignals(mirror.signals, 'mirror');          // v449 — gated
           const statusEl = document.getElementById('signals-status');
           if (statusEl) statusEl.textContent = `${mirror.signals.length} signals · GitHub mirror (API down)`;
           return;
