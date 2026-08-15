@@ -1,9 +1,9 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-08-15T14:09:36.042Z",
+  "timestamp": "2026-08-15T14:35:49.544Z",
   "algoWindow": {
-    "utcTime": "14:09",
+    "utcTime": "14:35",
     "activeWindow": {
       "name": "London-NY overlap",
       "start": 780,
@@ -13,12 +13,12 @@
     "algoIntensity": "peak",
     "note": "🕒 Active: London-NY overlap (peak algo activity)"
   },
-  "overallBias": "net-BUY",
+  "overallBias": "balanced",
   "pairsScanned": 9,
   "marketState": {
-    "buyBiased": 1,
+    "buyBiased": 0,
     "sellBiased": 0,
-    "neutral": 0
+    "neutral": 1
   },
   "pairs": [
     {
@@ -29,26 +29,20 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 62975.7,
-      "atr": 82.49286,
+      "price": 62972.19140625,
+      "atr": 94.52874,
       "vwap": {
-        "vwap": 62986.15545,
-        "price": 62975.7,
+        "vwap": 62984.11818,
+        "price": 62972.19140625,
         "distanceATR": -0.13,
         "position": "at",
         "bias": "neutral",
-        "bars": 15
+        "bars": 16
       },
       "absorption": {
         "detected": false
       },
-      "wick": {
-        "detected": true,
-        "side": "lower",
-        "wickToBodyRatio": 2.3,
-        "direction": "BUY",
-        "note": "Long lower wick (2.3× body) — buyers defended below 62973.2"
-      },
+      "wick": null,
       "roundNumber": {
         "roundBelow": 62500,
         "roundAbove": 63000,
@@ -58,10 +52,10 @@
         "note": "⚡ Price magnetized to roundAbove 63000 (0.29× ATR away)"
       },
       "rangeCompression": null,
-      "algoBias": "BUY",
-      "algoStrength": 2,
+      "algoBias": "NEUTRAL",
+      "algoStrength": 0,
       "votes": {
-        "BUY": 2,
+        "BUY": 0,
         "SELL": 0
       }
     },
@@ -101,6 +95,6 @@
       "error": "no bars"
     }
   ],
-  "interpretation": "Algo footprints across 1 pairs · 1 showing institutional BUY bias, 0 SELL. Currently in \"London-NY overlap\" window with peak algo activity.",
+  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 0 SELL. Currently in \"London-NY overlap\" window with peak algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
