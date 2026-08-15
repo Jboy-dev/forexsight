@@ -1,12 +1,17 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-08-15T07:57:23.011Z",
+  "timestamp": "2026-08-15T08:18:41.526Z",
   "algoWindow": {
-    "utcTime": "07:57",
-    "activeWindow": null,
-    "algoIntensity": "normal",
-    "note": "No specific algo window"
+    "utcTime": "08:18",
+    "activeWindow": {
+      "name": "London morning fix",
+      "start": 495,
+      "end": 525,
+      "algo": "high"
+    },
+    "algoIntensity": "high",
+    "note": "🕒 Active: London morning fix (high algo activity)"
   },
   "overallBias": "net-SELL",
   "pairsScanned": 9,
@@ -24,11 +29,11 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 62982.80859375,
-      "atr": 108.637,
+      "price": 62986.6,
+      "atr": 103.42857,
       "vwap": {
-        "vwap": 63016.99074,
-        "price": 62982.80859375,
+        "vwap": 63018.69202,
+        "price": 62986.6,
         "distanceATR": -0.31,
         "position": "below",
         "bias": "institutional-SELL",
@@ -37,21 +42,27 @@
       "absorption": {
         "detected": false
       },
-      "wick": null,
+      "wick": {
+        "detected": true,
+        "side": "upper",
+        "wickToBodyRatio": 66.4,
+        "direction": "SELL",
+        "note": "Long upper wick (66.4× body) — sellers rejected above 63020.3"
+      },
       "roundNumber": {
         "roundBelow": 62500,
         "roundAbove": 63000,
         "nearestLevel": 63000,
-        "distanceATR": 0.16,
+        "distanceATR": 0.13,
         "isMagnetized": true,
-        "note": "⚡ Price magnetized to roundAbove 63000 (0.16× ATR away)"
+        "note": "⚡ Price magnetized to roundAbove 63000 (0.13× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "SELL",
-      "algoStrength": 2,
+      "algoStrength": 4,
       "votes": {
         "BUY": 0,
-        "SELL": 2
+        "SELL": 4
       }
     },
     {
@@ -90,6 +101,6 @@
       "error": "no bars"
     }
   ],
-  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 1 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 1 SELL. Currently in \"London morning fix\" window with high algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
