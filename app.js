@@ -278,10 +278,73 @@
 window.addEventListener('error', (e) => {
   try {
     console.warn('[fxsight global error]', e.message || 'unknown', e.filename || '', e.lineno || '');
+    _v453NoteCrash(e.message || 'unknown');
   } catch {}
   // Don't prevent default — let the browser still surface in dev tools.
   // We just don't want it killing event loops or showing red overlays.
 });
+
+// ═══════════════════════════════════════════════════════════════════════
+// v453 — LAST RESORT: A BLANK SCREEN IS NEVER THE ANSWER.
+//
+// The guards above keep individual failures from killing the event loop,
+// but they cannot repaint a view that died mid-render. If the app ever ends
+// up showing the user nothing, this notices and offers a way out, because
+// the alternative — a white page that survives every refresh, since the bad
+// state is in storage — is the one failure a user cannot work around.
+//
+// It deliberately does NOT wipe anything on its own. Silent data deletion to
+// fix a rendering bug would be a worse outcome than the bug. It explains the
+// situation and lets the user choose, and the reset it offers clears only
+// cached view state, leaving trades intact.
+let _v453Crashes = [];
+function _v453NoteCrash(msg) {
+  const now = Date.now();
+  _v453Crashes = _v453Crashes.filter(t => now - t < 10000);
+  _v453Crashes.push(now);
+  // Three failures inside ten seconds means something structural, not a
+  // one-off. Check whether the user is actually looking at an empty app.
+  if (_v453Crashes.length >= 3) setTimeout(_v453CheckAlive, 400);
+}
+
+function _v453CheckAlive() {
+  try {
+    if (document.getElementById('v453-rescue')) return;
+    const main = document.querySelector('#signals-grid, .tab-content, main, body');
+    const visibleText = (document.body.innerText || '').trim();
+    // Only intervene when the page is genuinely empty to the eye.
+    if (visibleText.length > 120) return;
+    const el = document.createElement('div');
+    el.id = 'v453-rescue';
+    el.className = 'v453-rescue';
+    el.innerHTML = `
+      <h2>The page stopped drawing</h2>
+      <p>Something in the saved data is making a view fail. Your trades are
+         still stored — nothing has been deleted.</p>
+      <p>Reloading fixes most cases. If it comes straight back, the button
+         below clears cached display data only and leaves your trades and
+         history alone.</p>
+      <div class="v453-actions">
+        <button id="v453-reload">Reload</button>
+        <button id="v453-reset">Clear cached view data</button>
+      </div>
+      <p class="v453-small">Signals keep being generated and watched while
+         this is on screen — nothing is missed.</p>`;
+    document.body.appendChild(el);
+    document.getElementById('v453-reload').onclick = () => location.reload();
+    document.getElementById('v453-reset').onclick = () => {
+      try {
+        // Cached/derived state only. TRADES_KEY and sync settings are left
+        // untouched: they are the user's own record, not our scratch space.
+        for (const k of Object.keys(localStorage)) {
+          if (k === TRADES_KEY) continue;
+          if (/cache|signals|shadow|brain|verdict|seen|dedup/i.test(k)) localStorage.removeItem(k);
+        }
+      } catch {}
+      location.reload();
+    };
+  } catch {}
+}
 window.addEventListener('unhandledrejection', (e) => {
   try {
     const reason = e.reason && e.reason.message ? e.reason.message : String(e.reason || 'unknown');
@@ -3570,9 +3633,79 @@ function calculatePosition(signal, riskUsd) {
 
 // ========== Active Trades (watchlist with win/loss tracking + delete) ==========
 const SYNC_CODE_KEY = 'forexsight_sync_code';
-function getTrades() { return safeLoad(TRADES_KEY, []); }
+// ═══════════════════════════════════════════════════════════════════════
+// v453 — ONE BOUNDARY THAT CANNOT RETURN RUBBISH.
+//
+// getTrades() previously handed back whatever was in storage. safeLoad
+// survives unparseable JSON, but valid JSON that is the WRONG SHAPE went
+// straight through, and every caller assumed an array of well-formed trades.
+// Tested against the live app, four cases took the whole view down:
+//
+//   stored value        getTrades()   renderTrades / renderHistory
+//   'null'              null          both threw on .filter / .slice
+//   '{"id":"a"}'        object        "getTrades(...).slice is not a function"
+//   '[null,null]'       [null,null]   threw reading .status of null
+//   '[{"id":"x"}]'      [{id}]        renderHistory threw on missing fields
+//
+// Any of those is a blank screen the user cannot clear by refreshing,
+// because the bad value is persisted and reloads straight back in. That is
+// the worst failure this app can have: it survives restarts.
+//
+// Rather than guard every renderer — new ones would keep being written
+// without guards — the invariant is enforced once, here. Callers can now
+// rely on getTrades() returning an array whose entries are objects with the
+// fields the UI reads. Anything that fails the check is dropped, and the
+// cleaned list is written back so the corruption does not persist.
+function _v453IsUsableTrade(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return false;
+  if (typeof t.pair !== 'string' || !t.pair) return false;
+  if (t.direction !== 'BUY' && t.direction !== 'SELL') return false;
+  // entry and sl drive every downstream calculation; without finite numbers
+  // the row cannot be priced, sized, or resolved.
+  //
+  // Number() is deceptively permissive here: Number(null) is 0, Number('')
+  // is 0, and Number([]) is 0 — all finite, all meaningless as a price. A
+  // trade that slipped through with entry 0 would then produce nonsense R
+  // multiples and a division by zero in position sizing, which is worse than
+  // dropping it. Reject the blank-ish values explicitly first.
+  const num = (v) => {
+    if (v === null || v === undefined || v === '' || typeof v === 'boolean') return NaN;
+    if (typeof v === 'object') return NaN;
+    const n = Number(v);
+    return Number.isFinite(n) && n !== 0 ? n : NaN;
+  };
+  if (Number.isNaN(num(t.entry)) || Number.isNaN(num(t.sl))) return false;
+  return true;
+}
+
+function getTrades() {
+  const raw = safeLoad(TRADES_KEY, []);
+  const list = Array.isArray(raw) ? raw : [];
+  const clean = list.filter(_v453IsUsableTrade).map(t => ({
+    ...t,
+    entry: Number(t.entry),
+    sl: Number(t.sl),
+    status: (t.status === 'open' || t.status === 'won' || t.status === 'lost' || t.status === 'closed')
+      ? t.status : 'open',
+    takenAt: t.takenAt || new Date().toISOString(),
+    id: t.id != null ? String(t.id) : ('t' + Math.random().toString(36).slice(2)),
+  }));
+  // Repair storage only when something was actually wrong, so the common
+  // path stays a pure read with no writes.
+  if (!Array.isArray(raw) || clean.length !== list.length) {
+    try {
+      safeSave(TRADES_KEY, clean);
+      console.warn(`[v453] repaired trade storage: ${list.length - clean.length} unusable entr`
+        + `${list.length - clean.length === 1 ? 'y' : 'ies'} dropped`);
+    } catch {}
+  }
+  return clean;
+}
+
 function saveTrades(t) {
-  const trimmed = t.slice(-500);
+  // v453 — never persist a shape that would break the next read.
+  const list = Array.isArray(t) ? t.filter(_v453IsUsableTrade) : [];
+  const trimmed = list.slice(-500);
   safeSave(TRADES_KEY, trimmed);
   pushTradesToCloud(trimmed); // fire-and-forget
   return true;

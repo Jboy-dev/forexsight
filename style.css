@@ -10024,3 +10024,40 @@ body.light-theme .v442-why { color: #475569; }
   color: #ffb340;
   border: 1px solid rgba(255,179,64,0.35);
 }
+
+/* v453 — the rescue panel. Only ever visible if the app has drawn nothing,
+   which should be never; it exists so that "never" is not load-bearing. */
+.v453-rescue {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 22px;
+  background: var(--bg, #0b0b0f);
+  color: var(--text, #f2f2f7);
+  font-size: 15px;
+  line-height: 1.6;
+  overflow-y: auto;
+}
+.v453-rescue h2 { font-size: 19px; font-weight: 700; margin: 0; }
+.v453-rescue p { margin: 0; max-width: 46em; }
+.v453-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+.v453-rescue button {
+  padding: 11px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #2c2c34);
+  background: var(--panel, #16161c);
+  color: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.v453-rescue button:first-child {
+  background: var(--accent, #0a84ff);
+  border-color: transparent;
+  color: #fff;
+}
+.v453-small { font-size: 12.5px; color: var(--muted, #8e8e93); }
