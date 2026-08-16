@@ -1,1 +1,201 @@
-{"ts":1786904833065,"isoTime":"2026-08-16T18:27:13.065Z","count":0,"signals":[],"pipelineDiag":{"stage00_pairsScanned":9,"stage01_quickAnalyzeReturnedCandidates":0,"stage01_perPair":[],"stage02c_beforeSelfAudit":0,"stage02c_pairs":[],"stage03_afterSelfAuditVeto":0,"stage03_activeVetoes":{"combos":[],"pairDirs":[]},"stage03d_afterHourlyVeto":0,"stage03e_afterBrainGate":0,"stage04_afterInvariantsCheck":0,"stage04_droppedByInvariants":0,"stage05_afterPriceMovedGuard":0,"stage05_droppedByPriceMoved":0,"stage99_final":0,"platinumGateDropped":[],"platinumFilterRanTimes":0},"brainGated":[],"brainGatedCount":0,"adaptiveGate":{"minEdgePts":18,"minPWinPct":60,"targetWRPct":70,"tighteningReason":"2+ losses in a row detected — bank-grade pause activated (+8pts edge, +5pts pWin)","basedOnIntelLevel":50},"brainStats":{"totalSamples":46030891,"runs":10327,"lastUpdated":"2026-08-16T17:45:01.058Z","currentRegime":"TRENDING_QUIET","calibrationAccuracy":null},"stale":true,"ageSeconds":2083}
+{
+  "ts": 1786908625756,
+  "isoTime": "2026-08-16T19:30:25.756Z",
+  "count": 2,
+  "signals": [
+    {
+      "pair": "BTC/USD",
+      "direction": "SELL",
+      "confidence": 47,
+      "tier": "best",
+      "chartStudy": {
+        "score": 65,
+        "reasons": [
+          "Trend clean: 8/20 bars in direction (+11)",
+          "Pullback to EMA20 (+8)",
+          "Candle conviction: 55% body (+12)",
+          "Compression 41% (+7)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+3)",
+          "Momentum (RSI) (+4)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "SELL",
+        "strength": 70,
+        "alignment": "aligned",
+        "score": 85,
+        "adx4h": 20,
+        "reasons": [
+          "4H trend DOWN (price < EMA20 < EMA50, ADX 20)",
+          "✓ Signal direction matches 4H trend (+35.20282913229053)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "aligned",
+        "trend": "down",
+        "bias": 10,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "BREAKOUT",
+        "adx": 0,
+        "atrRatio": 1.64,
+        "compression": 1.63
+      },
+      "entry": 63153.03906,
+      "sl": 63330.62695,
+      "tp1": 62868.89844,
+      "tp2": 62655.79297,
+      "tp3": 62371.65234,
+      "adx": 21,
+      "agreement": 50,
+      "indicators": 2,
+      "strategies": 0,
+      "namedStrategies": [],
+      "comboKey": "SELL_",
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": false,
+      "weakSignal": true,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.17,
+      "pipPotential": 781,
+      "pipsToTp1": 284,
+      "pipsToTp2": 497,
+      "pipsToTp3": 781,
+      "pipsToSl": 178,
+      "atrV": 71.03515625,
+      "slDistAtr": 2.5,
+      "tp1DistAtr": 4,
+      "tp2DistAtr": 7,
+      "tp3DistAtr": 11,
+      "slMethod": "atr-floor",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 63153.03906,
+        "afterTp2": 62868.89844,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-08-16T19:30:25.710Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "hitTp1Pct": 36,
+        "hitTp2Pct": 0,
+        "hitTp3Pct": 0,
+        "hitSlPct": 59,
+        "undecidedPct": 5,
+        "expectedR": -0.24,
+        "winProbability": 36
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 0
+    },
+    {
+      "pair": "ETH/USD",
+      "direction": "BUY",
+      "confidence": 97,
+      "tier": "best",
+      "chartStudy": {
+        "score": 59,
+        "reasons": [
+          "Trend clean: 11/20 bars in direction (+15)",
+          "Pullback to EMA20 (+15)",
+          "Candle conviction: 63% body (+14)",
+          "Compression 34% (+7)",
+          "HTF alignment (EMA50 vs EMA200) (+-5)",
+          "Rejection wicks (+3)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "NEUTRAL",
+        "strength": 36,
+        "alignment": "neutral",
+        "score": 50,
+        "adx4h": 14,
+        "reasons": [
+          "4H ranging (ADX 14)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "neutral",
+        "trend": "neutral",
+        "bias": 0,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "BREAKOUT",
+        "adx": 0,
+        "atrRatio": 1.4,
+        "compression": 1.37
+      },
+      "entry": 1886.06006,
+      "sl": 1874.51034,
+      "tp1": 1901.07469,
+      "tp2": 1906.49017,
+      "tp3": 1918.16452,
+      "adx": 23,
+      "agreement": 100,
+      "indicators": 5.5,
+      "strategies": 3,
+      "namedStrategies": [
+        "MOMENTUM",
+        "VWAP",
+        "ICHIMOKU"
+      ],
+      "comboKey": "BUY_ICHIMOKU+MOMENTUM+VWAP",
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": false,
+      "weakSignal": false,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.06,
+      "pipPotential": 321,
+      "pipsToTp1": 150,
+      "pipsToTp2": 204,
+      "pipsToTp3": 321,
+      "pipsToSl": 115,
+      "atrV": 2.9185878208705356,
+      "slDistAtr": 3.957,
+      "tp1DistAtr": 5.144,
+      "tp2DistAtr": 7,
+      "tp3DistAtr": 11,
+      "slMethod": "structure (beyond ATR floor)",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 1886.06006,
+        "afterTp2": 1901.07469,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-08-16T19:30:25.683Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "hitTp1Pct": 33,
+        "hitTp2Pct": 1,
+        "hitTp3Pct": 0,
+        "hitSlPct": 43,
+        "undecidedPct": 23,
+        "expectedR": -0.09,
+        "winProbability": 34
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 0
+    }
+  ],
+  "source": "offline-generator",
+  "correlationFiltered": 0,
+  "note": "Generated by tools/generate-signals.mjs (GitHub Actions) using the same strictAnalyze() the live endpoint uses. Produced independently of Cloudflare so signals stay current when Functions are unavailable.",
+  "errors": [
+    "USD/JPY: last bar 2790min old",
+    "XAU/USD: last bar 2790min old",
+    "GBP/USD: last bar 2790min old",
+    "EUR/USD: last bar 2790min old",
+    "NZD/USD: last bar 2790min old",
+    "AUD/USD: last bar 2790min old",
+    "USD/CAD: last bar 2790min old",
+    "USD/CHF: last bar 2790min old"
+  ]
+}
