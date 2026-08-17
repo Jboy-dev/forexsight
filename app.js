@@ -3677,7 +3677,36 @@ const SYNC_CODE_KEY = 'forexsight_sync_code';
 //   • Every correction keeps the original values under `_correctedFrom`, so
 //     the change is auditable and reversible rather than a silent rewrite of
 //     the user's own record.
+// v455 — relabel flat exits already sitting in history as losses.
+// Needs no market data: a trade whose recorded result is 0R closed at its
+// entry, which is a break-even by definition. Runs before the bar-based
+// recheck so those trades are not then re-examined as losses.
+function _v455FixBreakEvens() {
+  const trades = getTrades();
+  let fixed = 0;
+  for (const t of trades) {
+    if (t.status !== 'lost') continue;
+    const flat = (typeof t.resultR === 'number' && Math.abs(t.resultR) <= 0.02)
+      || (typeof t.pnlPips === 'number' && t.pnlPips === 0
+          && typeof t.closePrice === 'number' && typeof t.entry === 'number'
+          && Math.abs(t.closePrice - t.entry) < Math.abs(t.entry) * 1e-6);
+    if (!flat) continue;
+    t._correctedFrom = t._correctedFrom || {
+      status: t.status, resultR: t.resultR ?? null, pnlPips: t.pnlPips ?? null,
+      correctedAt: new Date().toISOString(),
+      reason: 'closed flat at entry — break-even, not a loss (v455)',
+    };
+    t.status = 'closed';
+    t.breakEven = true;
+    if (typeof t.resultR !== 'number') t.resultR = 0;
+    fixed++;
+  }
+  if (fixed) saveTrades(trades);
+  return fixed;
+}
+
 async function recheckClosedTrades({ apply = true } = {}) {
+  const beFixed = apply ? _v455FixBreakEvens() : 0;
   const trades = getTrades();
   const closed = trades.filter(t => t.status === 'won' || t.status === 'lost');
   if (!closed.length) return { checked: 0, corrected: 0, changes: [] };
@@ -3736,7 +3765,7 @@ async function recheckClosedTrades({ apply = true } = {}) {
     }
   }
   if (apply && changes.length) saveTrades(trades);
-  return { checked, corrected: changes.length, changes };
+  return { checked, corrected: changes.length, changes, breakEvensRelabelled: beFixed };
 }
 
 // The managed ladder, identical to the monitor and shadow-tracker: a third
@@ -4163,6 +4192,7 @@ function closeTrade(id, outcome, closePrice, opts = {}) {
   t.resultR = opts.resultR != null
     ? Number(opts.resultR.toFixed(3))
     : (riskDist > 0 ? Number((((t.closePrice - t.entry) * direction) / riskDist).toFixed(3)) : null);
+  if (opts.breakEven) t.breakEven = true;   // v455 — flat exit, not a loss
   if (opts.maeR != null) t.maeR = Number(opts.maeR.toFixed(2));
   if (opts.mfeR != null) t.mfeR = Number(opts.mfeR.toFixed(2));
   saveTrades(trades);
@@ -4534,13 +4564,37 @@ function evaluateOpenTrades(pair, ohlc, coverage) {
     // bankedR (thirds already taken) plus whatever the remaining fraction
     // exits at, and `price` is the blended price that produces that R, so
     // the pips shown in History are the pips actually banked.
-    let outcome = null, price = null, realisedR = null;
+    let outcome = null, price = null, realisedR = null, breakEven = false;
     const closeRemainingAt = (exitPx) => {
       const exitR = riskDistance > 0
         ? ((exitPx - t.entry) * dirSign) / riskDistance : 0;
       realisedR = bankedR + openFraction * exitR;
       price = t.entry + dirSign * realisedR * riskDistance;
-      outcome = realisedR > 0 ? 'won' : 'lost';
+      // v455 — A BREAK-EVEN EXIT IS NOT A LOSS.
+      //
+      // This read `realisedR > 0 ? 'won' : 'lost'`, so a trade that came out
+      // at exactly 0R was filed as a loss. That is the "lost 0 pips" the user
+      // spotted on gold: entry 4452.30, closed 4452.30, 0 pips, worst
+      // drawdown 0.08R against a stop 41 points away. Price ran 35% toward
+      // TP1, which moves the stop to entry by design, then came back and took
+      // the trade out flat. The protection worked exactly as intended and
+      // nothing was lost — but the record called it a loss, which is untrue
+      // and quietly drags the win rate down.
+      //
+      // Break-even now gets its own outcome. 'closed' is used because the app
+      // already understands that status and History counts it as neither a win
+      // nor a loss, which is the honest treatment: it contributes 0R to
+      // expectancy because that is precisely what it returned.
+      //
+      // The threshold is deliberately tight. A genuine small loss stays a
+      // loss; only a result that rounds to nothing on a 1R risk is treated as
+      // flat.
+      if (Math.abs(realisedR) <= 0.02) {
+        outcome = 'closed';
+        breakEven = true;
+      } else {
+        outcome = realisedR > 0 ? 'won' : 'lost';
+      }
     };
     const stopTouched = t.direction === 'BUY' ? lo <= effectiveSL : hi >= effectiveSL;
     if (stopTouched) {
@@ -4634,7 +4688,7 @@ function evaluateOpenTrades(pair, ohlc, coverage) {
         ? Math.max(0, (t.direction === 'BUY' ? t.entry - lo : hi - t.entry) / riskDistance) : null;
       const mfeR = riskDistance > 0
         ? Math.max(0, (t.direction === 'BUY' ? hi - t.entry : t.entry - lo) / riskDistance) : null;
-      closeTrade(t.id, outcome, price, { tpReached, resultR: realisedR, maeR, mfeR });
+      closeTrade(t.id, outcome, price, { tpReached, resultR: realisedR, maeR, mfeR, breakEven });
       transitioned.push({ ...t, newOutcome: outcome, closePrice: price, tpReached });
     } else if (tpReached !== prevTpReached) {
       // Trade still open but progressed to a new TP — persist the new level
@@ -5224,12 +5278,14 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
     if (!window._v454Rechecked) {
       window._v454Rechecked = true;
       recheckClosedTrades().then(res => {
-        if (res.corrected > 0) {
+        if (res.corrected > 0 || res.breakEvensRelabelled > 0) {
           renderHistory();
           try {
             const w = res.changes.filter(c => c.now === 'won').length;
-            showToast(`Corrected ${res.corrected} trade${res.corrected === 1 ? '' : 's'}`
-              + (w ? ` — ${w} were actually wins` : ''));
+            const bits = [];
+            if (res.corrected) bits.push(`${res.corrected} corrected${w ? ` (${w} actually wins)` : ''}`);
+            if (res.breakEvensRelabelled) bits.push(`${res.breakEvensRelabelled} were break-even, not losses`);
+            showToast('History updated — ' + bits.join(', '));
           } catch {}
           console.warn('[v454] history corrections', res.changes);
         }
@@ -9927,7 +9983,13 @@ function renderHistory() {
 
   const wonCount = closed.filter(t => t.status === 'won').length;
   const lostCount = closed.filter(t => t.status === 'lost').length;
-  const winRate = closed.length ? Math.round(wonCount / closed.length * 100) : 0;
+  // v455 — break-even trades are neither wins nor losses, so they must not sit
+  // in the win-rate denominator. Counting a flat exit against the win rate
+  // understates the strategy just as surely as calling it a loss did.
+  const beCount = closed.filter(t => t.breakEven === true
+    || (t.status === 'closed' && typeof t.resultR === 'number' && Math.abs(t.resultR) <= 0.02)).length;
+  const decided = wonCount + lostCount;
+  const winRate = decided ? Math.round(wonCount / decided * 100) : 0;
 
   // TP-magnitude split for closed wins — same logic as My Trades.
   const winsByTp = { 1: 0, 2: 0, 3: 0 };
@@ -9986,7 +10048,8 @@ function renderHistory() {
       <div class="hs-card hs-total"><span class="hs-num">${closed.length}</span><span class="hs-lbl">total closed</span></div>
       <div class="hs-card hs-won"><span class="hs-num" style="color:var(--buy)">${wonCount}</span><span class="hs-lbl">won</span></div>
       <div class="hs-card hs-lost"><span class="hs-num" style="color:var(--sell)">${lostCount}</span><span class="hs-lbl">lost</span></div>
-      <div class="hs-card hs-rate"><span class="hs-num">${winRate}%</span><span class="hs-lbl">win rate</span></div>
+      <div class="hs-card hs-rate" title="Wins as a share of trades that actually resolved to a win or a loss. Break-even exits are excluded from both sides — they returned nothing, so counting them either way would misstate the record."><span class="hs-num">${winRate}%</span><span class="hs-lbl">win rate</span></div>
+      ${beCount ? `<div class="hs-card hs-be" title="Closed flat at entry because the stop had already been moved there. Not a win and not a loss — 0R either way."><span class="hs-num" style="color:var(--muted)">${beCount}</span><span class="hs-lbl">break-even</span></div>` : ''}
       <div class="hs-card hs-netr" title="Every closed trade added up, measured in R. 1R is what you risked per trade. This is the number that says whether the account is ahead — the win rate alone cannot."><span class="hs-num" style="color:${rColour(withR.length ? netR : null)}">${withR.length ? fmtR(netR) : '—'}</span><span class="hs-lbl">net result</span></div>
       <div class="hs-card hs-exp" title="Average R per trade across ${withR.length} closed trade${withR.length === 1 ? '' : 's'}. Positive means the average trade makes money even if most individual trades lose."><span class="hs-num" style="color:${rColour(expectancyR)}">${fmtR(expectancyR)}</span><span class="hs-lbl">per trade</span></div>
       <div class="hs-card hs-pips" title="Net pips across every closed trade, wins and losses together."><span class="hs-num" style="color:${netPips >= 0 ? 'var(--buy)' : 'var(--sell)'}">${netPips >= 0 ? '+' : ''}${netPips.toFixed(1)}</span><span class="hs-lbl">net pips</span></div>
@@ -10821,6 +10884,10 @@ function tradeRowHTML(t) {
     : '';
   // Status label gets enriched with the TP level for wins
   const tpLabel = t.status === 'won' ? (tpHit === 3 ? ' (TP3 full run)' : tpHit === 2 ? ' (TP2 · two thirds banked)' : tpHit === 1 ? ' (TP1 · a third banked)' : '') : '';
+  // v455 — a flat exit reads as BREAK-EVEN, never as a loss. The stop had
+  // already been moved to entry, so the trade was closed protected.
+  const isBreakEven = t.breakEven === true
+    || (t.status === 'closed' && typeof t.resultR === 'number' && Math.abs(t.resultR) <= 0.02);
 
   // ── LOSS-RISK WARNING for OPEN trades ──────────────────────────────────
   // Surfaces open trades that match the patterns of every historical loss:
@@ -10922,7 +10989,9 @@ function tradeRowHTML(t) {
       <div class="trade-head">
         <span class="pair">${t.pair}</span>
         <span class="direction-badge dir-${t.direction}">${t.direction}</span>
-        <span class="trade-status" style="color:${statusColor}">${t.status.toUpperCase()}${tpLabel}${pnl}</span>${rTag}
+        <span class="trade-status" style="color:${isBreakEven ? 'var(--muted)' : statusColor}">${
+          isBreakEven ? 'BREAK-EVEN · stop was at entry' : t.status.toUpperCase() + tpLabel + pnl
+        }</span>${isBreakEven ? '' : rTag}
         ${tpProgress}
         ${lossRiskBadge}
         ${eliteBrainBadge}
