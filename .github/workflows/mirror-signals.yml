@@ -143,6 +143,15 @@ jobs:
               print(f\"    {s['pair']} {s['direction']} entry={s['entry']} sl={s['sl']} tp1={s['tp1']}\")
           "
 
+      # v454 — PUBLISH REAL CANDLES AS STATIC ASSETS.
+      #
+      # The trade monitor needs a trade's full high/low history to know
+      # whether a stop or target was touched while the app was closed. With
+      # Functions down it otherwise saw only prices since the tab opened,
+      # which made winners that resolved overnight get written down as losses.
+      - name: Publish OHLC bars for the client
+        run: node tools/publish-ohlc.mjs
+
       # v448 — WATCH THE SETUPS, ALWAYS.
       #
       # The outcome watcher (shadow-tracker) is a Cloudflare Function, so

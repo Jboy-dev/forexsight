@@ -3656,6 +3656,125 @@ const SYNC_CODE_KEY = 'forexsight_sync_code';
 // rely on getTrades() returning an array whose entries are objects with the
 // fields the UI reads. Anything that fails the check is dropped, and the
 // cleaned list is written back so the corruption does not persist.
+// ═══════════════════════════════════════════════════════════════════════
+// v454 — RE-CHECK CLOSED TRADES AGAINST REAL BARS AND CORRECT THE RECORD.
+//
+// Between v452 and v454 the monitor could only see prices from the moment the
+// app was opened. Trades whose target was hit while the app was closed looked
+// as though nothing had happened, and the time-stop then recorded them at the
+// retraced price — as losses. Those entries are wrong and they are sitting in
+// History, dragging down the win rate and the expectancy the user reads.
+//
+// This re-walks every closed trade against the published hourly candles,
+// which do cover the full life of the trade, and corrects any whose recorded
+// outcome disagrees with what the bars show.
+//
+// Two deliberate constraints:
+//   • It only ever changes a trade when the bars are conclusive — they must
+//     start at or before the trade was taken. Incomplete data is exactly what
+//     caused the original error; re-deciding from more incomplete data would
+//     just move the mistake around.
+//   • Every correction keeps the original values under `_correctedFrom`, so
+//     the change is auditable and reversible rather than a silent rewrite of
+//     the user's own record.
+async function recheckClosedTrades({ apply = true } = {}) {
+  const trades = getTrades();
+  const closed = trades.filter(t => t.status === 'won' || t.status === 'lost');
+  if (!closed.length) return { checked: 0, corrected: 0, changes: [] };
+
+  const pairs = [...new Set(closed.map(t => t.pair))];
+  const bars = {};
+  await Promise.all(pairs.map(async (p) => {
+    try {
+      const r = await fetch(`/data/ohlc/${p.replace('/', '-')}.json?_b=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return;
+      const d = await r.json();
+      if (Array.isArray(d.ohlc) && d.ohlc.length > 24) bars[p] = d;
+    } catch {}
+  }));
+
+  const changes = [];
+  let checked = 0;
+  for (const t of trades) {
+    if (t.status !== 'won' && t.status !== 'lost') continue;
+    const src = bars[t.pair];
+    const takenMs = Date.parse(t.takenAt || '');
+    if (!src || !Number.isFinite(takenMs)) continue;
+    // Conclusive only: the candles must begin before the trade did.
+    if (!(src.firstBar <= takenMs)) continue;
+    const after = src.ohlc.filter(b => b.t >= takenMs);
+    if (after.length < 2) continue;
+    checked++;
+
+    const walk = _v454WalkTrade(t, after);
+    if (!walk) continue;
+    const trueStatus = walk.resultR > 0 ? 'won' : 'lost';
+    if (trueStatus === t.status) continue;
+
+    changes.push({
+      id: t.id, pair: t.pair, direction: t.direction,
+      was: t.status, now: trueStatus,
+      wasR: t.resultR ?? null, nowR: Math.round(walk.resultR * 100) / 100,
+      tpReached: walk.tpReached,
+    });
+    if (apply) {
+      t._correctedFrom = {
+        status: t.status, resultR: t.resultR ?? null,
+        pnlPips: t.pnlPips ?? null, tpReached: t.tpReached ?? null,
+        correctedAt: new Date().toISOString(),
+        reason: 'monitor lacked bar history covering this trade (v452-v453)',
+      };
+      t.status = trueStatus;
+      t.tpReached = walk.tpReached;
+      t.resultR = Math.round(walk.resultR * 100) / 100;
+      t.maeR = Math.round(walk.maeR * 100) / 100;
+      const risk = Math.abs(t.entry - t.sl);
+      const dir = t.direction === 'BUY' ? 1 : -1;
+      t.closePrice = t.entry + dir * t.resultR * risk;
+      const pip = pairConfig(t.pair).pip;
+      if (pip > 0) t.pnlPips = Number((((t.closePrice - t.entry) * dir) / pip).toFixed(1));
+    }
+  }
+  if (apply && changes.length) saveTrades(trades);
+  return { checked, corrected: changes.length, changes };
+}
+
+// The managed ladder, identical to the monitor and shadow-tracker: a third
+// banked at each target, stop to entry once TP1 is reached.
+function _v454WalkTrade(t, barsAfter) {
+  const isBuy = t.direction === 'BUY';
+  const slDist = Math.abs(t.entry - t.sl);
+  if (!(slDist > 0)) return null;
+  const rOf = (px) => (typeof px === 'number' && isFinite(px)) ? Math.abs(px - t.entry) / slDist : null;
+  const r1 = rOf(t.tp1), r2 = rOf(t.tp2), r3 = rOf(t.tp3);
+  let tp = 0, banked = 0, open = 1, stop = t.sl, mae = 0, lastClose = null;
+  for (const b of barsAfter) {
+    lastClose = b.c;
+    const adv = isBuy ? t.entry - b.l : b.h - t.entry;
+    if (adv > mae) mae = adv;
+    const stopHit = isBuy ? b.l <= stop : b.h >= stop;
+    let reached = 0;
+    if (r1 != null && (isBuy ? b.h >= t.tp1 : b.l <= t.tp1)) reached = 1;
+    if (r2 != null && (isBuy ? b.h >= t.tp2 : b.l <= t.tp2)) reached = 2;
+    if (r3 != null && (isBuy ? b.h >= t.tp3 : b.l <= t.tp3)) reached = 3;
+    // Same-bar stop and target is ambiguous; read it as the stop.
+    if (stopHit) {
+      banked += open * (tp === 0 ? -1 : 0);
+      return { resultR: banked, tpReached: tp, maeR: mae / slDist };
+    }
+    while (reached > tp) {
+      const nx = tp + 1, rh = nx === 1 ? r1 : nx === 2 ? r2 : r3;
+      if (rh == null) break;
+      tp = nx; banked += rh / 3; open = Math.max(0, open - 1 / 3);
+      if (tp === 1) stop = t.entry;
+    }
+    if (tp === 3) return { resultR: banked, tpReached: 3, maeR: mae / slDist };
+  }
+  if (lastClose == null) return null;
+  const moved = isBuy ? lastClose - t.entry : t.entry - lastClose;
+  return { resultR: banked + open * (moved / slDist), tpReached: tp, maeR: mae / slDist };
+}
+
 function _v453IsUsableTrade(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return false;
   if (typeof t.pair !== 'string' || !t.pair) return false;
@@ -4108,28 +4227,74 @@ async function fastEvaluateOpenTrades() {
         return { pair: p, ohlc: data.ohlc };
       }));
     } else {
+      // v454 — REAL BARS FIRST, spot only as a last resort.
+      //
+      // data/ohlc/<pair>.json is published every mirror cycle with 14 days of
+      // hourly candles. It is a static asset on this same origin, so it works
+      // with Functions down and needs no CORS exemption. Those bars cover the
+      // whole life of any open trade, which is what makes a stop or target
+      // touched while the app was closed detectable at all — and what stops a
+      // winner being written down as a loss.
+      const barResults = await Promise.allSettled(pairs.map(async (p) => {
+        const r = await fetch(`/data/ohlc/${p.replace('/', '-')}.json?_b=${Date.now()}`,
+                              { cache: 'no-store' });
+        if (!r.ok) throw new Error('no mirror bars');
+        const d = await r.json();
+        if (!Array.isArray(d.ohlc) || d.ohlc.length < 24) throw new Error('too few bars');
+        // Refuse bars that have stopped updating — stale candles would make a
+        // live trade look resolved against prices that no longer exist.
+        if (Date.now() - (d.lastBar || 0) > 6 * 3600 * 1000) throw new Error('bars stale');
+        return { pair: p, ohlc: d.ohlc, _coversFrom: d.firstBar };
+      }));
+
+      const stillNeeded = [];
+      results = pairs.map((p, i) => {
+        const br = barResults[i];
+        if (br.status === 'fulfilled' && br.value) return { status: 'fulfilled', value: br.value };
+        stillNeeded.push(p);
+        return null;
+      });
+
+      // Anything the published bars could not cover falls back to spot.
       let live = {};
-      try { live = (await _v440FetchLivePrices()) || {}; } catch {}
-      if (!Object.keys(live).length && _v440Live && _v440Live.prices) live = _v440Live.prices;
+      if (stillNeeded.length) {
+        try { live = (await _v440FetchLivePrices()) || {}; } catch {}
+        if (!Object.keys(live).length && _v440Live && _v440Live.prices) live = _v440Live.prices;
+      }
       window._v452Range ||= {};
       const now = Date.now();
-      results = pairs.map((p) => {
+      results = results.map((slot, i) => {
+        if (slot) return slot;                       // real bars already found
+        const p = pairs[i];
         const px = live[p];
         if (!Number.isFinite(px)) return { status: 'fulfilled', value: null };
-        const r = (window._v452Range[p] ||= { hi: px, lo: px });
-        if (px > r.hi) r.hi = px;
-        if (px < r.lo) r.lo = px;
+        const rng = (window._v452Range[p] ||= { hi: px, lo: px, since: now });
+        if (px > rng.hi) rng.hi = px;
+        if (px < rng.lo) rng.lo = px;
         // One synthetic bar spanning everything seen since monitoring began.
-        return { status: 'fulfilled', value: { pair: p, ohlc: [{ t: now, o: px, h: r.hi, l: r.lo, c: px }] } };
+        // _coversFrom records how far back that actually reaches, because it
+        // is NOT the life of the trade — see the guard in evaluateOpenTrades.
+        return { status: 'fulfilled', value: {
+          pair: p,
+          ohlc: [{ t: now, o: px, h: rng.hi, l: rng.lo, c: px }],
+          _synthetic: true,
+          _coversFrom: rng.since,
+        } };
       });
-      _v452Covered = pairs.filter(p => Number.isFinite(live[p]));
-      _v452Uncovered = pairs.filter(p => !Number.isFinite(live[p]));
+      // Report coverage by SOURCE, so the status line can be specific about
+      // which pairs have true candle history behind them.
+      _v452Covered = pairs.filter((p, i) => results[i] && results[i].value
+        && !results[i].value._synthetic);
+      _v452Uncovered = pairs.filter((p, i) => !results[i] || !results[i].value);
     }
     let totalClosed = 0;
     for (const res of results) {
       if (res.status !== 'fulfilled' || !res.value) continue;
       const { pair, ohlc } = res.value;
-      const closed = evaluateOpenTrades(pair, ohlc);
+      const closed = evaluateOpenTrades(pair, ohlc, {
+        synthetic: res.value._synthetic === true,
+        coversFrom: res.value._coversFrom || 0,
+      });
       for (const tr of closed) {
         notifyTradeOutcome(tr);
         totalClosed++;
@@ -4280,7 +4445,7 @@ function startFastTradeTick() {
   setTimeout(fastEvaluateOpenTrades, 1500);
 }
 
-function evaluateOpenTrades(pair, ohlc) {
+function evaluateOpenTrades(pair, ohlc, coverage) {
   const trades = getTrades();
   const transitioned = [];
   // PROGRESSIVE TP TRACKING — instead of closing the trade the instant TP1 is
@@ -4421,7 +4586,34 @@ function evaluateOpenTrades(pair, ohlc) {
     // spent two hours drifting underwater without ever tagging the stop is
     // recorded at the loss it really carried, not written off as a flat -1R
     // and not quietly excluded.
-    if (!outcome && ageMs > hardLimitMs) {
+    // v454 — DO NOT INFER A LOSS FROM DATA THAT DOES NOT COVER THE TRADE.
+    //
+    // This is the bug behind winning trades appearing as losses, and it was
+    // mine: v452 gave the monitor a spot-price fallback when the API died,
+    // built from a high/low accumulated only since the app was opened.
+    //
+    // A trade taken yesterday that reached TP2 overnight therefore looked as
+    // though it had never reached any target — tpReached computed as 0 from a
+    // range that begins today. Being over the age limit, the time-stop then
+    // closed it at the current, retraced price and wrote it down as a loss.
+    // The target had genuinely been hit; the app simply had not been watching
+    // and had no way to know.
+    //
+    // The two closes below both reason from ABSENCE: "no target was reached,
+    // so mark it out where it stands". That inference is only sound when the
+    // data spans the whole life of the trade. A stop or target actually being
+    // touched is different — that is positive evidence and stays trusted
+    // above, whatever the coverage.
+    //
+    // When coverage is short, the trade is left open instead. An open trade
+    // that resolves late is a small annoyance; a win recorded as a loss
+    // corrupts the history the user is trying to learn from, and silently
+    // makes the strategy look worse than it is.
+    const _covers = !coverage || !coverage.synthetic
+      || (coverage.coversFrom && coverage.coversFrom <= takenTs);
+    if (!_covers) {
+      t._awaitingFullHistory = true;
+    } else if (!outcome && ageMs > hardLimitMs) {
       const lastBar = relevant[relevant.length - 1];
       if (lastBar && Number.isFinite(lastBar.c)) closeRemainingAt(lastBar.c);
     } else if (!outcome && ageMs > underwaterCutoffMs) {
@@ -5023,7 +5215,27 @@ $$('.tab').forEach(t => t.addEventListener('click', () => {
   if (t.dataset.tab === 'calendar') _deferRender(loadCalendar);
   if (t.dataset.tab === 'performance') _deferRender(renderPerformance);
   if (t.dataset.tab === 'strategies') _deferRender(renderStrategies);
-  if (t.dataset.tab === 'history') _deferRender(renderHistory);
+  if (t.dataset.tab === 'history') {
+    _deferRender(renderHistory);
+    // v454 — verify the record against real candles when History is
+    // opened. Runs once per session, repaints only if something was
+    // actually corrected, and reports what changed rather than editing
+    // the user's history silently.
+    if (!window._v454Rechecked) {
+      window._v454Rechecked = true;
+      recheckClosedTrades().then(res => {
+        if (res.corrected > 0) {
+          renderHistory();
+          try {
+            const w = res.changes.filter(c => c.now === 'won').length;
+            showToast(`Corrected ${res.corrected} trade${res.corrected === 1 ? '' : 's'}`
+              + (w ? ` — ${w} were actually wins` : ''));
+          } catch {}
+          console.warn('[v454] history corrections', res.changes);
+        }
+      }).catch(() => {});
+    }
+  }
   // v224 — refresh My Trades view when user opens that tab
   if (t.dataset.tab === 'trades') _deferRender(renderTrades);
 }));
