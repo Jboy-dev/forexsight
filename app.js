@@ -3804,6 +3804,51 @@ function _v454WalkTrade(t, barsAfter) {
   return { resultR: banked + open * (moved / slDist), tpReached: tp, maeR: mae / slDist };
 }
 
+// v456 — NORMALISE BEFORE JUDGING. A trade must never be lost to formatting.
+//
+// v453 rejected anything whose direction was not exactly 'BUY' or 'SELL', so a
+// signal carrying 'buy' was thrown away — and because saveTrades filtered
+// silently while takeTrade still returned ok:true, the app said the trade was
+// added and it simply was not there. That is the "sometimes it doesn't show up"
+// the user reported.
+//
+// Case and numeric-string differences are presentation, not corruption. They
+// get fixed. Only genuinely unusable records are refused, and now the caller
+// is told which and why.
+function _v456Normalise(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return null;
+  const out = { ...t };
+  if (typeof out.direction === 'string') {
+    const d = out.direction.trim().toUpperCase();
+    if (d === 'BUY' || d === 'LONG') out.direction = 'BUY';
+    else if (d === 'SELL' || d === 'SHORT') out.direction = 'SELL';
+  }
+  if (typeof out.pair === 'string') out.pair = out.pair.trim().toUpperCase();
+  for (const k of ['entry', 'sl', 'tp1', 'tp2', 'tp3']) {
+    if (typeof out[k] === 'string' && out[k].trim() !== '') {
+      const n = Number(out[k]);
+      if (Number.isFinite(n)) out[k] = n;
+    }
+  }
+  return out;
+}
+
+// Explains a refusal instead of just returning false, so the UI can tell the
+// user what is missing rather than losing the trade quietly.
+function _v456WhyUnusable(t) {
+  if (!t || typeof t !== 'object' || Array.isArray(t)) return 'not a trade record';
+  if (typeof t.pair !== 'string' || !t.pair) return 'no pair';
+  if (t.direction !== 'BUY' && t.direction !== 'SELL') {
+    return `direction "${t.direction}" is not BUY or SELL`;
+  }
+  const bad = (v) => v === null || v === undefined || v === ''
+    || typeof v === 'boolean' || typeof v === 'object'
+    || !Number.isFinite(Number(v)) || Number(v) === 0;
+  if (bad(t.entry)) return 'no usable entry price';
+  if (bad(t.sl)) return 'no usable stop loss — risk cannot be sized without one';
+  return null;
+}
+
 function _v453IsUsableTrade(t) {
   if (!t || typeof t !== 'object' || Array.isArray(t)) return false;
   if (typeof t.pair !== 'string' || !t.pair) return false;
@@ -3829,7 +3874,7 @@ function _v453IsUsableTrade(t) {
 function getTrades() {
   const raw = safeLoad(TRADES_KEY, []);
   const list = Array.isArray(raw) ? raw : [];
-  const clean = list.filter(_v453IsUsableTrade).map(t => ({
+  const clean = list.map(_v456Normalise).filter(t => t && _v453IsUsableTrade(t)).map(t => ({
     ...t,
     entry: Number(t.entry),
     sl: Number(t.sl),
@@ -3852,7 +3897,9 @@ function getTrades() {
 
 function saveTrades(t) {
   // v453 — never persist a shape that would break the next read.
-  const list = Array.isArray(t) ? t.filter(_v453IsUsableTrade) : [];
+  const list = Array.isArray(t)
+    ? t.map(_v456Normalise).filter(x => x && _v453IsUsableTrade(x))
+    : [];
   const trimmed = list.slice(-500);
   safeSave(TRADES_KEY, trimmed);
   pushTradesToCloud(trimmed); // fire-and-forget
@@ -4117,7 +4164,7 @@ function takeTrade(signal, opts = {}) {
   // trade row + modal can show which strategy(ies) caught this signal even
   // hours/days after the live signal is gone. Spread the whole signal first,
   // then override with trade-specific fields.
-  const trade = {
+  const trade = _v456Normalise({
     ...signal,
     id,
     // Trade-specific fields override the signal copy
@@ -4127,8 +4174,24 @@ function takeTrade(signal, opts = {}) {
     closePrice: null,
     pnlPips: null,
     notes: '',
-  };
-  trades.push(trade); saveTrades(trades);
+  });
+  // v456 — refuse loudly rather than losing it. A record that cannot be
+  // stored has to produce a message the user can act on; reporting success
+  // for a trade that was then silently dropped is the worst of both.
+  const why = _v456WhyUnusable(trade);
+  if (why) return { ok: false, reason: `Can't track this trade — ${why}.` };
+
+  trades.push(trade);
+  saveTrades(trades);
+
+  // Confirm it actually persisted. saveTrades filters, storage can be full,
+  // and a private-mode browser can reject writes outright — so verify rather
+  // than assume, and tell the truth either way.
+  const stored = getTrades().some(x => x.id === id);
+  if (!stored) {
+    return { ok: false, reason: 'Could not save the trade — device storage refused the write. '
+      + 'Check you are not in private browsing, then try again.' };
+  }
   return { ok: true, trade };
 }
 
