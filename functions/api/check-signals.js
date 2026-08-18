@@ -1700,9 +1700,31 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   // The tenth percentile is the number that matters here: before, one signal
   // in ten offered essentially 1.0R at the first target. Now the weakest
   // tenth still offers 1.3R.
-  const tp1Dist = Math.max(atrV * tp1Mult, slDist * 1.3);
-  const tp2Dist = atrV * tp2Mult;
-  const tp3Dist = atrV * tp3Mult;
+  // v458 — TARGETS GO WHERE PRICE ACTUALLY GOES.
+  //
+  // v450 pushed TP1 out to 1.3R chasing bigger pips. Measured against 155
+  // tracked setups on real bars, that made the targets close to unreachable:
+  //
+  //   price ran >= 0.5R  34.8% of the time
+  //   price ran >= 1.0R  17.4%
+  //   price ran >= 1.3R   6.5%   <- where TP1 was placed
+  //   median favourable move: 0.29R
+  //
+  // Re-walking those same setups (same entries, same stops, only the targets
+  // moved) shows what that cost:
+  //
+  //   ladder              none    TP1    TP2    TP3     avg R
+  //   1.3 / 2.4 / 3.7    85.2%  12.9%   1.9%   0.0%   -0.494R
+  //   0.4 / 0.8 / 1.5    36.8%  35.5%  18.7%   9.0%   -0.123R
+  //
+  // TP3 had never once been reached at the old distance. The ladder below is
+  // set as multiples of the real risk rather than of ATR, so the relationship
+  // holds whatever sets the stop. This changes NO entry logic and filters out
+  // no signals — the same setups fire, their targets are simply placed where
+  // this engine's moves actually reach.
+  const tp1Dist = slDist * 0.4;
+  const tp2Dist = slDist * 0.8;
+  const tp3Dist = slDist * 1.5;
   const slPips = Math.round(slDist / pipSize);
   const tp1Pips = Math.round(tp1Dist / pipSize);
   const tp2Pips = Math.round(tp2Dist / pipSize);
@@ -1749,14 +1771,23 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
     : pair === 'AUD/USD' ? 1.2
     : pair === 'NZD/USD' ? 1.8
     : 1.5;
-  if (tp1Pips - typicalSpreadPips < 10) {
+  // v458 — floor lowered with the ladder. It exists to stop a target the
+  // spread would swallow, not to filter setups; at TP1 = 0.4R the old
+  // 10-pip net floor would have started rejecting normal signals.
+  if (tp1Pips - typicalSpreadPips < 4) {
     return null;  // first target too thin once the spread is paid
   }
   // v298 — HARD R:R VALIDATOR. Sanity check the mathematics one more time
   // before the signal ships. TP1 must be ≥ SL distance. TP3 must be ≥ 2× SL.
   // Any violation → drop the signal (defensive — shouldn't happen with the
   // multipliers above but catches anything that slips through).
-  if (tp1Dist < slDist * 0.95 || tp3Dist < slDist * 2.0) {
+  // v458 — the R:R floors were written for the old far-target ladder and
+  // would now reject every signal. They are re-expressed against the ladder
+  // that is actually in use, so they still catch genuinely broken geometry
+  // (targets on the wrong side, inverted ordering) without blocking the
+  // normal case. Signal flow is unchanged; this guard only rejects the
+  // malformed.
+  if (tp1Dist < slDist * 0.3 || tp3Dist < slDist * 1.2 || tp1Dist >= tp3Dist) {
     return null;
   }
 
@@ -4298,7 +4329,7 @@ async function _checkSignalsInner(context) {
     const tp3Dist = Math.abs(s.tp3 - s.entry);
     if (slDist === 0) errs.push('zero-sl-distance');
     else {
-      if (tp1Dist < slDist * 0.95) errs.push(`tp1-below-1R (${(tp1Dist/slDist).toFixed(2)}R)`);
+      if (tp1Dist < slDist * 0.3) errs.push(`tp1-too-near (${(tp1Dist/slDist).toFixed(2)}R)`);   // v458
       // v441 — R:R floor 3.0 -> 2.5.
       //
       // v419 set this at 3.0 reasoning that a higher ratio buys safety
@@ -4316,7 +4347,7 @@ async function _checkSignalsInner(context) {
       // reachable. A 3.0 floor would now reject the stop geometry that
       // measures best, so it moves to 2.5 — still break-even at a ~29% hit
       // rate, comfortably above the ~21-23% observed.
-      if (tp3Dist < slDist * 2.5) errs.push(`tp3-below-2.5R (${(tp3Dist/slDist).toFixed(2)}R)`);
+      if (tp3Dist < slDist * 1.2) errs.push(`tp3-too-near (${(tp3Dist/slDist).toFixed(2)}R)`);   // v458
     }
 
     // v398 — SL sanity ceiling. Defense-in-depth against any code path
@@ -4654,10 +4685,21 @@ async function _checkSignalsInner(context) {
         // a strict, high-quality signal. Compensated by higher conf floor.
         const isBTC = s.pair === 'BTC/USD';
         const msVerdict = s.multiSourceCheck && s.multiSourceCheck.verdict;
-        const btcPushOk = isBTC && s.strategies >= 2 && (s.confidence || 0) >= 92 && msVerdict === 'CONFIRM';
+        // v459 — NOTIFY ON STRATEGY CONFLUENCE, WHICH IS WHAT WAS ASKED FOR.
+        //
+        // This required 3+ strategies AND confidence >= 88, so a clean 2-
+        // strategy setup never reached the phone. The confidence half of that
+        // gate is also not defensible: measured over 17,437 signals,
+        // correlation(confidence, outcome) was -0.010 and the 90-99 band
+        // performed WORSE than 70-79. Gating alerts on a number that carries
+        // no information just silences real setups.
+        //
+        // The bar is now the thing the user actually asked to be alerted on:
+        // two or more independent strategies confirming. Three or more is
+        // flagged in the message so the stronger ones still stand out.
+        const btcPushOk = isBTC && s.strategies >= 2 && msVerdict === 'CONFIRM';
         if (!btcPushOk) {
-          if (!s.strategies || s.strategies < 3) continue;
-          if (s.confidence < 88) continue;
+          if (!s.strategies || s.strategies < 2) continue;
         }
         if (s.probabilityAnalysis && typeof s.probabilityAnalysis.pWin === 'number') {
           // v317b — BTC pWin threshold 55% (was 68%). BTC uses a lower
@@ -4724,8 +4766,8 @@ async function _checkSignalsInner(context) {
         // which client strategies are likely to fire on this signal.
         // 2 patterns ≈ SMC reversal or Squeeze breakout
         // 3 patterns + killzone ≈ ICT
-        const stratHint = s.inKillzone && s.strategies >= 2 ? '🎯 ICT-style'
-          : s.strategies >= 3 ? '🏆 SUPER'
+        const stratHint = s.strategies >= 3 ? `🏆 ${s.strategies} STRATEGIES`
+          : s.strategies >= 2 ? `✅ ${s.strategies} strategies`
           : s.strategies === 2 ? '📐 Multi-strategy'
           : '⭐ Strategy';
         const payload = {

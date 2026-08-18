@@ -121,7 +121,17 @@ window._APP_VERSION_AT_LOAD = 'v444';
     if (didClean && !sessionStorage.getItem('_v412_reloaded')) {
       sessionStorage.setItem('_v412_reloaded', '1');
       location.reload();
+      return;
     }
+    // v459 — after the old caching worker is gone, register a push-ONLY one.
+    // Killing every worker also removed the only mechanism that can raise a
+    // notification while the app is closed, which is exactly how it is used
+    // from the home screen. push-sw.js has no fetch handler, so it cannot
+    // serve stale content and cannot bring back the bug that caused the
+    // original worker to be removed.
+    navigator.serviceWorker.register('/push-sw.js', { scope: '/' })
+      .then(function(reg){ window.__pushSW = reg; })
+      .catch(function(){});
   });
 })();
 </script>
@@ -1001,6 +1011,6 @@ window._APP_VERSION_AT_LOAD = 'v444';
   <span>ForexSight · Live data via Yahoo Finance · News via FXStreet / DailyFX / ForexLive / Investing.com / Reuters · Calendar via ForexFactory</span>
 </footer>
 
-<script src="app.js?v=457"></script>
+<script src="app.js?v=459"></script>
 </body>
 </html>

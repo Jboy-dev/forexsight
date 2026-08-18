@@ -39,7 +39,9 @@ const problems = [];
 // v413 — tiers that must never reach the user.
 const BANNED_TIERS = new Set(['chart-read']);
 // v441/v444 — the reward floor the current engine guarantees.
-const MIN_TP3_R = 2.5;
+// v458 — matches the measured ladder (TP3 at 1.5R). The old 2.5R floor was
+// written for targets that were never actually reached.
+const MIN_TP3_R = 1.2;
 
 for (const s of signals) {
   const id = `${s.pair} ${s.direction}`;
