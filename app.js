@@ -8291,6 +8291,23 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  // ─── How it judges itself ──────────────────────────────────────────
+  { area: 'How it judges itself', name: 'Self-evaluation panel',
+    tags: 'self evaluation evaluate learning measure edge honest proof statistics confidence interval bootstrap R expectancy',
+    what: 'Sits at the top of the Learning tab. It scores every setup the watcher has resolved against real candles and breaks the results down by strategy, combination, instrument, session, regime, trend strength and time of day. Each row shows the sample size and a 95% confidence interval, not just an average.',
+    use: 'Read the interval, not the headline number. If the interval crosses zero, that slice has not been shown to do anything — a good-looking average on twelve trades is noise. The panel is built to be able to tell you nothing works, and right now that is what it says.' },
+  { area: 'How it judges itself', name: 'Why a finding gets ignored',
+    tags: 'actionable finding ignored rejected significance time split overfitting noise curve fitting',
+    what: 'A measured pattern is only acted on if it passes three tests: at least 25 samples, a confidence interval entirely above zero, and it must still hold on the most recent half of the data.',
+    use: 'The third test is the important one. Five earlier attempts on this app found patterns that looked strong across all the data and then failed completely on new data. Requiring a pattern to survive being split in time is what separates an edge from a coincidence that has already stopped happening.' },
+  { area: 'How it judges itself', name: 'What "R" means here',
+    tags: 'R multiple risk reward expectancy average loss win measure unit',
+    what: 'One R is the distance from entry to stop — whatever you risked on that trade. +1R means you made what you were risking; -1R means the stop was hit in full. Averaging in R lets a gold trade and a euro trade be compared on the same scale.',
+    use: 'Average R per setup is the number that matters, not win rate. A system that wins 70% of the time can still lose money if the losses are bigger than the wins, and one that wins 35% can be strongly profitable.' },
+  { area: 'How it judges itself', name: 'Current honest standing',
+    tags: 'honest standing truth edge profitable does it work performance record reality',
+    what: 'Across the setups tracked so far the average result is negative, and the confidence interval does not include zero. No instrument, session, strategy count or confidence band has yet shown a positive edge that survives a time split.',
+    use: 'This is stated plainly on purpose. The app is a well-built structure for finding an edge and measuring it truthfully; it has not yet found one. Treat the signals as candidates to study, and never size a position as though the outcome were established.' },
   // ─── Screens ────────────────────────────────────────────────────────
   { area: 'Screens', name: 'Signals tab',
     tags: 'signals feed cards setups entry sl tp home main',
@@ -8525,6 +8542,123 @@ function initReferenceSearch() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// v463 — SELF-EVALUATION PANEL
+//
+// Shows what the system has actually established about its own signals, with
+// the sample size and confidence interval behind every number. It is built to
+// be able to report that nothing works, because that has been the true answer
+// so far and hiding it would make every other number here untrustworthy.
+//
+// Populated by tools/self-evaluate.mjs, which reruns on every watch cycle.
+// ---------------------------------------------------------------------------
+let _v463Eval = null;
+async function _v463LoadEval() {
+  const urls = [
+    'https://raw.githubusercontent.com/Jboy-dev/forex-signals-cloudflare/main/data/self-evaluation.json',
+    '/data/self-evaluation.json',
+  ];
+  for (const u of urls) {
+    try {
+      const f = window._v428OrigFetch || fetch;
+      const r = await f(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && typeof j.samples === 'number') { _v463Eval = j; return j; }
+    } catch (_) { /* try next */ }
+  }
+  return null;
+}
+
+function _v463RenderEval() {
+  const d = _v463Eval;
+  if (!d) {
+    return `<div class="card" id="v463-eval"><h3>🔬 Self-evaluation</h3>
+      <p class="muted">Loading the latest measurement…</p></div>`;
+  }
+  const sign = v => (v >= 0 ? '+' : '') + v.toFixed(3);
+  const ov = d.overall || {};
+  const acted = (d.actionable || []).length;
+
+  // Best row per feature that met the sample floor, so the panel shows the
+  // strongest candidate in each dimension rather than a wall of noise.
+  const min = (d.rules && d.rules.minSamples) || 25;
+  const rows = [];
+  for (const [feature, list] of Object.entries(d.byFeature || {})) {
+    const elig = (list || []).filter(r => r.n >= min);
+    if (elig.length) rows.push([feature, elig[0]]);
+  }
+
+  const label = {
+    strategyCount: 'Number of strategies agreeing',
+    strategy: 'Individual strategy',
+    combo: 'Strategy combination',
+    pair: 'Instrument',
+    direction: 'Buy vs sell',
+    session: 'Time of day',
+    regime: 'Market regime',
+    htfAlignment: 'Higher-timeframe agreement',
+    adxBand: 'Trend strength (ADX)',
+    killzone: 'Killzone timing',
+  };
+
+  return `<div class="card" id="v463-eval">
+    <h3>🔬 Self-evaluation</h3>
+    <p class="muted" style="margin-top:-4px">
+      Every resolved setup, scored against real candles. A finding is only acted
+      on if its confidence interval clears zero <em>and</em> it still clears zero
+      on the most recent half of the data — the test that stops the system
+      fitting itself to noise.
+    </p>
+
+    <div class="wl-row" style="margin:10px 0">
+      <div><div class="muted" style="font-size:12px">Setups measured</div>
+           <div style="font-size:20px;font-weight:700">${d.samples}</div></div>
+      <div><div class="muted" style="font-size:12px">Average per setup</div>
+           <div style="font-size:20px;font-weight:700;color:${ov.avgR >= 0 ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'}">
+             ${ov.avgR != null ? sign(ov.avgR) + 'R' : '—'}</div></div>
+      <div><div class="muted" style="font-size:12px">Findings acted on</div>
+           <div style="font-size:20px;font-weight:700">${acted}</div></div>
+    </div>
+
+    <div style="padding:10px 12px;border-radius:10px;margin:8px 0;
+                background:${acted ? 'rgba(38,166,91,.10)' : 'rgba(229,72,77,.09)'};
+                border:1px solid ${acted ? 'rgba(38,166,91,.30)' : 'rgba(229,72,77,.25)'}">
+      <strong>${acted ? 'Findings in use' : 'Nothing has qualified yet'}</strong>
+      <div class="muted" style="margin-top:4px">${d.verdict || ''}</div>
+    </div>
+
+    ${rows.length ? `
+      <h4 style="margin:14px 0 4px">Strongest candidate in each dimension</h4>
+      <p class="muted" style="margin:0 0 6px;font-size:12px">
+        Sorted best-first within each dimension. "Reliably negative" means the
+        interval sits entirely below zero — that slice loses money consistently,
+        which is itself a real finding.
+      </p>
+      <div style="overflow-x:auto">
+      <table class="votes-table">
+        <tr><th>Dimension</th><th>Best slice</th><th>n</th><th>Avg R</th><th>95% interval</th><th>Verdict</th></tr>
+        ${rows.map(([f, r]) => `<tr>
+          <td>${label[f] || f}</td>
+          <td>${r.value}</td>
+          <td>${r.n}</td>
+          <td style="color:${r.avgR >= 0 ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'};font-weight:600">${sign(r.avgR)}</td>
+          <td class="muted" style="white-space:nowrap">${r.ci ? `${sign(r.ci[0])} … ${sign(r.ci[1])}` : '—'}</td>
+          <td class="muted">${r.verdict}</td>
+        </tr>`).join('')}
+      </table></div>` : `
+      <p class="muted">No dimension has reached ${min} samples yet. Slices are
+      reported once there is enough data for the interval to mean anything.</p>`}
+
+    <p class="muted" style="margin-top:10px;font-size:12px">
+      Measured ${d.isoTime ? new Date(d.isoTime).toLocaleString('en-GB') : 'recently'}.
+      Bootstrap over ${(d.rules && d.rules.bootstrapIterations) || 6000} resamples.
+      These are the system's own tracked setups walked forward on real bars —
+      not a backtest, and not a projection of future results.
+    </p>
+  </div>`;
+}
+
 function renderLearningGuide() {
   // Renders the LEARNING_DATA above into expandable sections. Plain HTML +
   // <details>/<summary> elements — no framework, no dependencies, works in
@@ -8653,7 +8787,13 @@ function renderPerformance() {
 
   // v247 — Prepend the self-evolving Learning guide so users see "what
   // every part of the website does" first, then their personal perf stats.
-  $('#performance-view').innerHTML = renderReferenceSearch() + renderLearningGuide() + html;
+  $('#performance-view').innerHTML = _v463RenderEval() + renderReferenceSearch() + renderLearningGuide() + html;
+  // v463 — fetch in the background, then swap just the panel in place so
+  // the rest of the view never blanks while the measurement loads.
+  _v463LoadEval().then(() => {
+    const el = document.getElementById('v463-eval');
+    if (el) el.outerHTML = _v463RenderEval();
+  }).catch(() => {});
   try { initReferenceSearch(); } catch (e) { console.warn('[ref]', e.message); }
 }
 

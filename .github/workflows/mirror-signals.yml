@@ -170,6 +170,18 @@ jobs:
       - name: Watch open setups
         run: node tools/watch-setups.mjs
 
+      # v463 — SELF-EVALUATION, WITH THE POWER TO FIND NOTHING.
+      #
+      # Runs after the watcher so it always scores the freshest resolved
+      # setups. It reports every slice with a bootstrap interval and only
+      # marks a finding actionable if it clears zero AND still clears zero
+      # on the recent half of the data. Five previous "learning" passes on
+      # this project found patterns that vanished on new data; the time
+      # split is what stops a sixth. When nothing qualifies it says so and
+      # the engine is left alone.
+      - name: Self-evaluate
+        run: node tools/self-evaluate.mjs
+
       - name: Commit + push if changed
         run: |
           cd $GITHUB_WORKSPACE

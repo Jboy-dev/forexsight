@@ -127,6 +127,17 @@ for (const s of (latest.signals || [])) {
     key, pair: s.pair, direction: s.direction,
     entry: s.entry, sl: s.sl, tp1: s.tp1, tp2: s.tp2, tp3: s.tp3,
     confidence: s.confidence, strategies: s.strategies,
+    // v463 — capture WHICH strategies fired, not just how many, plus the
+    // conditions at entry. Without these the record can say a setup lost but
+    // never which part of the system produced it, so nothing can be held
+    // responsible and nothing can be learned. This is the difference between
+    // keeping score and actually evaluating.
+    namedStrategies: Array.isArray(s.namedStrategies) ? s.namedStrategies : [],
+    comboKey: s.comboKey || null,
+    adx: typeof s.adx === 'number' ? s.adx : null,
+    regime: s.regime && s.regime.label ? s.regime.label : null,
+    htfAlignment: s.htfStudy && s.htfStudy.alignment ? s.htfStudy.alignment : null,
+    inKillzone: s.inKillzone === true,
     firedAt: new Date(latest.ts || Date.now()).toISOString(),
     status: 'open',
   });
