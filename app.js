@@ -3657,6 +3657,50 @@ const SYNC_CODE_KEY = 'forexsight_sync_code';
 // fields the UI reads. Anything that fails the check is dropped, and the
 // cleaned list is written back so the corruption does not persist.
 // ═══════════════════════════════════════════════════════════════════════
+// v457 — READ BARS FROM WHICHEVER MIRROR IS ACTUALLY FRESH.
+//
+// Diagnosis: this Pages project has NO git integration (Git Provider: No), so
+// the GitHub Action commits new data to the repo and nothing ever pushes it
+// to Pages. The /data/ copy served by Pages is frozen at the last manual
+// `wrangler pages deploy`. Measured today: GitHub raw had 5 signals 18
+// minutes old while the Pages copy had 0 signals and was 35 hours stale.
+//
+// The signal loader already tried GitHub raw first, which is why signals kept
+// working. The v454 bar fetch did not — it read only the Pages copy, so the
+// candles used to verify whether a stop or target was touched could be a day
+// and a half old. The 6-hour staleness guard caught that and fell back to
+// spot prices, so nothing incorrect was recorded, but the app was running on
+// its weaker source without needing to.
+//
+// Both sources are tried now, freshest-capable first, and the result is only
+// accepted if the bars are actually recent.
+async function _v457FetchBars(pair) {
+  const slug = pair.replace('/', '-');
+  const bust = Date.now();
+  const sources = [
+    `https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/ohlc/${slug}.json?_b=${bust}`,
+    `/data/ohlc/${slug}.json?_b=${bust}`,
+  ];
+  let best = null;
+  for (const url of sources) {
+    try {
+      const r = await fetch(url, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (!Array.isArray(d.ohlc) || d.ohlc.length < 24) continue;
+      // Keep whichever source has the most recent final bar.
+      if (!best || (d.lastBar || 0) > (best.lastBar || 0)) best = d;
+      // GitHub raw is written every cron cycle; if it is fresh, stop early.
+      if (Date.now() - (d.lastBar || 0) < 2 * 3600 * 1000) break;
+    } catch {}
+  }
+  if (!best) return null;
+  // Never resolve a live trade against candles that have stopped updating.
+  if (Date.now() - (best.lastBar || 0) > 6 * 3600 * 1000) return null;
+  return best;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // v454 — RE-CHECK CLOSED TRADES AGAINST REAL BARS AND CORRECT THE RECORD.
 //
 // Between v452 and v454 the monitor could only see prices from the moment the
@@ -3715,10 +3759,8 @@ async function recheckClosedTrades({ apply = true } = {}) {
   const bars = {};
   await Promise.all(pairs.map(async (p) => {
     try {
-      const r = await fetch(`/data/ohlc/${p.replace('/', '-')}.json?_b=${Date.now()}`, { cache: 'no-store' });
-      if (!r.ok) return;
-      const d = await r.json();
-      if (Array.isArray(d.ohlc) && d.ohlc.length > 24) bars[p] = d;
+      const d = await _v457FetchBars(p);        // v457 — freshest mirror wins
+      if (d && Array.isArray(d.ohlc) && d.ohlc.length > 24) bars[p] = d;
     } catch {}
   }));
 
@@ -4329,14 +4371,8 @@ async function fastEvaluateOpenTrades() {
       // touched while the app was closed detectable at all — and what stops a
       // winner being written down as a loss.
       const barResults = await Promise.allSettled(pairs.map(async (p) => {
-        const r = await fetch(`/data/ohlc/${p.replace('/', '-')}.json?_b=${Date.now()}`,
-                              { cache: 'no-store' });
-        if (!r.ok) throw new Error('no mirror bars');
-        const d = await r.json();
-        if (!Array.isArray(d.ohlc) || d.ohlc.length < 24) throw new Error('too few bars');
-        // Refuse bars that have stopped updating — stale candles would make a
-        // live trade look resolved against prices that no longer exist.
-        if (Date.now() - (d.lastBar || 0) > 6 * 3600 * 1000) throw new Error('bars stale');
+        const d = await _v457FetchBars(p);      // v457 — freshest mirror wins
+        if (!d) throw new Error('no fresh bars');
         return { pair: p, ohlc: d.ohlc, _coversFrom: d.firstBar };
       }));
 
