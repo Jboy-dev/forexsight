@@ -1,175 +1,51 @@
 {
   "ok": true,
-  "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-08-18T18:00:36.898Z",
-  "trustScore": 100,
-  "trustLabel": "System Readiness",
-  "performanceScore": 18,
-  "readiness": {
-    "score": 100,
-    "activeGates": 11,
-    "totalGates": 11,
-    "gates": [
-      {
-        "name": "R:R ≥ 3 gate",
-        "pts": 10,
-        "active": true,
-        "since": "v419"
-      },
-      {
-        "name": "Positive EV gate",
-        "pts": 10,
-        "active": true,
-        "since": "v424"
-      },
-      {
-        "name": "Hard MTF agreement",
-        "pts": 10,
-        "active": true,
-        "since": "v424"
-      },
-      {
-        "name": "News blackout",
-        "pts": 10,
-        "active": true,
-        "since": "v423"
-      },
-      {
-        "name": "Patience gate (90s)",
-        "pts": 10,
-        "active": true,
-        "since": "v423"
-      },
-      {
-        "name": "Algo-read confirm",
-        "pts": 10,
-        "active": true,
-        "since": "v415"
-      },
-      {
-        "name": "Conditions floor 65",
-        "pts": 10,
-        "active": true,
-        "since": "v414"
-      },
-      {
-        "name": "Session guard",
-        "pts": 8,
-        "active": true,
-        "since": "v414"
-      },
-      {
-        "name": "Loss-pattern filter",
-        "pts": 8,
-        "active": true,
-        "since": "v411"
-      },
-      {
-        "name": "Correlation dedup",
-        "pts": 7,
-        "active": true,
-        "since": "v411"
-      },
-      {
-        "name": "SL sanity ceiling",
-        "pts": 7,
-        "active": true,
-        "since": "v398"
-      }
-    ],
-    "note": "Every gate is a proven filter against a real failure mode. All active."
-  },
+  "version": "v359-self-trust",
+  "timestamp": "2026-08-18T18:53:58.888Z",
+  "trustScore": 2,
   "autoCorrection": {
-    "edgeAdjPts": -6,
-    "pWinAdjPts": -2,
-    "note": "Trust high — loosening gate"
+    "edgeAdjPts": 8,
+    "pWinAdjPts": 5,
+    "note": "Trust low — tightening gate hard"
   },
-  "components": {
-    "filteredLive": {
-      "label": "Filtered-tier WR (what you actually trade)",
-      "score": 0,
-      "weight": 0.35
-    },
-    "recentAll": {
-      "label": "Recent 20-signal momentum",
-      "score": 0,
-      "weight": 0.2
-    },
-    "calibration": {
-      "label": "Confidence calibration",
-      "score": 0,
-      "weight": 0.15
-    },
-    "activeQuality": {
-      "label": "Live setup quality",
-      "score": 50,
-      "weight": 0.2
-    },
-    "selectivity": {
-      "label": "Filter selectivity",
-      "score": 85,
-      "weight": 0.1
-    }
+  "historicalBacktest": {
+    "totalYearsCovered": 70,
+    "totalSignals": 1919,
+    "wins": 496,
+    "losses": 1387,
+    "winRate": 26,
+    "score": 0
   },
-  "filteredTier": {
-    "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 34,
-    "lifetimeWinRate": 21,
-    "recentWinRate": 20
-  },
-  "allTier": {
-    "note": "All resolved signals including lower tiers",
-    "totalResolved": 178,
-    "lifetimeWinRate": 23,
-    "recentWindowSize": 20,
-    "recentWinRate": 20
-  },
-  "activeQuality": {
-    "signalCount": 0,
-    "note": "No active signals — system holding cash (neutral)",
-    "score": 50
-  },
-  "selectivity": {
-    "note": "candidate count unavailable — assuming baseline strict filter",
-    "score": 85
+  "liveTrades": {
+    "totalResolved": 3,
+    "lifetimeWinRate": 33,
+    "recentWindowSize": 3,
+    "recentWinRate": 33,
+    "score": 6
   },
   "calibration": {
     "accuracyPct": 0,
-    "meanErrorPts": 55.1,
+    "meanErrorPts": 52,
     "buckets": {
       "60-70": {
-        "samples": 30,
-        "winRate": 27,
-        "expected": 65,
-        "error": 38
+        "samples": 0,
+        "note": "too few samples"
       },
       "70-80": {
-        "samples": 69,
-        "winRate": 19,
-        "expected": 75,
-        "error": 56
+        "samples": 0,
+        "note": "too few samples"
       },
       "80-90": {
-        "samples": 64,
-        "winRate": 22,
+        "samples": 3,
+        "winRate": 33,
         "expected": 85,
-        "error": 63
+        "error": 52
       },
       "90+": {
-        "samples": 15,
-        "winRate": 40,
-        "expected": 92,
-        "error": 52
+        "samples": 0,
+        "note": "too few samples"
       }
     }
   },
-  "historicalBacktest": {
-    "note": "INFORMATIONAL ONLY — raw strategy without filters. Not in trust score.",
-    "totalYearsCovered": 90.1,
-    "totalSignals": 2493,
-    "wins": 670,
-    "losses": 1778,
-    "winRate": 27
-  },
-  "interpretation": "VERY HIGH TRUST — filtered signals calibrated & outperforming"
+  "interpretation": "VERY LOW TRUST — protective mode; only elite setups will pass"
 }
