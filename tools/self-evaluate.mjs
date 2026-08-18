@@ -99,6 +99,54 @@ for (const [feature, extract] of Object.entries(FEATURES)) {
   report[feature] = rows;
 }
 
+// ── Assumption tests ───────────────────────────────────────────────────────
+// The engine is built on beliefs it has never had to defend: that more
+// strategies agreeing is better, that higher-timeframe alignment confirms a
+// setup, that a strong trend reading is a better place to trade. Each is a
+// claim about ordering, so each can be checked. This does not change the
+// engine — it reports where a belief and the record disagree, so the
+// disagreement is visible rather than assumed away.
+function slice(feature, value) {
+  const r = (report[feature] || []).find(x => String(x.value) === value);
+  return r || null;
+}
+const assumptions = [];
+function testOrdering(name, belief, feature, ordered) {
+  const got = ordered.map(v => ({ v, r: slice(feature, v) })).filter(x => x.r);
+  if (got.length < 2) return;
+  // Belief holds if avgR is non-decreasing along the stated order.
+  let holds = true;
+  for (let i = 1; i < got.length; i++) if (got[i].r.avgR < got[i - 1].r.avgR - 0.05) holds = false;
+  assumptions.push({
+    name, belief, holds,
+    observed: got.map(x => `${x.v}: ${x.r.avgR >= 0 ? '+' : ''}${x.r.avgR}R (n=${x.r.n})`),
+    note: holds
+      ? 'The record is consistent with this.'
+      : 'The record runs against this. Treat the belief as unsupported, not as fact.',
+  });
+}
+
+testOrdering(
+  'More confirmation is better',
+  'A setup with more strategies agreeing should perform better than one with fewer.',
+  'strategyCount', ['1 strategies', '2 strategies', '3 strategies', '4 strategies'],
+);
+testOrdering(
+  'Higher-timeframe alignment confirms',
+  'A setup aligned with the 4H trend should perform better than one that is not.',
+  'htfAlignment', ['neutral', 'aligned'],
+);
+testOrdering(
+  'Stronger trend is a better trade',
+  'A higher ADX reading should mark a better environment to enter.',
+  'adxBand', ['ADX <20', 'ADX 20-30', 'ADX 30+'],
+);
+
+for (const a of assumptions) {
+  console.log(`  assumption "${a.name}": ${a.holds ? 'consistent' : 'CONTRADICTED'}`);
+  if (!a.holds) for (const o of a.observed) console.log(`      ${o}`);
+}
+
 const all = resolved.map(x => x.resultR);
 const overallCi = ci(all);
 const out = {
@@ -108,6 +156,7 @@ const out = {
   overall: { avgR: +mean(all).toFixed(3), ci: overallCi ? [+overallCi[0].toFixed(3), +overallCi[1].toFixed(3)] : null },
   rules: { minSamples: MIN_N, requiresRecentHalfToHold: true, bootstrapIterations: BOOT },
   actionable,
+  assumptions,
   verdict: actionable.length
     ? `${actionable.length} finding(s) cleared the bar and may be acted on.`
     : 'No slice of the data has a positive edge that survives a time split. '

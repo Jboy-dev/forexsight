@@ -8628,6 +8628,24 @@ function _v463RenderEval() {
       <div class="muted" style="margin-top:4px">${d.verdict || ''}</div>
     </div>
 
+    ${(d.assumptions || []).length ? `
+      <h4 style="margin:14px 0 4px">What the record says about the engine's own assumptions</h4>
+      <p class="muted" style="margin:0 0 6px;font-size:12px">
+        The engine is built on beliefs about what makes a setup better. Each one
+        is a claim about ordering, so each can be checked against the outcomes.
+      </p>
+      ${d.assumptions.map(a => `
+        <div style="padding:9px 11px;border-radius:9px;margin:6px 0;
+             background:${a.holds ? 'rgba(38,166,91,.08)' : 'rgba(229,72,77,.08)'};
+             border:1px solid ${a.holds ? 'rgba(38,166,91,.25)' : 'rgba(229,72,77,.22)'}">
+          <div style="font-weight:600">${a.holds ? '✓' : '✗'} ${a.name}
+            <span class="muted" style="font-weight:400">— ${a.holds ? 'consistent' : 'contradicted'}</span></div>
+          <div class="muted" style="font-size:12px;margin-top:3px">${a.belief}</div>
+          <div style="font-size:12px;margin-top:5px;font-family:ui-monospace,monospace">
+            ${(a.observed || []).join(' &nbsp;·&nbsp; ')}</div>
+          <div class="muted" style="font-size:12px;margin-top:4px">${a.note}</div>
+        </div>`).join('')}` : ''}
+
     ${rows.length ? `
       <h4 style="margin:14px 0 4px">Strongest candidate in each dimension</h4>
       <p class="muted" style="margin:0 0 6px;font-size:12px">
