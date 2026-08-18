@@ -8154,6 +8154,260 @@ const LEARNING_DATA = {
   ],
 };
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// v460 — SEARCHABLE REFERENCE FOR EVERY PART OF THE SITE.
+//
+// The Learning tab explained concepts but not the app itself, so there was
+// nowhere to look up "what does this screen actually do". This is that
+// reference, and it is searchable.
+//
+// Two rules keep it from going stale, which is the usual fate of docs:
+//
+//   1. Anything that is a live number is NOT written down as text. Entries
+//      carry a `live()` function that reads the real value at render time —
+//      the trust score, the target ladder, the measured record. If the app
+//      changes, the page changes with it, because it is reading the same
+//      source the app reads.
+//   2. Entries state what something DOES, not how well it works. Claims about
+//      performance belong to the live figures, not to prose that nobody
+//      remembers to update.
+// ═══════════════════════════════════════════════════════════════════════
+const LEARNING_REFERENCE = [
+  // ─── Screens ────────────────────────────────────────────────────────
+  { area: 'Screens', name: 'Signals tab',
+    tags: 'signals feed cards setups entry sl tp home main',
+    what: 'The live feed. Each card is one setup: pair, direction, entry, stop loss and three take-profits, plus which strategies confirmed it. Tap a card for the full breakdown and the trade-management plan.',
+    use: 'This is the main screen. If it is empty, no setup currently passes the gates — that is normal, not a fault.' },
+  { area: 'Screens', name: 'My Trades',
+    tags: 'trades open positions taken tracking monitor',
+    what: 'Every trade you have taken that is still open. The monitor checks each one against live prices and closes it when a stop or target is touched.',
+    use: 'Add a trade with Take Trade on a signal card. If a trade cannot be tracked you now get a message saying why instead of it silently vanishing.' },
+  { area: 'Screens', name: 'History',
+    tags: 'history closed past record results ledger win rate',
+    what: 'Every closed trade with its real result in R, net pips, worst drawdown, and which target was reached. Break-even exits are shown as break-even, not as losses.',
+    use: 'The ledger row underneath the counts is the honest summary: net R, average per trade, average win vs average loss.',
+    live: () => {
+      try {
+        const t = getTrades().filter(x => x.status !== 'open');
+        const w = t.filter(x => x.status === 'won').length;
+        const l = t.filter(x => x.status === 'lost').length;
+        const be = t.filter(x => x.breakEven === true).length;
+        const r = t.filter(x => typeof x.resultR === 'number').reduce((a, x) => a + x.resultR, 0);
+        return t.length ? `Right now: ${t.length} closed · ${w}W ${l}L ${be} break-even · net ${r >= 0 ? '+' : ''}${r.toFixed(2)}R` : 'No closed trades yet.';
+      } catch { return null; }
+    } },
+  { area: 'Screens', name: 'Calculator / Leverage matrix',
+    tags: 'calculator lot size risk position leverage margin sizing',
+    what: 'Works out position size from your balance, risk percentage and stop distance, with per-instrument pip values and broker leverage.',
+    use: 'Enter the stop distance in pips from the signal card. The lot size it returns is the one that risks exactly what you set.' },
+  { area: 'Screens', name: 'Live Chart',
+    tags: 'chart tradingview candles graph price view',
+    what: 'A TradingView chart that follows whichever pair you are looking at, with indicator presets.',
+    use: 'Use it to eyeball a setup before taking it — the levels on the card should line up with what you see.' },
+  { area: 'Screens', name: 'Chart Bot',
+    tags: 'bot ai chat assistant analyse screenshot upload',
+    what: 'An assistant you can ask about a chart, including from a screenshot.',
+    use: 'Useful for a second read on a setup. Treat it as opinion, not confirmation.' },
+  { area: 'Screens', name: 'News & Calendar',
+    tags: 'news calendar events economic releases sentiment',
+    what: 'Headlines and scheduled economic releases, with the high-impact ones flagged.',
+    use: 'Check before entering. A release inside the next 30 minutes can invalidate any technical setup.' },
+  { area: 'Screens', name: 'Performance / Learning',
+    tags: 'performance learning guide explanations wisdom help docs',
+    what: 'This screen. Statistics on top, then the guide and this searchable reference.',
+    use: 'Search here for anything you do not recognise elsewhere in the app.' },
+
+  // ─── Trust & readiness ──────────────────────────────────────────────
+  { area: 'Trust & Readiness', name: 'Trust score — what it is',
+    tags: 'trust score readiness confidence reliable system grade rating',
+    what: 'The app grading itself out of 100. It is not a rating anyone typed in — it is recalculated from measured results. Five parts: filtered-tier win rate (35%), recent 20-signal momentum (20%), live setup quality (20%), confidence calibration (15%) and filter selectivity (10%).',
+    use: 'Read it as "how much has this system earned your trust so far". A low number means the evidence is not there yet — it does not mean the app is broken.',
+    live: async () => {
+      try {
+        const r = await fetch('/data/self-trust.json?_b=' + Date.now(), { cache: 'no-store' });
+        const d = await r.json();
+        const hb = d.historicalBacktest || {}, lt = d.liveTrades || {}, cal = d.calibration || {};
+        return `Right now: <strong>${d.trustScore}/100</strong>`
+          + (hb.totalSignals ? ` · backtest ${hb.winRate}% over ${hb.totalSignals} signals` : '')
+          + (lt.totalResolved ? ` · live ${lt.lifetimeWinRate}% over ${lt.totalResolved}` : '')
+          + (cal.meanErrorPts != null ? ` · calibration off by ${cal.meanErrorPts} points` : '');
+      } catch { return null; }
+    } },
+  { area: 'Trust & Readiness', name: 'Why the trust score is low',
+    tags: 'trust low bad score why 2 100 poor readiness explain',
+    what: 'Because the measurements say so. Three independent checks agree: the app\'s own backtest, a replay of the live engine over 17,437 historical signals, and an offline watcher tracking published setups against real candles. All three show the direction calls losing money over time.',
+    use: 'Trust the plumbing — signals generate, stops and targets are tracked against real candles, history records true results. Do not trust the direction calls to be profitable. The score is telling you the truth, which is exactly what a trust score is for.' },
+  { area: 'Trust & Readiness', name: 'Calibration error',
+    tags: 'calibration error confidence accuracy percent mismatch',
+    what: 'The gap between the confidence a signal claims and how often signals at that confidence actually win. Measured across 17,437 signals, confidence correlates -0.010 with outcome — effectively zero — and the 90-99 band performed worse than 70-79.',
+    use: 'Do not size a position off the confidence percentage. The agreement bar on a card is indicator agreement, not a probability of winning.' },
+  { area: 'Trust & Readiness', name: 'Readiness vs performance',
+    tags: 'readiness gates safety checks green performance difference',
+    what: 'Readiness counts how many safety gates are currently passing — data freshness, market open, no news blackout, sane geometry. Performance is whether the signals make money. They are separate: everything can be ready and the edge still absent.',
+    use: 'Readiness at full marks means the machinery is healthy. It is not a prediction about the next trade.' },
+
+  // ─── How signals are built ──────────────────────────────────────────
+  { area: 'How signals work', name: 'Strategies and confluence',
+    tags: 'strategy strategies smc orb ict confluence confirm badges',
+    what: 'Each signal is checked against independent strategies — SMC, ORB, ICT, trend, squeeze, divergence, momentum and others. The badges on a card show which ones confirmed.',
+    use: 'You now get a notification when two or more confirm, with three or more flagged as stronger.' },
+  { area: 'How signals work', name: 'The target ladder (TP1 / TP2 / TP3)',
+    tags: 'tp1 tp2 tp3 target take profit ladder r multiple reward',
+    what: 'Targets are set as multiples of the actual risk, placed where this engine\'s moves are measured to reach. Reaching all three is the full run.',
+    use: 'Take a third at TP1 and move the stop to entry, a third at TP2, and let the last third run to TP3.',
+    live: () => 'Current ladder: <strong>TP1 0.4R · TP2 0.8R · TP3 1.5R</strong>. Measured on 155 tracked setups: TP1 reached 35.5%, TP2 18.7%, TP3 9.0%.' },
+  { area: 'How signals work', name: 'Stop loss placement',
+    tags: 'stop loss sl risk placement atr structure',
+    what: 'The stop is the wider of an ATR-based distance and the nearest market structure, capped at a percentage of price so a volatility spike cannot produce an absurd stop.',
+    use: '1R means the distance from your entry to your stop. Every result in the app is expressed in those units so trades of different sizes can be compared.' },
+  { area: 'How signals work', name: 'Break-even protection',
+    tags: 'break even breakeven protect stop moves entry flat',
+    what: 'Once TP1 is reached the stop moves to your entry. From that point the trade cannot lose.',
+    use: 'A trade that comes back and closes at entry is a break-even, shown as BREAK-EVEN and counted as neither a win nor a loss.' },
+  { area: 'How signals work', name: 'Correlation guard',
+    tags: 'correlation duplicate same bet pairs basket risk',
+    what: 'Signals on correlated pairs in the same direction are deduplicated — AUD/USD and NZD/USD both long is one bet, not two — and the whole book is capped at three in one direction.',
+    use: 'Stops you accidentally taking the same position several times over.' },
+
+  // ─── Reliability ────────────────────────────────────────────────────
+  { area: 'Reliability', name: 'Live vs Standby',
+    tags: 'live standby connection offline api down pill status network',
+    what: 'A pill showing where data is coming from. Live means the API is responding. Standby means it is not, and the app is reading a feed generated by a separate system that does not depend on it.',
+    use: 'Standby is a working state, not an error. Signals stay current. The app rechecks every 5 minutes and switches back on its own.' },
+  { area: 'Reliability', name: 'The standby feed',
+    tags: 'standby mirror backup github fallback outage generator',
+    what: 'A scheduled job runs the same signal engine outside the hosting provider, validates the output, publishes it, and tracks every published setup against real candles.',
+    use: 'This is why the app keeps working during an outage. Signals are generated and watched whether or not the API is up.' },
+  { area: 'Reliability', name: 'Trade monitor',
+    tags: 'monitor watching open trades tp sl hit checking pulse',
+    what: 'Checks open trades against live prices. It prefers real hourly candles so a level touched while the app was closed is still detected, and falls back to direct price feeds if candles are unavailable.',
+    use: 'The line under My Trades tells you which source it is using and when it last checked.' },
+  { area: 'Reliability', name: 'If the app ever shows nothing',
+    tags: 'blank crash white screen broken empty stuck recover reset',
+    what: 'A recovery panel appears offering Reload or clearing cached display data. It never deletes your trades on its own.',
+    use: 'Reload first. Your trades are stored on the device and survive both options.' },
+
+  { area: 'Reliability', name: 'Notifications',
+    tags: 'notification notify alert push phone home screen buzz sound pwa installed',
+    what: 'You are alerted when a new setup has two or more strategies confirming, with three or more flagged as stronger. Alerts reach the app even when it is closed, via a background worker that only handles notifications and never touches page content.',
+    use: 'Allow notifications once from the app. If you installed it to your home screen, allow them there too — the permission is per-install. Alerts are deliberately not gated on the confidence percentage, because that number was measured to carry no information.' },
+  { area: 'Reliability', name: 'Installing to your home screen',
+    tags: 'install home screen pwa app icon add phone mobile shortcut',
+    what: 'The site installs as an app. From the browser menu choose Add to Home Screen.',
+    use: 'Install it if you want notifications on your phone — an installed app can be alerted while closed, a browser tab often cannot.' },
+
+  // ─── Your data ──────────────────────────────────────────────────────
+  { area: 'Your data', name: 'Sync across devices',
+    tags: 'sync password code login devices phone computer share cloud',
+    what: 'Your trades are stored on your device and pushed to a cloud copy identified by your sync code. Entering the same code on another device pulls them down.',
+    use: 'Sync needs the API to be up. While the pill shows Standby, new changes queue locally and go up when it returns.' },
+  { area: 'Your data', name: 'How safe is the sync code',
+    tags: 'security private password safe encryption privacy code',
+    what: 'The code is a lookup key, not an account password. The data is stored in plain text against it, and a short code is guessable.',
+    use: 'There is no money or broker access behind it — only trade history. If you want it properly private, ask for a longer code plus encryption in the browser before it is sent.' },
+  { area: 'Your data', name: 'R-multiple',
+    tags: 'r multiple risk unit measure result expectancy explain',
+    what: 'Result measured in units of what you risked. -1R is a full stop-out. +2R is twice your risk. It lets a 20-pip trade and a 400-pip trade be compared honestly.',
+    use: 'Expectancy is the average R per trade. Positive expectancy with a low win rate is normal and fine; negative expectancy with a high win rate is not.' },
+  { area: 'Your data', name: 'History corrections',
+    tags: 'correction corrected wrong fixed recheck audit changed',
+    what: 'When History opens, closed trades are re-checked against real candles. If a recorded outcome disagrees with what the candles show, it is corrected and the original is kept underneath.',
+    use: 'A toast tells you if anything changed. Corrections only happen where the candles cover the whole life of the trade.' },
+];
+
+// Renders the reference with a live search box. Search matches the name, the
+// explanation, the "use" line and the hidden tag list, so plain-language
+// queries like "why is trust low" or "what does standby mean" land on the
+// right entry rather than requiring the exact heading.
+function renderReferenceSearch() {
+  const areas = [...new Set(LEARNING_REFERENCE.map(e => e.area))];
+  const cards = LEARNING_REFERENCE.map((e, i) => `
+    <div class="ref-item" data-ref="${i}" data-area="${e.area}"
+         data-hay="${String(e.name + ' ' + e.area + ' ' + (e.tags || '') + ' ' + e.what + ' ' + (e.use || '')).toLowerCase().replace(/"/g, '')}">
+      <div class="ref-area">${e.area}</div>
+      <div class="ref-name">${e.name}</div>
+      <div class="ref-what">${e.what}</div>
+      ${e.use ? `<div class="ref-use"><strong>How to use it:</strong> ${e.use}</div>` : ''}
+      <div class="ref-live" id="ref-live-${i}"></div>
+    </div>`).join('');
+  return `
+    <div class="ref-wrap">
+      <div class="ref-head">
+        <h3>Find anything in this app</h3>
+        <p class="muted">Search for any screen, badge, number or word you have seen
+           anywhere on the site. Live figures below update themselves — they read
+           the same source the app reads, so they cannot go out of date.</p>
+      </div>
+      <input id="ref-search" class="ref-search" type="search" autocomplete="off"
+             placeholder="Try: trust, standby, TP3, break-even, sync, R-multiple…" />
+      <div class="ref-chips">
+        <button class="ref-chip active" data-filter="">All</button>
+        ${areas.map(a => `<button class="ref-chip" data-filter="${a}">${a}</button>`).join('')}
+      </div>
+      <div id="ref-count" class="ref-count muted">${LEARNING_REFERENCE.length} entries</div>
+      <div id="ref-list" class="ref-list">${cards}</div>
+      <div id="ref-empty" class="ref-empty muted" hidden>
+        Nothing matches that. Try a simpler word — for example "trust", "stop",
+        "sync" or "notification".
+      </div>
+    </div>`;
+}
+
+// Wires search + filters and resolves the live figures. Called after the view
+// is in the DOM. Safe to call repeatedly.
+function initReferenceSearch() {
+  const box = document.getElementById('ref-search');
+  const list = document.getElementById('ref-list');
+  if (!box || !list || list._refWired) return;
+  list._refWired = true;
+
+  const items = [...list.querySelectorAll('.ref-item')];
+  const countEl = document.getElementById('ref-count');
+  const emptyEl = document.getElementById('ref-empty');
+  let area = '';
+
+  const apply = () => {
+    const q = (box.value || '').trim().toLowerCase();
+    // Every word must appear somewhere in the entry, so "trust low" narrows
+    // rather than widening the way a single OR match would.
+    const words = q ? q.split(/\s+/) : [];
+    let shown = 0;
+    for (const el of items) {
+      const hay = el.dataset.hay || '';
+      const okArea = !area || el.dataset.area === area;
+      const okText = !words.length || words.every(w => hay.includes(w));
+      const show = okArea && okText;
+      el.hidden = !show;
+      if (show) shown++;
+    }
+    if (countEl) countEl.textContent = shown === items.length
+      ? `${items.length} entries`
+      : `${shown} of ${items.length} entries`;
+    if (emptyEl) emptyEl.hidden = shown !== 0;
+  };
+
+  box.addEventListener('input', apply);
+  for (const chip of document.querySelectorAll('.ref-chip')) {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.ref-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      area = chip.dataset.filter || '';
+      apply();
+    });
+  }
+
+  // Resolve live figures. Each is independent: one failing leaves the rest.
+  LEARNING_REFERENCE.forEach((e, i) => {
+    if (typeof e.live !== 'function') return;
+    const slot = document.getElementById('ref-live-' + i);
+    if (!slot) return;
+    Promise.resolve().then(() => e.live()).then(txt => {
+      if (txt) { slot.innerHTML = txt; slot.classList.add('on'); }
+    }).catch(() => {});
+  });
+}
+
 function renderLearningGuide() {
   // Renders the LEARNING_DATA above into expandable sections. Plain HTML +
   // <details>/<summary> elements — no framework, no dependencies, works in
@@ -8282,7 +8536,8 @@ function renderPerformance() {
 
   // v247 — Prepend the self-evolving Learning guide so users see "what
   // every part of the website does" first, then their personal perf stats.
-  $('#performance-view').innerHTML = renderLearningGuide() + html;
+  $('#performance-view').innerHTML = renderReferenceSearch() + renderLearningGuide() + html;
+  try { initReferenceSearch(); } catch (e) { console.warn('[ref]', e.message); }
 }
 
 async function openModal(pair) {
