@@ -8581,7 +8581,7 @@ function initReferenceSearch() {
 let _v463Eval = null;
 async function _v463LoadEval() {
   const urls = [
-    'https://raw.githubusercontent.com/Jboy-dev/forex-signals-cloudflare/main/data/self-evaluation.json',
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/self-evaluation.json',
     '/data/self-evaluation.json',
   ];
   for (const u of urls) {
@@ -8710,7 +8710,7 @@ function _v463RenderEval() {
 let _v465Dq = null;
 async function _v465LoadDq() {
   const urls = [
-    'https://raw.githubusercontent.com/Jboy-dev/forex-signals-cloudflare/main/data/data-quality.json',
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/data-quality.json',
     '/data/data-quality.json',
   ];
   for (const u of urls) {
