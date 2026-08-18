@@ -41,7 +41,18 @@ const BANNED_TIERS = new Set(['chart-read']);
 // v441/v444 — the reward floor the current engine guarantees.
 // v458 — matches the measured ladder (TP3 at 1.5R). The old 2.5R floor was
 // written for targets that were never actually reached.
-const MIN_TP3_R = 1.2;
+// v466 — TP3 is now 2.5R, so the floor rises with it.
+const MIN_TP3_R = 2.0;
+
+// v466 — THE INVARIANT THAT MATTERS MOST.
+//
+// Under the managed ladder a third is banked at each target, so a trade that
+// reaches all three pays (tp1+tp2+tp3)/3. If that is not greater than 1R, the
+// best possible outcome is smaller than a full stop-out and the setup loses
+// money at any win rate. The v458 ladder paid +0.900R against -1.000R and was
+// served for weeks, so this is checked here as well as in the engine: the
+// mirror must never republish a losing geometry from a stale deployment.
+const MIN_PERFECT_RUN_R = 1.0;
 
 for (const s of signals) {
   const id = `${s.pair} ${s.direction}`;
@@ -77,6 +88,13 @@ for (const s of signals) {
     const r = Math.abs(tp3 - entry) / risk;
     if (r < MIN_TP3_R) {
       problems.push(`${id}: tp3 is only ${r.toFixed(2)}R (floor is ${MIN_TP3_R}R)`);
+    }
+  }
+  if ([tp1, tp2, tp3].every(v => typeof v === 'number' && Number.isFinite(v))) {
+    const perfect = (Math.abs(tp1 - entry) + Math.abs(tp2 - entry) + Math.abs(tp3 - entry)) / (3 * risk);
+    if (perfect <= MIN_PERFECT_RUN_R) {
+      problems.push(`${id}: a perfect run pays only ${perfect.toFixed(3)}R against a -1.000R loss `
+        + `— the best outcome is smaller than the worst, so this cannot win at any strike rate`);
     }
   }
 }

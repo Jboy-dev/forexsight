@@ -8304,6 +8304,15 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  // ─── Risk and reward ───────────────────────────────────────────────
+  { area: 'Risk and reward', name: 'Why the stop used to be bigger than the targets',
+    tags: 'risk reward rr ratio sl bigger than tp stop loss targets ladder geometry broken fixed 0.4R',
+    what: 'Until v466 the ladder was TP1 0.4R, TP2 0.8R, TP3 1.5R against a 1R stop — the first two targets sat INSIDE the stop. Banking a third at each target meant a trade that hit all three paid +0.900R, while a full stop-out cost -1.000R.',
+    use: 'The best possible outcome was smaller than the worst possible outcome, which loses money at any win rate — a trade that hit TP1 and reversed banked +0.133R, so it took seven and a half of them to pay for one loss. It is now TP1 0.5R, TP2 1.2R, TP3 2.5R: a perfect run pays +1.400R. This removed a structural flaw; it did not create an edge.' },
+  { area: 'Risk and reward', name: 'The perfect-run invariant',
+    tags: 'invariant perfect run guard regression protection ladder validation minimum',
+    what: 'Both the engine and the mirror gatekeeper now reject any signal whose perfect run — (TP1+TP2+TP3)/3 under the thirds ladder — does not exceed 1R.',
+    use: 'This is why the flaw cannot come back by someone tuning a single multiplier. The broken ladder was served for weeks because each number looked individually reasonable; only the combination was fatal. The check tests the combination.' },
   // ─── Reading a signal honestly ─────────────────────────────────────
   { area: 'Reading a signal honestly', name: '"N strategies agreed" vs "N independent"',
     tags: 'strategies agreed independent confirmation redundant families count badge how many indicators',
@@ -8416,7 +8425,10 @@ const LEARNING_REFERENCE = [
     tags: 'tp1 tp2 tp3 target take profit ladder r multiple reward',
     what: 'Targets are set as multiples of the actual risk, placed where this engine\'s moves are measured to reach. Reaching all three is the full run.',
     use: 'Take a third at TP1 and move the stop to entry, a third at TP2, and let the last third run to TP3.',
-    live: () => 'Current ladder: <strong>TP1 0.4R · TP2 0.8R · TP3 1.5R</strong>. Measured on 155 tracked setups: TP1 reached 35.5%, TP2 18.7%, TP3 9.0%.' },
+    live: () => 'Current ladder: <strong>TP1 0.5R · TP2 1.2R · TP3 2.5R</strong> (v466). '
+      + 'The previous 0.4/0.8/1.5 ladder paid +0.900R on a perfect run against a -1.000R loss — '
+      + 'the best outcome was smaller than the worst, which loses money at any strike rate. '
+      + 'A perfect run now pays +1.400R. Measured reach on 122 resolved setups: TP1 31%, TP2 13%, TP3 2%.' },
   { area: 'How signals work', name: 'Stop loss placement',
     tags: 'stop loss sl risk placement atr structure',
     what: 'The stop is the wider of an ATR-based distance and the nearest market structure, capped at a percentage of price so a volatility spike cannot produce an absurd stop.',
@@ -9286,7 +9298,7 @@ $('#calc-btn').addEventListener('click', () => {
   const lots = riskUsd / (pips * pipVal);
   const units = Math.round(lots * 100000);
   const res = $('#calc-result');
-  res.innerHTML = `Risk: <b>£${riskUsd.toFixed(2)}</b><br>Position size: <b>${lots.toFixed(2)} standard lots</b> (${(lots * 10).toFixed(2)} mini · ${(lots * 100).toFixed(0)} micro)<br>Units: <b>${units.toLocaleString()}</b> (for OANDA/TradingView)<br>SL hit = lose £${riskUsd.toFixed(2)} · TP1 (0.4R) = gain ~£${(riskUsd * 0.4).toFixed(2)}<br><span class="fx-line">${_v461RateNote()}</span>`;
+  res.innerHTML = `Risk: <b>£${riskUsd.toFixed(2)}</b><br>Position size: <b>${lots.toFixed(2)} standard lots</b> (${(lots * 10).toFixed(2)} mini · ${(lots * 100).toFixed(0)} micro)<br>Units: <b>${units.toLocaleString()}</b> (for OANDA/TradingView)<br>SL hit = lose £${riskUsd.toFixed(2)} · TP1 (0.5R) = gain ~£${(riskUsd * 0.5).toFixed(2)}<br><span class="fx-line">${_v461RateNote()}</span>`;
   res.classList.add('visible');
 });
 
@@ -10439,9 +10451,9 @@ function _calc2() {
     ${marginSection}
     <div class="calc-summary">
       <div>SL hit (-${pips}p) → <b style="color:#ef4444">−${fmtGBP(safeLots * pips * pipVal, 'USD')}</b></div>
-      <div>TP1 hit (0.4R, +${(pips * 0.4).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 0.4, 'USD')}</b></div>
-      <div>TP2 hit (0.8R, +${(pips * 0.8).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 0.8, 'USD')}</b></div>
-      <div>TP3 hit (1.5R, +${(pips * 1.5).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 1.5, 'USD')}</b></div>
+      <div>TP1 hit (0.5R, +${(pips * 0.5).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 0.5, 'USD')}</b></div>
+      <div>TP2 hit (1.2R, +${(pips * 1.2).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 1.2, 'USD')}</b></div>
+      <div>TP3 hit (2.5R, +${(pips * 2.5).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 2.5, 'USD')}</b></div>
       <div class="fx-line">${_v461RateNote()}</div>
     </div>
   `;

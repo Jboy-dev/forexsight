@@ -1805,9 +1805,39 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   // holds whatever sets the stop. This changes NO entry logic and filters out
   // no signals — the same setups fire, their targets are simply placed where
   // this engine's moves actually reach.
-  const tp1Dist = slDist * 0.4;
-  const tp2Dist = slDist * 0.8;
-  const tp3Dist = slDist * 1.5;
+  // v466 — THE LADDER HAD TO PAY MORE THAN IT COULD LOSE.
+  //
+  // v458 set these at 0.4 / 0.8 / 1.5 because v450's targets were never
+  // reached — TP3 hit 0.0%. Making them reachable was right; making them
+  // reachable by putting TP1 and TP2 INSIDE the stop was not. Under the v442
+  // managed ladder (a third banked at each target) that geometry paid:
+  //
+  //     perfect trade, all three targets  =  (0.4+0.8+1.5)/3  =  +0.900R
+  //     full loss                                            =  -1.000R
+  //
+  // The best possible outcome was smaller than the worst possible outcome. No
+  // entry signal, however good, can win against that — a trade that hit TP1
+  // and reversed banked +0.133R, so it took seven and a half of them to pay
+  // for one stop-out.
+  //
+  // Chosen from the measured excursion distribution over 122 resolved setups:
+  // of the ladders whose perfect run clears 1R, this has the highest TP1 reach
+  // (31%), and TP1 is the target that matters most because reaching it moves
+  // the stop to break-even and takes the trade out of risk.
+  //
+  //     perfect trade  =  (0.5+1.2+2.5)/3  =  +1.400R  against -1.000R
+  //
+  // This does not create an edge and is not claimed to. It removes a
+  // structural guarantee of losing that sat underneath every signal.
+  const tp1Dist = slDist * 0.5;
+  const tp2Dist = slDist * 1.2;
+  const tp3Dist = slDist * 2.5;
+
+  // The invariant that keeps it fixed. Any future ladder whose perfect run
+  // fails to beat a full stop-out is rejected here rather than published, so
+  // the flaw above cannot be reintroduced by tuning a multiplier in isolation.
+  const _perfectRunR = (tp1Dist + tp2Dist + tp3Dist) / (3 * slDist);
+  if (!(_perfectRunR > 1.0)) return null;
   const slPips = Math.round(slDist / pipSize);
   const tp1Pips = Math.round(tp1Dist / pipSize);
   const tp2Pips = Math.round(tp2Dist / pipSize);
