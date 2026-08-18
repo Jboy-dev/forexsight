@@ -25,8 +25,10 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: mirror-signals
-  cancel-in-progress: true
+  # v462 — shared with watch-offset.yml so the two watchers interleave
+  # instead of writing the same files at the same moment.
+  group: market-watch
+  cancel-in-progress: false
 
 permissions:
   contents: write

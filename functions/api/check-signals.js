@@ -1635,7 +1635,29 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   // 31% of stopped-out trades had already run 2+ ATR in profit before
   // reversing: they reached target territory and were closed by a stop
   // sitting inside ordinary noise.
-  const atrSlDist = atrV * 2.5;
+  // v462 — STOP TIGHTENED 2.5 -> 1.75 ATR (0.7x).
+  //
+  // Re-walked 159 tracked setups on real bars across a grid of stop widths and
+  // target ladders. Tightening the stop improved expectancy at EVERY ladder
+  // tested, without exception, because the targets move in with it and get
+  // reached far more often:
+  //
+  //   stop 1.0x · TP 0.4/0.8/1.5   none 38.4%  TP3  8.8%   -0.129R
+  //   stop 0.7x · TP 0.4/0.8/1.5   none 32.7%  TP3 18.9%   -0.025R
+  //   stop 0.5x · TP 0.4/0.8/1.5   none 32.1%  TP3 22.6%   +0.017R
+  //
+  // The 0.5x line is the only positive figure this project has produced — but
+  // it is an artifact of a simulation that ignores the spread. At half stop,
+  // TP1 is a median of 6 pips on FX, and a 1-1.5 pip spread is a fifth of
+  // that. Charging the real spread:
+  //
+  //   stop 1.0x  -0.209R      stop 0.7x  -0.140R      stop 0.5x  -0.143R
+  //
+  // 0.7x is chosen over 0.5x because they are level on expectancy while 0.7x
+  // keeps TP1 at ~8.5 pips instead of 6, so a normal spread widening cannot
+  // swallow the target. This changes geometry only — no gate, no filter, and
+  // no change to which setups fire.
+  const atrSlDist = atrV * 1.75;
 
   // Structure-based SL: distance to swing extreme from last 20 bars + buffer
   const lookback = Math.min(20, ohlc.length - 1);

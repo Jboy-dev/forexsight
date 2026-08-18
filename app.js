@@ -3576,6 +3576,122 @@ function analyzePair(pair, data, daily = null) {
 // Returns pip value in USD for ONE standard lot (100,000 units) of the pair.
 // USD account assumed. Cross-pair conversions use the live USD rate of the
 // quote currency, looked up from other signals already loaded on the page.
+
+// ═══════════════════════════════════════════════════════════════════════
+// v461 — REAL GBP CONVERSION. The £ signs were previously cosmetic.
+//
+// Every money figure in this app is computed in the pair's QUOTE currency,
+// which for almost everything traded here is USD: pipValuePerLot() returns 10
+// for a USD-quoted pair, and its own comment says "Fallback to $10". v277
+// swapped the $ glyph for £ and changed nothing underneath, so the numbers on
+// screen were US dollars wearing a pound sign.
+//
+// At GBP/USD ~1.35 that is not a rounding difference. Risking what you think
+// is £20 on a 20-pip stop actually risks $20, which is about £14.80 — you
+// under-risk by a quarter — while a "+£20" target really pays £14.80, so the
+// profit is overstated by a third. Both errors point the same way: the
+// numbers cannot be used for real position sizing.
+//
+// This converts properly. The rate is fetched live, cross-checked against a
+// second source, and the app REFUSES to invent one: if no trustworthy rate is
+// available it says so on screen rather than quietly showing dollars again.
+// ═══════════════════════════════════════════════════════════════════════
+const _v461Fx = { gbpPerUsd: null, at: 0, source: null, checking: null };
+
+async function _v461FetchGbpRate() {
+  const st = _v461Fx;
+  const FRESH_MS = 30 * 60 * 1000;          // FX moves slowly enough for 30 min
+  if (st.gbpPerUsd && Date.now() - st.at < FRESH_MS) return st.gbpPerUsd;
+  if (st.checking) return st.checking;
+
+  st.checking = (async () => {
+    const rates = [];
+    const grab = async (url, pick, label) => {
+      try {
+        const r = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(8000) });
+        if (!r.ok) return;
+        const v = pick(await r.json());
+        if (Number.isFinite(v) && v > 0.3 && v < 2.0) rates.push({ v, label });
+      } catch {}
+    };
+    // Two independent providers. A single source that silently returns a bad
+    // number would corrupt every figure on the site, so agreement is required.
+    await Promise.all([
+      grab('https://open.er-api.com/v6/latest/USD', d => d?.rates?.GBP, 'er-api'),
+      grab('https://api.frankfurter.app/latest?from=USD&to=GBP', d => d?.rates?.GBP, 'frankfurter'),
+    ]);
+
+    let chosen = null, source = null;
+    if (rates.length >= 2) {
+      const [a, b] = rates;
+      // Within 1% of each other means both are sane; take the mean.
+      if (Math.abs(a.v - b.v) / b.v <= 0.01) {
+        chosen = (a.v + b.v) / 2;
+        source = `${a.label} + ${b.label}`;
+      } else {
+        chosen = null;                       // disagreement — trust neither
+        source = 'sources disagree';
+      }
+    } else if (rates.length === 1) {
+      chosen = rates[0].v;
+      source = rates[0].label + ' (single source)';
+    }
+
+    if (chosen) { st.gbpPerUsd = chosen; st.at = Date.now(); st.source = source; }
+    else if (!st.gbpPerUsd) { st.source = source || 'unavailable'; }
+    st.checking = null;
+    return st.gbpPerUsd;
+  })();
+  return st.checking;
+}
+
+// Convert an amount denominated in a pair's quote currency into GBP.
+// Returns null when no trustworthy rate exists, so callers can say so
+// instead of printing a wrong number with a pound sign in front of it.
+function _v461ToGbp(amount, quoteCurrency) {
+  if (!Number.isFinite(amount)) return null;
+  const q = (quoteCurrency || 'USD').toUpperCase();
+  if (q === 'GBP') return amount;                     // already sterling
+  const r = _v461Fx.gbpPerUsd;
+  if (!r) return null;
+  if (q === 'USD') return amount * r;
+  // Non-USD, non-GBP quote (e.g. JPY): the app's pip maths already expresses
+  // these in USD before they reach here, so the USD path is the correct one.
+  return amount * r;
+}
+
+// One formatter for every money figure, so nothing can drift back to dollars.
+// Shows a clear placeholder rather than a wrong number when the rate is out.
+function fmtGBP(amount, quoteCurrency) {
+  const v = _v461ToGbp(amount, quoteCurrency);
+  if (v == null) return '£—';
+  const abs = Math.abs(v);
+  const s = abs >= 10000 ? v.toFixed(0) : abs >= 100 ? v.toFixed(1) : v.toFixed(2);
+  return '£' + Number(s).toLocaleString(undefined, {
+    minimumFractionDigits: abs >= 10000 ? 0 : abs >= 100 ? 1 : 2,
+    maximumFractionDigits: abs >= 10000 ? 0 : abs >= 100 ? 1 : 2,
+  });
+}
+
+// Pip value per standard lot, in GBP. This is the number position sizing must
+// use — the existing pipValuePerLot() returns the quote-currency figure.
+function pipValuePerLotGBP(pair, price) {
+  const usd = pipValuePerLot(pair, price);
+  const g = _v461ToGbp(usd, 'USD');
+  return g == null ? null : g;
+}
+
+// A small line the UI can show so a stale or missing rate is visible rather
+// than assumed. Never hide the provenance of a number people size trades on.
+function _v461RateNote() {
+  const st = _v461Fx;
+  if (!st.gbpPerUsd) {
+    return `<span class="fx-note fx-bad">GBP rate unavailable — money figures hidden rather than shown in the wrong currency.</span>`;
+  }
+  const mins = Math.round((Date.now() - st.at) / 60000);
+  return `<span class="fx-note">£1 = $${(1 / st.gbpPerUsd).toFixed(4)} · ${st.source} · ${mins}m ago</span>`;
+}
+
 function pipValuePerLot(pair, price) {
   const quote = pair.split('/')[1];
   if (quote === 'USD') return 10;
@@ -5558,6 +5674,7 @@ function _v449Resume() {
 // v451 — establish connection state before the first data read, so the
 // app never issues a request it already knows will fail.
 try { _v451ApiAlive(); } catch {}
+try { _v461FetchGbpRate(); } catch {}   // v461 — GBP rate ready before first money render
 
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') _v449Resume();
@@ -8927,7 +9044,7 @@ $('#calc-btn').addEventListener('click', () => {
   const lots = riskUsd / (pips * pipVal);
   const units = Math.round(lots * 100000);
   const res = $('#calc-result');
-  res.innerHTML = `Risk: <b>£${riskUsd.toFixed(2)}</b><br>Position size: <b>${lots.toFixed(2)} standard lots</b> (${(lots * 10).toFixed(2)} mini · ${(lots * 100).toFixed(0)} micro)<br>Units: <b>${units.toLocaleString()}</b> (for OANDA/TradingView)<br>SL hit = lose £${riskUsd.toFixed(2)} · TP1 (1:1) = gain ~£${riskUsd.toFixed(2)}`;
+  res.innerHTML = `Risk: <b>£${riskUsd.toFixed(2)}</b><br>Position size: <b>${lots.toFixed(2)} standard lots</b> (${(lots * 10).toFixed(2)} mini · ${(lots * 100).toFixed(0)} micro)<br>Units: <b>${units.toLocaleString()}</b> (for OANDA/TradingView)<br>SL hit = lose £${riskUsd.toFixed(2)} · TP1 (0.4R) = gain ~£${(riskUsd * 0.4).toFixed(2)}<br><span class="fx-line">${_v461RateNote()}</span>`;
   res.classList.add('visible');
 });
 
@@ -10075,14 +10192,15 @@ function _calc2() {
       <div class="calc-cell"><span class="calc-lbl">Mini lots</span><span class="calc-val">${safeMini.toFixed(2)}</span><span class="calc-sub">0.10 standard ea.</span></div>
       <div class="calc-cell"><span class="calc-lbl">Micro lots</span><span class="calc-val">${safeMicro.toFixed(0)}</span><span class="calc-sub">0.01 standard ea.</span></div>
       ${hideUnits ? '' : `<div class="calc-cell"><span class="calc-lbl">Units</span><span class="calc-val">${safeUnits.toLocaleString()}</span><span class="calc-sub">for OANDA / TradingView</span></div>`}
-      <div class="calc-cell"><span class="calc-lbl">Pip value</span><span class="calc-val">£${(safeLots * pipVal).toFixed(2)}</span><span class="calc-sub">per pip move</span></div>
+      <div class="calc-cell"><span class="calc-lbl">Pip value</span><span class="calc-val">${fmtGBP(safeLots * pipVal, 'USD')}</span><span class="calc-sub">per pip move</span></div>
     </div>
     ${marginSection}
     <div class="calc-summary">
-      <div>SL hit (-${pips}p) → <b style="color:#ef4444">−£${(safeLots * pips * pipVal).toFixed(2)}</b></div>
-      <div>TP1 hit (1R, +${pips}p) → <b style="color:#22c55e">+£${(safeLots * pips * pipVal).toFixed(2)}</b></div>
-      <div>TP2 hit (2.5R, +${(pips * 2.5).toFixed(0)}p) → <b style="color:#22c55e">+£${(safeLots * pips * pipVal * 2.5).toFixed(2)}</b></div>
-      <div>TP3 hit (4R, +${(pips * 4).toFixed(0)}p) → <b style="color:#22c55e">+£${(safeLots * pips * pipVal * 4).toFixed(2)}</b></div>
+      <div>SL hit (-${pips}p) → <b style="color:#ef4444">−${fmtGBP(safeLots * pips * pipVal, 'USD')}</b></div>
+      <div>TP1 hit (0.4R, +${(pips * 0.4).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 0.4, 'USD')}</b></div>
+      <div>TP2 hit (0.8R, +${(pips * 0.8).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 0.8, 'USD')}</b></div>
+      <div>TP3 hit (1.5R, +${(pips * 1.5).toFixed(0)}p) → <b style="color:#22c55e">+${fmtGBP(safeLots * pips * pipVal * 1.5, 'USD')}</b></div>
+      <div class="fx-line">${_v461RateNote()}</div>
     </div>
   `;
 }

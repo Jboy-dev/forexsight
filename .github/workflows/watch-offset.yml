@@ -1,0 +1,61 @@
+name: Market watch (offset)
+
+# v462 — SECOND WATCHER, OFFSET FROM THE FIRST.
+#
+# GitHub throttles a repo's scheduled workflows. mirror-signals.yml asks for
+# every 15 minutes and actually lands roughly hourly (measured 46-72 min
+# between runs), which is how long a setup could sit unseen.
+#
+# Throttling is applied per workflow, so a second workflow on an offset
+# schedule roughly halves that worst-case gap. It runs the same steps and is
+# safe to overlap: signal generation is deterministic, the watcher re-walks
+# every setup from the bar it fired on rather than from "since last run", and
+# the commit step is a no-op when nothing changed.
+
+on:
+  schedule:
+    # Offset from the primary so the two interleave rather than collide.
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  # Shared with the primary: if one is mid-run the other stands down instead
+  # of racing it to the same files.
+  group: market-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1, token: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: Refresh candles
+        run: node tools/publish-ohlc.mjs
+
+      - name: Generate signals
+        run: |
+          node tools/generate-signals.mjs
+          node tools/validate-signals.mjs data/latest-signals.json
+
+      - name: Watch open setups
+        run: node tools/watch-setups.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "market-watch-bot"
+          git config user.email "actions@github.com"
+          git add data/
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: market watch $(date -u +%H:%M)"
+            git push || (git pull --rebase && git push)
+          else
+            echo "no change"
+          fi
