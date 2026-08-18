@@ -5950,7 +5950,20 @@ function openShadowDetailModal(key) {
     if (s.bigMove) tagsHTML.push('<span class="big-run-badge" style="margin:0">🚀 BIG RUN</span>');
     if (s.inKillzone) tagsHTML.push('<span class="shadow-meta-tag" title="Fired during London or NY active hours">🎯 In killzone</span>');
     if (s.adx) tagsHTML.push(`<span class="shadow-meta-tag" title="Trend strength when signal fired">ADX ${s.adx}</span>`);
-    if (s.strategies) tagsHTML.push(`<span class="shadow-meta-tag">${s.strategies} strategies agreed</span>`);
+    if (s.strategies) {
+      // v465 — the raw count overstates the evidence. TREND, MOMENTUM, MACD,
+      // VWAP, ICHIMOKU and BOLLINGER are all price-versus-a-moving-average at
+      // different lookbacks, so on a trending bar they are arithmetically
+      // bound to agree. Measured on this app's own record, ICHIMOKU has never
+      // once fired without VWAP. Showing "4 strategies agreed" for four
+      // restatements of one reading is the kind of thing that makes a setup
+      // feel safer than it is, so both numbers are shown.
+      const fam = typeof s.independentFamilies === 'number' ? s.independentFamilies : null;
+      tagsHTML.push(`<span class="shadow-meta-tag">${s.strategies} strategies agreed</span>`);
+      if (fam !== null && fam < s.strategies) {
+        tagsHTML.push(`<span class="shadow-meta-tag" title="${s.strategies} indicators fired, but they fall into ${fam} distinct kind(s) of evidence: ${Object.keys(s.familyBreakdown || {}).join(', ')}. Indicators in the same family measure the same thing.">= ${fam} independent</span>`);
+      }
+    }
     if (Array.isArray(s.namedStrategies) && s.namedStrategies.length) {
       tagsHTML.push(`<span class="shadow-meta-tag" title="Patterns that fired together">${s.namedStrategies.join(' + ')}</span>`);
     }
@@ -8291,6 +8304,19 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  // ─── Reading a signal honestly ─────────────────────────────────────
+  { area: 'Reading a signal honestly', name: '"N strategies agreed" vs "N independent"',
+    tags: 'strategies agreed independent confirmation redundant families count badge how many indicators',
+    what: 'A signal card shows both the raw number of indicators that fired and how many DISTINCT kinds of evidence those represent. TREND, MOMENTUM, MACD, VWAP, ICHIMOKU and BOLLINGER are all price measured against a moving average at different lookbacks, so on a trending bar they are close to arithmetically bound to agree.',
+    use: 'When a card says "4 strategies agreed = 1 independent", the four are one reading repeated. Tap the badge to see which families fired. Note honestly: measured on this app\'s record, having more independent families has NOT produced better results either — the metric stops the count misleading you, it does not identify winners.' },
+  { area: 'Reading a signal honestly', name: 'Why more confirmations is not safer',
+    tags: 'more confirmations worse safer overconfidence redundancy correlated indicators',
+    what: 'Across the tracked setups, 2 strategies averaged -0.109R while 4 averaged -0.626R. The relationship runs opposite to the intuition the count creates.',
+    use: 'Treat a high strategy count as a description of how trending the bar was, not as evidence the trade is more likely to work. The engine still publishes these setups; the number is shown so it can be read correctly rather than removed.' },
+  { area: 'Reading a signal honestly', name: 'Chart integrity panel',
+    tags: 'chart integrity data quality bars candles stale gaps accurate reading feed splice verify',
+    what: 'In the Learning tab. Checks the actual candles for chronological order, duplicate timestamps, unexplained gaps, candles whose high sits below their low, opens disconnected from the previous close, and how old the last bar is.',
+    use: 'If an instrument shows anything other than "clean", treat its signals with suspicion until it clears — a fault in the bars produces a confident wrong answer rather than an obvious error. This is what caused winners to be recorded as losses in an earlier version.' },
   // ─── How it judges itself ──────────────────────────────────────────
   { area: 'How it judges itself', name: 'Self-evaluation panel',
     tags: 'self evaluation evaluate learning measure edge honest proof statistics confidence interval bootstrap R expectancy',
@@ -8677,6 +8703,60 @@ function _v463RenderEval() {
   </div>`;
 }
 
+// v465 — CHART INTEGRITY PANEL.
+// Every signal is a claim about candles. This reports whether the candles
+// themselves passed their integrity checks, so a data fault appears as a data
+// fault instead of quietly becoming a bad trade.
+let _v465Dq = null;
+async function _v465LoadDq() {
+  const urls = [
+    'https://raw.githubusercontent.com/Jboy-dev/forex-signals-cloudflare/main/data/data-quality.json',
+    '/data/data-quality.json',
+  ];
+  for (const u of urls) {
+    try {
+      const f = window._v428OrigFetch || fetch;
+      const r = await f(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && Array.isArray(j.instruments)) { _v465Dq = j; return j; }
+    } catch (_) {}
+  }
+  return null;
+}
+
+function _v465RenderDq() {
+  const d = _v465Dq;
+  if (!d) return `<div class="card" id="v465-dq"><h3>📉 Chart integrity</h3><p class="muted">Loading…</p></div>`;
+  const ok = d.healthy;
+  return `<div class="card" id="v465-dq">
+    <h3>📉 Chart integrity</h3>
+    <p class="muted" style="margin-top:-4px">
+      The bars the engine reads, checked against things that must be true:
+      chronological order, no duplicate or missing candles, highs above lows,
+      opens connected to the previous close, and a recent final bar.
+    </p>
+    <div style="padding:10px 12px;border-radius:10px;margin:8px 0;
+                background:${ok ? 'rgba(38,166,91,.10)' : 'rgba(229,72,77,.09)'};
+                border:1px solid ${ok ? 'rgba(38,166,91,.30)' : 'rgba(229,72,77,.25)'}">
+      <strong>${d.instrumentsClean}/${d.instrumentsChecked} instruments clean</strong>
+      <div class="muted" style="margin-top:3px">${d.verdict || ''}</div>
+    </div>
+    <div style="overflow-x:auto"><table class="votes-table">
+      <tr><th>Instrument</th><th>Bars</th><th>Last bar</th><th>Status</th></tr>
+      ${d.instruments.map(i => `<tr>
+        <td>${i.pair}</td><td>${i.bars}</td>
+        <td class="muted">${i.lastBarAgeHours < 1 ? '<1h' : i.lastBarAgeHours.toFixed(1) + 'h'} ago</td>
+        <td style="color:${i.clean ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'}">
+          ${i.clean ? 'clean' : i.issues.join('; ')}</td>
+      </tr>`).join('')}
+    </table></div>
+    <p class="muted" style="margin-top:8px;font-size:12px">
+      Checked ${d.isoTime ? new Date(d.isoTime).toLocaleString('en-GB') : 'recently'} on every watch cycle.
+    </p>
+  </div>`;
+}
+
 function renderLearningGuide() {
   // Renders the LEARNING_DATA above into expandable sections. Plain HTML +
   // <details>/<summary> elements — no framework, no dependencies, works in
@@ -8805,12 +8885,16 @@ function renderPerformance() {
 
   // v247 — Prepend the self-evolving Learning guide so users see "what
   // every part of the website does" first, then their personal perf stats.
-  $('#performance-view').innerHTML = _v463RenderEval() + renderReferenceSearch() + renderLearningGuide() + html;
+  $('#performance-view').innerHTML = _v463RenderEval() + _v465RenderDq() + renderReferenceSearch() + renderLearningGuide() + html;
   // v463 — fetch in the background, then swap just the panel in place so
   // the rest of the view never blanks while the measurement loads.
   _v463LoadEval().then(() => {
     const el = document.getElementById('v463-eval');
     if (el) el.outerHTML = _v463RenderEval();
+  }).catch(() => {});
+  _v465LoadDq().then(() => {
+    const el = document.getElementById('v465-dq');
+    if (el) el.outerHTML = _v465RenderDq();
   }).catch(() => {});
   try { initReferenceSearch(); } catch (e) { console.warn('[ref]', e.message); }
 }

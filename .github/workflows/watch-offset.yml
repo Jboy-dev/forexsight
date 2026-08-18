@@ -45,6 +45,12 @@ jobs:
           node tools/generate-signals.mjs
           node tools/validate-signals.mjs data/latest-signals.json
 
+      # v465 — verify the candles the engine reads before trusting anything
+      # computed from them. A stale, spliced or malformed bar produces a
+      # confident wrong answer, which is worse than no answer.
+      - name: Verify chart data
+        run: node tools/verify-data.mjs
+
       - name: Watch open setups
         run: node tools/watch-setups.mjs
 

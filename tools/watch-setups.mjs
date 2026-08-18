@@ -134,6 +134,10 @@ for (const s of (latest.signals || [])) {
     // keeping score and actually evaluating.
     namedStrategies: Array.isArray(s.namedStrategies) ? s.namedStrategies : [],
     comboKey: s.comboKey || null,
+    // v465 — how many genuinely different kinds of evidence agreed, as
+    // opposed to how many indicators restated the same one.
+    independentFamilies: typeof s.independentFamilies === 'number' ? s.independentFamilies : null,
+    dominantFamily: s.dominantFamily || null,
     adx: typeof s.adx === 'number' ? s.adx : null,
     regime: s.regime && s.regime.label ? s.regime.label : null,
     htfAlignment: s.htfStudy && s.htfStudy.alignment ? s.htfStudy.alignment : null,

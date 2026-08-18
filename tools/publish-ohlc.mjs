@@ -17,7 +17,7 @@
 //   node tools/publish-ohlc.mjs
 //   node tools/publish-ohlc.mjs --dry-run
 
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 
 const PAIRS = {
   'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X', 'USD/JPY': 'USDJPY=X',
@@ -79,7 +79,26 @@ await Promise.all(Object.entries(PAIRS).map(async ([pair, sym]) => {
           + 'verify stop/target touches over a trade\'s full life without the '
           + 'live API. Served as a static asset.',
     };
-    if (!DRY) writeFileSync(`data/ohlc/${slugFor(pair)}.json`, JSON.stringify(payload));
+    // v465 — only rewrite when the newest bar has actually advanced.
+    //
+    // These files are republished on every watch cycle, roughly 48 times a
+    // day. When the last bar is unchanged the rewrite still produces a new
+    // git object, so the repository was growing by megabytes a week to record
+    // that nothing happened. Markets close at weekends and quiet hours repeat
+    // the same final bar, so a large share of those writes carried no news.
+    const _path = `data/ohlc/${slugFor(pair)}.json`;
+    let _changed = true;
+    if (existsSync(_path)) {
+      try {
+        const prev = JSON.parse(readFileSync(_path, 'utf8'));
+        const prevBars = Array.isArray(prev) ? prev : (prev.bars || prev.ohlc || []);
+        const newBars = Array.isArray(payload) ? payload : (payload.bars || payload.ohlc || []);
+        const a = prevBars[prevBars.length - 1], b = newBars[newBars.length - 1];
+        if (a && b && a.t === b.t && a.c === b.c && prevBars.length === newBars.length) _changed = false;
+      } catch { /* unreadable previous file — rewrite it */ }
+    }
+    if (!DRY && _changed) writeFileSync(_path, JSON.stringify(payload));
+    if (!_changed) console.log(`  = ${pair} unchanged, not rewritten`);
     wrote++;
     summary.push(`${pair}: ${bars.length} bars, last ${ageMin}min old`);
   } catch (e) {

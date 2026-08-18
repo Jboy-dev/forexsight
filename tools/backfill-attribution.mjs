@@ -20,6 +20,23 @@
 import { execFileSync } from 'child_process';
 import { readFileSync, writeFileSync } from 'fs';
 
+// Mirror of STRATEGY_FAMILY in check-signals.js. Kept here so history can be
+// re-scored without importing the Worker bundle.
+const FAMILY = {
+  TREND:'moving-average', MOMENTUM:'moving-average', MACD:'moving-average',
+  VWAP:'moving-average', ICHIMOKU:'moving-average', BOLLINGER:'moving-average',
+  ICT:'structure', SMC:'structure', ORDER_BLOCK:'structure', SR:'structure',
+  FIB:'structure', BREAKOUT_RETEST:'structure', TURTLE_SOUP:'structure',
+  THREE_BAR:'candle-pattern', WYCKOFF:'candle-pattern', ORB:'candle-pattern',
+  SILVER_BULLET:'candle-pattern', DIVERGENCE:'divergence',
+};
+const _families = (n) => new Set((n || []).map(x => FAMILY[x] || 'other'));
+function _dominant(n) {
+  const c = {};
+  for (const x of (n || [])) { const f = FAMILY[x] || 'other'; c[f] = (c[f] || 0) + 1; }
+  return Object.keys(c).sort((a, b) => c[b] - c[a])[0] || null;
+}
+
 const DRY = process.argv.includes('--dry');
 const BOOK = 'data/open-setups.json';
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
@@ -50,15 +67,31 @@ for (const h of revs) {
       regime: s.regime && s.regime.label ? s.regime.label : null,
       htfAlignment: s.htfStudy && s.htfStudy.alignment ? s.htfStudy.alignment : null,
       inKillzone: s.inKillzone === true,
+      // v465 — older snapshots predate the independence fields, so derive
+      // them from the strategy names the same way the engine now does.
+      independentFamilies: typeof s.independentFamilies === 'number'
+        ? s.independentFamilies : _families(s.namedStrategies).size,
+      dominantFamily: s.dominantFamily || _dominant(s.namedStrategies),
     });
   }
 }
 
 const book = JSON.parse(readFileSync(BOOK, 'utf8'));
-let filled = 0, alreadyHad = 0, noMatch = 0;
+let filled = 0, alreadyHad = 0, noMatch = 0, derived = 0;
 
 for (const x of book) {
-  if (Array.isArray(x.namedStrategies) && x.namedStrategies.length) { alreadyHad++; continue; }
+  if (Array.isArray(x.namedStrategies) && x.namedStrategies.length) {
+    alreadyHad++;
+    // v465 — a record restored by an earlier run has names but predates the
+    // independence fields. Derive them here rather than leaving the newest
+    // measurement blank on exactly the setups that already have attribution.
+    if (x.independentFamilies == null) {
+      x.independentFamilies = _families(x.namedStrategies).size;
+      x.dominantFamily = x.dominantFamily || _dominant(x.namedStrategies);
+      derived++;
+    }
+    continue;
+  }
   const rec = found.get(x.key);
   if (!rec) { noMatch++; continue; }
   // Fill blanks only — never contradict what was recorded live.
@@ -72,7 +105,7 @@ for (const x of book) {
 console.log(`scanned ${scanned} snapshot(s), recovered ${found.size} attributed publication(s)`);
 console.log(`book: ${book.length} setups`);
 console.log(`  ${filled} backfilled`);
-console.log(`  ${alreadyHad} already had names`);
+console.log(`  ${alreadyHad} already had names (${derived} gained independence scoring)`);
 console.log(`  ${noMatch} no matching snapshot (published before v441, or by a deployment that did not emit names)`);
 
 if (DRY) { console.log('\n--dry: nothing written'); process.exit(0); }

@@ -167,6 +167,12 @@ jobs:
       # bar it fired on, so GitHub throttling this cron to ~hourly (measured
       # 46-72 min against the requested 15) delays publication without ever
       # changing an outcome.
+      # v465 — verify the candles the engine reads before trusting anything
+      # computed from them. A stale, spliced or malformed bar produces a
+      # confident wrong answer, which is worse than no answer.
+      - name: Verify chart data
+        run: node tools/verify-data.mjs
+
       - name: Watch open setups
         run: node tools/watch-setups.mjs
 

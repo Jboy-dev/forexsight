@@ -328,6 +328,67 @@ function _macdStrategy(ohlc, dir) {
 // v317 — NEW STRATEGY: VWAP position + trend.
 // Institutions benchmark against VWAP; price above VWAP = bullish
 // intraday bias, below = bearish. Combined with trend of VWAP itself.
+// ── v465 — INDEPENDENT CONFIRMATION ───────────────────────────────────────
+//
+// The engine counted strategies and treated a higher count as a stronger
+// signal. Measured against its own record, the opposite held: 4 strategies
+// agreeing averaged -0.626R while 2 averaged -0.109R. The co-occurrence
+// matrix says why.
+//
+//   when ICHIMOKU fires, VWAP fires  98% of the time
+//   when ICT      fires, VWAP fires 100% and ICHIMOKU 95%
+//   when BOLLINGER fires, VWAP fires 100%
+//   ICHIMOKU has NEVER fired alone in 102 occurrences
+//
+// That is not six opinions. TREND (EMA50/200), MOMENTUM (EMA20/50), MACD
+// (EMA12/26), VWAP, ICHIMOKU (Tenkan/Kijun midpoints) and BOLLINGER (SMA20
+// ± 2σ) are all the same measurement — price against a moving average — read
+// at different lookbacks. On a trending bar they must agree, because they are
+// arithmetically bound to. Counting them separately manufactures confidence
+// out of one piece of evidence.
+//
+// So confirmations are now grouped by what they actually measure, and the
+// honest count is the number of DISTINCT families that agree. A setup with
+// six moving-average variants is one confirmation. A setup with a moving
+// average, a structural level and a candle pattern is three.
+//
+// This is reported, not enforced. No gate reads it yet — there is not enough
+// data to know which threshold is right, and inventing one would repeat the
+// mistake this measurement exists to catch.
+const STRATEGY_FAMILY = {
+  // Price versus a moving average, at various lookbacks. Mutually redundant.
+  TREND: 'moving-average', MOMENTUM: 'moving-average', MACD: 'moving-average',
+  VWAP: 'moving-average', ICHIMOKU: 'moving-average', BOLLINGER: 'moving-average',
+  // Where price sits against levels left by earlier trading.
+  ICT: 'structure', SMC: 'structure', ORDER_BLOCK: 'structure', SR: 'structure',
+  FIB: 'structure', BREAKOUT_RETEST: 'structure', TURTLE_SOUP: 'structure',
+  // Shape of the recent candles themselves.
+  THREE_BAR: 'candle-pattern', WYCKOFF: 'candle-pattern', ORB: 'candle-pattern',
+  SILVER_BULLET: 'candle-pattern',
+  // Price disagreeing with an oscillator — genuinely different information.
+  DIVERGENCE: 'divergence',
+};
+
+function independentConfirmation(named) {
+  const list = Array.isArray(named) ? named : [];
+  const byFamily = {};
+  for (const n of list) {
+    const fam = STRATEGY_FAMILY[n] || 'other';
+    (byFamily[fam] ||= []).push(n);
+  }
+  const families = Object.keys(byFamily);
+  return {
+    independentFamilies: families.length,
+    familyBreakdown: byFamily,
+    // The largest family that is doing all the work, when one dominates.
+    dominantFamily: families.sort((a, b) => byFamily[b].length - byFamily[a].length)[0] || null,
+    // Raw count minus the redundancy it contains: how much of the headline
+    // number is real. 6 moving averages -> 1. Kept explicit so the UI can
+    // show both and the difference is visible rather than quietly corrected.
+    redundantCount: list.length - families.length,
+  };
+}
+
 function _vwapStrategy(ohlc, dir) {
   const n = ohlc.length - 1;
   if (n < 24) return false;
@@ -1882,6 +1943,10 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
     // v216 — expose the exact named strategy combo so the brain can score it
     namedStrategies: namedStrats.slice(),
     comboKey: `${direction}_${namedStrats.slice().sort().join('+')}`,
+    // v465 — how many of those are actually independent (see
+    // independentConfirmation above). Reported alongside the raw count so the
+    // gap between "six strategies" and "one kind of evidence" is visible.
+    ...independentConfirmation(namedStrats),
     // v218 — brain-blessed pattern markers
     isEliteBrainPattern,
     eliteBrainWR: eliteBrainWR != null ? Math.round(eliteBrainWR * 100) : null,

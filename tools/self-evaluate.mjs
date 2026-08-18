@@ -47,6 +47,8 @@ const FEATURES = {
   strategyCount: x => x.strategies != null ? `${x.strategies} strategies` : null,
   strategy:      x => (x.namedStrategies || []),          // multi-valued
   combo:         x => x.comboKey || null,
+  independence:  x => x.independentFamilies == null ? null : `${x.independentFamilies} independent`,
+  dominantFamily:x => x.dominantFamily || null,
   pair:          x => x.pair || null,
   direction:     x => x.direction || null,
   session:       x => { const h = +String(x.firedAt).slice(11, 13); return Number.isFinite(h) ? `${String(h - h % 4).padStart(2,'0')}-${String(h - h % 4 + 3).padStart(2,'0')} UTC` : null; },
@@ -130,6 +132,17 @@ testOrdering(
   'More confirmation is better',
   'A setup with more strategies agreeing should perform better than one with fewer.',
   'strategyCount', ['1 strategies', '2 strategies', '3 strategies', '4 strategies'],
+);
+// v465 — this one was MY hypothesis, added at the same time as the metric it
+// tests. The strategies are near-duplicates of each other (ICHIMOKU never
+// fires without VWAP), so the theory was that counting distinct kinds of
+// evidence instead of raw indicators would separate good setups from bad.
+// It does not. Recorded here rather than removed, because a failed idea that
+// stays measured is worth more than one that quietly disappears.
+testOrdering(
+  'Independent confirmation beats redundant confirmation',
+  'A setup confirmed by two different KINDS of evidence should beat one confirmed by several restatements of the same kind.',
+  'independence', ['1 independent', '2 independent', '3 independent'],
 );
 testOrdering(
   'Higher-timeframe alignment confirms',
