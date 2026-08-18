@@ -42,7 +42,8 @@ const BANNED_TIERS = new Set(['chart-read']);
 // v458 — matches the measured ladder (TP3 at 1.5R). The old 2.5R floor was
 // written for targets that were never actually reached.
 // v466 — TP3 is now 2.5R, so the floor rises with it.
-const MIN_TP3_R = 2.0;
+// v467 — TP3 is 3.5R; floor raised again.
+const MIN_TP3_R = 3.0;
 
 // v466 — THE INVARIANT THAT MATTERS MOST.
 //
@@ -53,6 +54,11 @@ const MIN_TP3_R = 2.0;
 // served for weeks, so this is checked here as well as in the engine: the
 // mirror must never republish a losing geometry from a stale deployment.
 const MIN_PERFECT_RUN_R = 1.0;
+
+// v467 — the first target must clear the stop. Taking profit smaller than the
+// risk means the first exit can never pay for the loss that follows it, so a
+// ladder whose TP1 sits inside the stop is rejected outright.
+const MIN_TP1_R = 1.0;
 
 for (const s of signals) {
   const id = `${s.pair} ${s.direction}`;
@@ -88,6 +94,13 @@ for (const s of signals) {
     const r = Math.abs(tp3 - entry) / risk;
     if (r < MIN_TP3_R) {
       problems.push(`${id}: tp3 is only ${r.toFixed(2)}R (floor is ${MIN_TP3_R}R)`);
+    }
+  }
+  {
+    const r1 = Math.abs(tp1 - entry) / risk;
+    if (!(r1 > MIN_TP1_R)) {
+      problems.push(`${id}: tp1 is ${r1.toFixed(2)}R — it must exceed the stop (${MIN_TP1_R}R), `
+        + `otherwise the first target banks less than the trade risks`);
     }
   }
   if ([tp1, tp2, tp3].every(v => typeof v === 'number' && Number.isFinite(v))) {
