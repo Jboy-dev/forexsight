@@ -1,35 +1,151 @@
 {
-  "ts": 1787148329098,
-  "isoTime": "2026-08-19T14:05:29.098Z",
-  "count": 3,
+  "ts": 1787150451433,
+  "isoTime": "2026-08-19T14:40:51.433Z",
+  "count": 4,
   "signals": [
     {
-      "pair": "EUR/USD",
-      "direction": "BUY",
-      "confidence": 96,
-      "tier": "extreme",
+      "pair": "USD/CHF",
+      "direction": "SELL",
+      "confidence": 97,
+      "tier": "best",
       "chartStudy": {
-        "score": 72,
+        "score": 65,
         "reasons": [
           "Trend clean: 12/20 bars in direction (+17)",
           "Pullback to EMA20 (+0)",
-          "Candle conviction: 80% body (+15)",
-          "Compression 42% (+7)",
+          "Candle conviction: 87% body (+15)",
+          "Compression 51% (+3)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+3)",
+          "Rejection wicks (+0)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "SELL",
+        "strength": 75,
+        "alignment": "aligned",
+        "score": 80,
+        "adx4h": 25,
+        "reasons": [
+          "4H trend DOWN (price < EMA20 < EMA50, ADX 25)",
+          "✓ Signal direction matches 4H trend (+40.08424690619775)",
+          "⚠ 4H RSI oversold (19)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "neutral",
+        "trend": "neutral",
+        "bias": 0,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "BREAKOUT",
+        "adx": 0,
+        "atrRatio": 2.09,
+        "compression": 2.05
+      },
+      "entry": 0.7985,
+      "sl": 0.80169,
+      "tp1": 0.79467,
+      "tp2": 0.79211,
+      "tp3": 0.78732,
+      "adx": 31,
+      "agreement": 92,
+      "indicators": 12.499999999999998,
+      "strategies": 7,
+      "namedStrategies": [
+        "ORB",
+        "ICT",
+        "TREND",
+        "BOLLINGER",
+        "MACD",
+        "VWAP",
+        "ICHIMOKU"
+      ],
+      "comboKey": "SELL_BOLLINGER+ICHIMOKU+ICT+MACD+ORB+TREND+VWAP",
+      "independentFamilies": 3,
+      "familyBreakdown": {
+        "candle-pattern": [
+          "ORB"
+        ],
+        "structure": [
+          "ICT"
+        ],
+        "moving-average": [
+          "TREND",
+          "BOLLINGER",
+          "MACD",
+          "VWAP",
+          "ICHIMOKU"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 4,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": true,
+      "weakSignal": false,
+      "bigMove": true,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.67,
+      "pipPotential": 112,
+      "pipsToTp1": 38,
+      "pipsToTp2": 64,
+      "pipsToTp3": 112,
+      "pipsToSl": 32,
+      "atrV": 0.0015357094151633127,
+      "slDistAtr": 2.08,
+      "tp1DistAtr": 2.496,
+      "tp2DistAtr": 4.16,
+      "tp3DistAtr": 7.279,
+      "slMethod": "capped",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 0.7985,
+        "afterTp2": 0.79467,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-08-19T14:40:51.432Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "hitTp1Pct": 45,
+        "hitTp2Pct": 1,
+        "hitTp3Pct": 0,
+        "hitSlPct": 53,
+        "undecidedPct": 1,
+        "expectedR": -0.06,
+        "winProbability": 46
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 0
+    },
+    {
+      "pair": "EUR/USD",
+      "direction": "BUY",
+      "confidence": 98,
+      "tier": "extreme",
+      "chartStudy": {
+        "score": 66,
+        "reasons": [
+          "Trend clean: 13/20 bars in direction (+18)",
+          "Pullback to EMA20 (+0)",
+          "Candle conviction: 84% body (+15)",
+          "Compression 47% (+3)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+0)",
           "Momentum (RSI) (+10)"
         ]
       },
       "htfStudy": {
         "direction": "BUY",
-        "strength": 94,
+        "strength": 93,
         "alignment": "aligned",
         "score": 90,
-        "adx4h": 44,
+        "adx4h": 43,
         "reasons": [
-          "4H trend UP (price > EMA20 > EMA50, ADX 44)",
+          "4H trend UP (price > EMA20 > EMA50, ADX 43)",
           "✓ Signal direction matches 4H trend (+50)",
-          "⚠ 4H RSI overbought (79)"
+          "⚠ 4H RSI overbought (84)"
         ]
       },
       "dailyHtf": {
@@ -41,15 +157,245 @@
       "regime": {
         "label": "BREAKOUT",
         "adx": 0,
-        "atrRatio": 1.69,
-        "compression": 1.67
+        "atrRatio": 1.92,
+        "compression": 1.89
       },
-      "entry": 1.16618,
-      "sl": 1.16152,
-      "tp1": 1.17178,
-      "tp2": 1.17551,
-      "tp3": 1.18251,
+      "entry": 1.16795,
+      "sl": 1.16328,
+      "tp1": 1.17356,
+      "tp2": 1.1773,
+      "tp3": 1.1843,
       "adx": 40,
+      "agreement": 93,
+      "indicators": 13.499999999999998,
+      "strategies": 8,
+      "namedStrategies": [
+        "ORB",
+        "ICT",
+        "TREND",
+        "BOLLINGER",
+        "MACD",
+        "VWAP",
+        "ICHIMOKU"
+      ],
+      "comboKey": "BUY_BOLLINGER+ICHIMOKU+ICT+MACD+ORB+TREND+VWAP",
+      "independentFamilies": 3,
+      "familyBreakdown": {
+        "candle-pattern": [
+          "ORB"
+        ],
+        "structure": [
+          "ICT"
+        ],
+        "moving-average": [
+          "TREND",
+          "BOLLINGER",
+          "MACD",
+          "VWAP",
+          "ICHIMOKU"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 4,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": true,
+      "weakSignal": false,
+      "bigMove": true,
+      "bigMoveHunt": true,
+      "atrExpansion": 1.74,
+      "pipPotential": 164,
+      "pipsToTp1": 56,
+      "pipsToTp2": 93,
+      "pipsToTp3": 164,
+      "pipsToSl": 47,
+      "atrV": 0.0011477385248456682,
+      "slDistAtr": 4.07,
+      "tp1DistAtr": 4.885,
+      "tp2DistAtr": 8.141,
+      "tp3DistAtr": 14.247,
+      "slMethod": "capped",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 1.16795,
+        "afterTp2": 1.17356,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-08-19T14:40:51.335Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "hitTp1Pct": 36,
+        "hitTp2Pct": 0,
+        "hitTp3Pct": 0,
+        "hitSlPct": 42,
+        "undecidedPct": 23,
+        "expectedR": -0.06,
+        "winProbability": 36
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 1
+    },
+    {
+      "pair": "XAU/USD",
+      "direction": "BUY",
+      "confidence": 97,
+      "tier": "extreme",
+      "chartStudy": {
+        "score": 69,
+        "reasons": [
+          "Trend clean: 12/20 bars in direction (+17)",
+          "Pullback to EMA20 (+0)",
+          "Candle conviction: 76% body (+15)",
+          "Compression 44% (+7)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+0)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "BUY",
+        "strength": 71,
+        "alignment": "aligned",
+        "score": 86,
+        "adx4h": 21,
+        "reasons": [
+          "4H trend UP (price > EMA20 > EMA50, ADX 21)",
+          "✓ Signal direction matches 4H trend (+35.8084173725116)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "aligned",
+        "trend": "up",
+        "bias": 10,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "BREAKOUT",
+        "adx": 0,
+        "atrRatio": 1.75,
+        "compression": 1.75
+      },
+      "entry": 4546.6,
+      "sl": 4510.23,
+      "tp1": 4590.25,
+      "tp2": 4619.35,
+      "tp3": 4673.9,
+      "adx": 34,
+      "agreement": 92,
+      "indicators": 12.499999999999998,
+      "strategies": 7,
+      "namedStrategies": [
+        "ORB",
+        "ICT",
+        "TREND",
+        "BOLLINGER",
+        "MACD",
+        "VWAP",
+        "ICHIMOKU"
+      ],
+      "comboKey": "BUY_BOLLINGER+ICHIMOKU+ICT+MACD+ORB+TREND+VWAP",
+      "independentFamilies": 3,
+      "familyBreakdown": {
+        "candle-pattern": [
+          "ORB"
+        ],
+        "structure": [
+          "ICT"
+        ],
+        "moving-average": [
+          "TREND",
+          "BOLLINGER",
+          "MACD",
+          "VWAP",
+          "ICHIMOKU"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 4,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": true,
+      "weakSignal": false,
+      "bigMove": true,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.36,
+      "pipPotential": 1273,
+      "pipsToTp1": 436,
+      "pipsToTp2": 727,
+      "pipsToTp3": 1273,
+      "pipsToSl": 364,
+      "atrV": 22.564348493303573,
+      "slDistAtr": 1.612,
+      "tp1DistAtr": 1.934,
+      "tp2DistAtr": 3.224,
+      "tp3DistAtr": 5.642,
+      "slMethod": "capped",
+      "slSavedPips": 31,
+      "trailStops": {
+        "afterTp1": 4546.6,
+        "afterTp2": 4590.25,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-08-19T14:40:51.360Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "hitTp1Pct": 45,
+        "hitTp2Pct": 2,
+        "hitTp3Pct": 0,
+        "hitSlPct": 53,
+        "undecidedPct": 0,
+        "expectedR": -0.03,
+        "winProbability": 47
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 10
+    },
+    {
+      "pair": "ETH/USD",
+      "direction": "BUY",
+      "confidence": 96,
+      "tier": "extreme",
+      "chartStudy": {
+        "score": 65,
+        "reasons": [
+          "Trend clean: 10/20 bars in direction (+14)",
+          "Pullback to EMA20 (+0)",
+          "Candle conviction: 62% body (+14)",
+          "Compression 33% (+7)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+0)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "BUY",
+        "strength": 66,
+        "alignment": "aligned",
+        "score": 81,
+        "adx4h": 16,
+        "reasons": [
+          "4H trend UP (price > EMA20 > EMA50, ADX 16)",
+          "✓ Signal direction matches 4H trend (+30.805275595084254)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "aligned",
+        "trend": "up",
+        "bias": 10,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "BREAKOUT",
+        "adx": 0,
+        "atrRatio": 1.34,
+        "compression": 1.31
+      },
+      "entry": 1939.69995,
+      "sl": 1902.68256,
+      "tp1": 1984.12083,
+      "tp2": 2013.73474,
+      "tp3": 2069.26083,
+      "adx": 39,
       "agreement": 91,
       "indicators": 10.899999999999999,
       "strategies": 6,
@@ -82,264 +428,41 @@
       "inKillzone": true,
       "weakSignal": false,
       "bigMove": true,
-      "bigMoveHunt": true,
-      "atrExpansion": 1.54,
-      "pipPotential": 163,
-      "pipsToTp1": 56,
-      "pipsToTp2": 93,
-      "pipsToTp3": 163,
-      "pipsToSl": 47,
-      "atrV": 0.0010212574686322892,
-      "slDistAtr": 4.568,
-      "tp1DistAtr": 5.481,
-      "tp2DistAtr": 9.135,
-      "tp3DistAtr": 15.987,
-      "slMethod": "capped",
-      "slSavedPips": 0,
-      "trailStops": {
-        "afterTp1": 1.16618,
-        "afterTp2": 1.17178,
-        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
-      },
-      "detectedAt": "2026-08-19T14:05:29.023Z",
-      "monteCarloOutcome": {
-        "runs": 1000,
-        "hitTp1Pct": 32,
-        "hitTp2Pct": 0,
-        "hitTp3Pct": 0,
-        "hitSlPct": 38,
-        "undecidedPct": 31,
-        "expectedR": -0.06,
-        "winProbability": 32
-      },
-      "generatedOffline": true,
-      "barAgeMinutes": 1
-    },
-    {
-      "pair": "BTC/USD",
-      "direction": "BUY",
-      "confidence": 97,
-      "tier": "best",
-      "chartStudy": {
-        "score": 67,
-        "reasons": [
-          "Trend clean: 12/20 bars in direction (+17)",
-          "Pullback to EMA20 (+0)",
-          "Candle conviction: 59% body (+13)",
-          "Compression 36% (+7)",
-          "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+0)",
-          "Momentum (RSI) (+10)"
-        ]
-      },
-      "htfStudy": {
-        "direction": "BUY",
-        "strength": 80,
-        "alignment": "aligned",
-        "score": 95,
-        "adx4h": 30,
-        "reasons": [
-          "4H trend UP (price > EMA20 > EMA50, ADX 30)",
-          "✓ Signal direction matches 4H trend (+44.658897951261025)"
-        ]
-      },
-      "dailyHtf": {
-        "aligned": "aligned",
-        "trend": "up",
-        "bias": 10,
-        "daysAnalysed": 20
-      },
-      "regime": {
-        "label": "BREAKOUT",
-        "adx": 0,
-        "atrRatio": 1.46,
-        "compression": 1.42
-      },
-      "entry": 65101,
-      "sl": 64064.90095,
-      "tp1": 66344.31886,
-      "tp2": 67173.1981,
-      "tp3": 68727.34668,
-      "adx": 31,
-      "agreement": 92,
-      "indicators": 12.2,
-      "strategies": 7,
-      "namedStrategies": [
-        "MOMENTUM",
-        "ICT",
-        "TREND",
-        "BOLLINGER",
-        "MACD",
-        "VWAP",
-        "ICHIMOKU"
-      ],
-      "comboKey": "BUY_BOLLINGER+ICHIMOKU+ICT+MACD+MOMENTUM+TREND+VWAP",
-      "independentFamilies": 2,
-      "familyBreakdown": {
-        "moving-average": [
-          "MOMENTUM",
-          "TREND",
-          "BOLLINGER",
-          "MACD",
-          "VWAP",
-          "ICHIMOKU"
-        ],
-        "structure": [
-          "ICT"
-        ]
-      },
-      "dominantFamily": "moving-average",
-      "redundantCount": 5,
-      "isEliteBrainPattern": false,
-      "eliteBrainWR": null,
-      "inKillzone": true,
-      "weakSignal": false,
-      "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 1,
-      "pipPotential": 3626,
-      "pipsToTp1": 1243,
-      "pipsToTp2": 2072,
-      "pipsToTp3": 3626,
-      "pipsToSl": 1036,
-      "atrV": 188.55245535714286,
-      "slDistAtr": 5.495,
-      "tp1DistAtr": 6.594,
-      "tp2DistAtr": 10.99,
-      "tp3DistAtr": 19.233,
+      "atrExpansion": 1.14,
+      "pipPotential": 1296,
+      "pipsToTp1": 444,
+      "pipsToTp2": 740,
+      "pipsToTp3": 1296,
+      "pipsToSl": 370,
+      "atrV": 8.510009765625,
+      "slDistAtr": 4.35,
+      "tp1DistAtr": 5.22,
+      "tp2DistAtr": 8.7,
+      "tp3DistAtr": 15.225,
       "slMethod": "structure (beyond ATR floor)",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 65101,
-        "afterTp2": 66344.31886,
+        "afterTp1": 1939.69995,
+        "afterTp2": 1984.12083,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-19T14:05:29.069Z",
+      "detectedAt": "2026-08-19T14:40:51.367Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "hitTp1Pct": 22,
+        "hitTp1Pct": 30,
         "hitTp2Pct": 0,
         "hitTp3Pct": 0,
-        "hitSlPct": 35,
-        "undecidedPct": 44,
+        "hitSlPct": 44,
+        "undecidedPct": 26,
         "expectedR": -0.13,
-        "winProbability": 22
-      },
-      "generatedOffline": true,
-      "barAgeMinutes": 0
-    },
-    {
-      "pair": "USD/JPY",
-      "direction": "SELL",
-      "confidence": 94,
-      "tier": "extreme",
-      "chartStudy": {
-        "score": 71,
-        "reasons": [
-          "Trend clean: 16/20 bars in direction (+20)",
-          "Pullback to EMA20 (+0)",
-          "Candle conviction: 51% body (+11)",
-          "Compression 42% (+7)",
-          "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+3)",
-          "Momentum (RSI) (+10)"
-        ]
-      },
-      "htfStudy": {
-        "direction": "SELL",
-        "strength": 78,
-        "alignment": "aligned",
-        "score": 83,
-        "adx4h": 28,
-        "reasons": [
-          "4H trend DOWN (price < EMA20 < EMA50, ADX 28)",
-          "✓ Signal direction matches 4H trend (+42.96864725425202)",
-          "⚠ 4H RSI oversold (29)"
-        ]
-      },
-      "dailyHtf": {
-        "aligned": "aligned",
-        "trend": "down",
-        "bias": 10,
-        "daysAnalysed": 20
-      },
-      "regime": {
-        "label": "BREAKOUT",
-        "adx": 0,
-        "atrRatio": 1.67,
-        "compression": 1.67
-      },
-      "entry": 158.411,
-      "sl": 159.203,
-      "tp1": 157.461,
-      "tp2": 156.827,
-      "tp3": 155.639,
-      "adx": 42,
-      "agreement": 89,
-      "indicators": 8.8,
-      "strategies": 5,
-      "namedStrategies": [
-        "ICT",
-        "BOLLINGER",
-        "MACD",
-        "VWAP",
-        "ICHIMOKU"
-      ],
-      "comboKey": "SELL_BOLLINGER+ICHIMOKU+ICT+MACD+VWAP",
-      "independentFamilies": 2,
-      "familyBreakdown": {
-        "structure": [
-          "ICT"
-        ],
-        "moving-average": [
-          "BOLLINGER",
-          "MACD",
-          "VWAP",
-          "ICHIMOKU"
-        ]
-      },
-      "dominantFamily": "moving-average",
-      "redundantCount": 3,
-      "isEliteBrainPattern": false,
-      "eliteBrainWR": null,
-      "inKillzone": true,
-      "weakSignal": false,
-      "bigMove": true,
-      "bigMoveHunt": true,
-      "atrExpansion": 1.67,
-      "pipPotential": 277,
-      "pipsToTp1": 95,
-      "pipsToTp2": 158,
-      "pipsToTp3": 277,
-      "pipsToSl": 79,
-      "atrV": 0.21407209123883927,
-      "slDistAtr": 3.7,
-      "tp1DistAtr": 4.44,
-      "tp2DistAtr": 7.4,
-      "tp3DistAtr": 12.95,
-      "slMethod": "capped",
-      "slSavedPips": 0,
-      "trailStops": {
-        "afterTp1": 158.411,
-        "afterTp2": 157.461,
-        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
-      },
-      "detectedAt": "2026-08-19T14:05:29.009Z",
-      "monteCarloOutcome": {
-        "runs": 1000,
-        "hitTp1Pct": 38,
-        "hitTp2Pct": 0,
-        "hitTp3Pct": 0,
-        "hitSlPct": 45,
-        "undecidedPct": 16,
-        "expectedR": -0.07,
-        "winProbability": 38
+        "winProbability": 30
       },
       "generatedOffline": true,
       "barAgeMinutes": 0
     }
   ],
   "source": "offline-generator",
-  "correlationFiltered": 4,
+  "correlationFiltered": 5,
   "note": "Generated by tools/generate-signals.mjs (GitHub Actions) using the same strictAnalyze() the live endpoint uses. Produced independently of Cloudflare so signals stay current when Functions are unavailable."
 }
