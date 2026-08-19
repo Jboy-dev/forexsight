@@ -3618,7 +3618,14 @@ async function _v461FetchGbpRate() {
     // number would corrupt every figure on the site, so agreement is required.
     await Promise.all([
       grab('https://open.er-api.com/v6/latest/USD', d => d?.rates?.GBP, 'er-api'),
-      grab('https://api.frankfurter.app/latest?from=USD&to=GBP', d => d?.rates?.GBP, 'frankfurter'),
+      // v472 — frankfurter.app stopped sending Access-Control-Allow-Origin, so
+      // from a browser it fails every time. It never produced a rate here; it
+      // only ever downgraded the check to "single source" while filling the
+      // console with CORS errors. Replaced with a provider that does allow
+      // cross-origin reads, restoring the two-source agreement this was
+      // designed around.
+      grab('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json',
+           d => d?.usd?.gbp, 'currency-api'),
     ]);
 
     let chosen = null, source = null;
