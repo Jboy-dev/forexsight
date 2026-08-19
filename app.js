@@ -6345,7 +6345,9 @@ async function loadSignals(force = false) {
   // ran on every poll, so the status line flashed "Loading signals…" over a
   // perfectly good feed every 90 seconds.
   if (!(state.signals && state.signals.length)) {
-    $('#signals-status').textContent = 'Loading signals…';
+    const _ls = document.getElementById('signals-status-line');
+    if (_ls) _ls.textContent = 'Loading signals…';
+    else $('#signals-status').textContent = 'Loading signals…';
   }
   showWeekendBannerIfNeeded();
 
@@ -6390,9 +6392,12 @@ async function loadSignals(force = false) {
         ? (ageMin >= 60 ? `${(ageMin / 60).toFixed(1)}h ago` : `${Math.round(ageMin)}m ago`)
         : 'unknown age';
       const stale = isFinite(ageMin) && ageMin > STALE_MIN;
-      $('#signals-status').textContent =
-        `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`
+      const _line = `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`
         + (stale ? ' · OUT OF DATE — prices have moved, re-check before trading' : '');
+      const _span = document.getElementById('signals-status-line');
+      if (_span) _span.textContent = _line;            // keeps the banner alive
+      else $('#signals-status').textContent = _line;   // before the first render
+      _v471AttachBanner();
       try {
         const el = $('#signals-status');
         if (el) el.style.color = stale ? 'var(--bad,#e5484d)' : '';
@@ -7362,22 +7367,16 @@ function renderSignals() {
                 : `≥ ${state.minConf}%`;
   const proCount = state.signals.filter(isProSetup).length;
   const proLine = proCount > 0 ? ` · <strong style="color:#ffd60a">🏆 ${proCount} PRO</strong>` : '';
+  // v471 — the count line lives in its own span. It used to share the element
+  // with the banner below, and loadSignals() overwrites this element's
+  // textContent on every poll, which silently deleted the banner seconds after
+  // it appeared. That is why the old "+0.12R — positive" line was rarely seen,
+  // and it would have hidden its honest replacement just the same.
   $('#signals-status').innerHTML = `
-    ${filtered.length} signal${filtered.length === 1 ? '' : 's'} (${modeTag}) from ${totalTracked} pairs${proLine}. Click a card for full breakdown.
-    <div class="reality-banner">
-      📊 <strong>What the record actually says.</strong> This banner used to quote
-      "+0.12R per trade — positive" from a replay of 5,971 signals. That replay ran a
-      different engine (predict-next.js) than the one that produces these cards, so it
-      was never evidence about this system. Measured on setups this engine published and
-      then watched to resolution on real candles, counting each move once rather than
-      once per republication: <strong>${(window._v469Brain && window._v469Brain.totalSamples) || '—'} independent moves,
-      averaging ${(window._v469Brain && window._v469Brain.overall) ? (window._v469Brain.overall.avgR >= 0 ? '+' : '') + window._v469Brain.overall.avgR : '—'}R</strong>,
-      with a confidence interval that still includes zero. <strong>No edge has been established
-      either way</strong> — the sample is too small to settle it. Treat these as candidates to
-      study, size at 1–2% risk at most, and do not stake money on an outcome the record
-      cannot yet support. Past results never predict future ones.
-    </div>
+    <span id="signals-status-line">${filtered.length} signal${filtered.length === 1 ? '' : 's'} (${modeTag}) from ${totalTracked} pairs${proLine}. Click a card for full breakdown.</span>
+
   `;
+  _v471AttachBanner();
   const proPickHTML = renderProPickBanner(state.signals);
   const radiantHTML = renderRadiantBanner();
   // Per-strategy OPEN signal counter — shows at a glance how many active
@@ -8871,6 +8870,48 @@ async function _v469LoadBrain() {
     } catch (_) {}
   }
   return null;
+}
+
+// v471b — THE HONEST RECORD, ON EVERY PATH.
+//
+// This banner lived inside one branch of renderSignals and was additionally
+// wiped by loadSignals writing textContent over the whole status element. So
+// the claim it carried — for a long time the unsupported "+0.12R per trade —
+// positive" — appeared and vanished depending on which filter happened to be
+// active. A statement about whether the system makes money should not be
+// conditional on a UI mode, in either direction.
+//
+// It is now appended after whatever the status line says, on every path, and
+// reads its numbers from the offline brain so it can never drift from the
+// measured record.
+function _v471RealityBanner() {
+  const b = window._v469Brain;
+  const n = b && typeof b.totalSamples === 'number' ? b.totalSamples : null;
+  const avg = b && b.overall && typeof b.overall.avgR === 'number' ? b.overall.avgR : null;
+  const fig = (n != null && avg != null)
+    ? `<strong>${n} independent moves, averaging ${avg >= 0 ? '+' : ''}${avg.toFixed(3)}R</strong>, with a confidence interval that still includes zero`
+    : '<strong>too few independent moves to measure yet</strong>';
+  return `<div class="reality-banner">
+    📊 <strong>What the record actually says.</strong> This banner used to quote
+    "+0.12R per trade — positive", taken from a replay of 5,971 signals. That replay
+    ran a different engine than the one producing these cards, so it was never
+    evidence about this system. Measured on setups this engine published and then
+    watched to resolution on real candles, counting each move once rather than once
+    per republication: ${fig}. <strong>No edge is established either way</strong> —
+    the sample cannot settle it. See "When would we actually know?" in Learning for
+    how much more it would take. Size at 1–2% risk at most, and do not stake money
+    on an outcome the record cannot yet support.
+  </div>`;
+}
+
+function _v471AttachBanner() {
+  try {
+    const host = document.getElementById('signals-status');
+    if (!host) return;
+    const existing = host.querySelector('.reality-banner');
+    if (existing) existing.remove();
+    host.insertAdjacentHTML('beforeend', _v471RealityBanner());
+  } catch (_) {}
 }
 
 function _v469RenderBrain() {
