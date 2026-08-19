@@ -19,14 +19,20 @@
 // coincidence. When nothing qualifies, this says so, and the system changes
 // nothing. That is a result, not a failure.
 import { readFileSync, writeFileSync } from 'fs';
+import { toEpisodes } from './lib/episodes.mjs';
 
 const MIN_N = 25;
 const BOOT = 6000;
 
 const book = JSON.parse(readFileSync('data/open-setups.json', 'utf8'));
-const resolved = book
+const rawResolved = book
   .filter(x => typeof x.resultR === 'number' && x.firedAt)
   .sort((a, b) => String(a.firedAt).localeCompare(String(b.firedAt)));
+
+// v469 — collapse republished setups into single episodes before measuring
+// anything. Without this the same move counts many times and the intervals
+// below are far narrower than the evidence justifies. See tools/lib/episodes.mjs.
+const resolved = toEpisodes(rawResolved);
 
 const mean = v => v.length ? v.reduce((a, b) => a + b, 0) / v.length : 0;
 function ci(v) {
@@ -166,6 +172,8 @@ const out = {
   ts: Date.now(),
   isoTime: new Date().toISOString(),
   samples: resolved.length,
+  rawPublications: rawResolved.length,
+  inflationFactor: +(rawResolved.length / Math.max(1, resolved.length)).toFixed(2),
   overall: { avgR: +mean(all).toFixed(3), ci: overallCi ? [+overallCi[0].toFixed(3), +overallCi[1].toFixed(3)] : null },
   rules: { minSamples: MIN_N, requiresRecentHalfToHold: true, bootstrapIterations: BOOT },
   actionable,
@@ -179,7 +187,8 @@ const out = {
 
 writeFileSync('data/self-evaluation.json', JSON.stringify(out, null, 2));
 
-console.log(`self-evaluation over ${resolved.length} resolved setups`);
+console.log(`self-evaluation over ${resolved.length} independent episodes `
+  + `(${rawResolved.length} raw publications, ${(rawResolved.length/Math.max(1,resolved.length)).toFixed(2)}x inflation)`);
 console.log(`  overall ${out.overall.avgR >= 0 ? '+' : ''}${out.overall.avgR}R  CI[${out.overall.ci}]`);
 console.log(`  ${out.verdict}`);
 for (const [f, rows] of Object.entries(report)) {

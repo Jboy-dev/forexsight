@@ -20,7 +20,7 @@
 //   node tools/generate-signals.mjs            # writes data/latest-signals.json
 //   node tools/generate-signals.mjs --dry-run  # prints, writes nothing
 
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { strictAnalyze } from '../functions/api/check-signals.js';
 
 const PAIR_SYMBOLS = {
@@ -52,6 +52,56 @@ async function fetchBars(symbol) {
     bars.push({ t: ts[i] * 1000, o, h, l, c, v: q.volume?.[i] ?? 0 });
   }
   return bars;
+}
+
+// ── v469 — ATTACH WHAT THE BRAIN ACTUALLY KNOWS ────────────────────────────
+//
+// The win-chance figure used to come from a Cloudflare Function reading KV.
+// That made the app's intelligence depend on Cloudflare being up, and when the
+// KV key expired every signal arrived unscored and the card rendered it as
+// "0% win chance". This reads the offline brain instead — same statistics,
+// built in CI by tools/build-brain.mjs, no Function and no KV.
+//
+// It attaches an estimate ONLY where the brain has enough episodes to support
+// one. Where it does not, nothing is attached and the card says "not scored",
+// which is the truth. Inventing a number for a thin slice is how the previous
+// version misled, and the sample floor is on episodes, not publications, so a
+// single trending move cannot manufacture confidence.
+function loadBrain() {
+  try { return JSON.parse(readFileSync('data/learning-brain.json', 'utf8')); }
+  catch { return null; }
+}
+
+function attachBrainScore(sig, brain) {
+  if (!brain) return;
+  const combo = brain.byCombo && sig.comboKey ? brain.byCombo[sig.comboKey] : null;
+  const pair  = brain.byPair && sig.pair ? brain.byPair[sig.pair] : null;
+  // Prefer the most specific slice that clears the sample floor.
+  const src = (combo && combo.usable) ? { s: combo, basis: `combo ${sig.comboKey}` }
+            : (pair && pair.usable)   ? { s: pair,  basis: `pair ${sig.pair}` }
+            : null;
+  if (!src) {
+    sig.brainNote = brain.byCombo && sig.comboKey && brain.byCombo[sig.comboKey]
+      ? `only ${brain.byCombo[sig.comboKey].samples} episode(s) for this combination `
+        + `— below the ${brain.minSamplesForUse} needed to quote a win chance`
+      : 'no resolved history for this setup yet';
+    return;
+  }
+  const { s, basis } = src;
+  sig.probabilityAnalysis = {
+    pWin: Math.round((s.winRate || 0) * 100),
+    samples: s.samples,
+    avgR: s.avgR,
+    ci: s.ci,
+    proven: s.proven,
+    basis,
+    source: 'offline-brain',
+    // Said on the object itself so nothing downstream can present this as
+    // more than it is.
+    caveat: s.proven
+      ? 'Interval clears zero on this slice.'
+      : 'Measured rate only. The interval includes zero, so this is not evidence of an edge.',
+  };
 }
 
 const signals = [];
@@ -126,6 +176,14 @@ function dedupeCorrelated(list) {
     }
   }
   return out;
+}
+
+// Score before dedupe so every emitted signal carries whatever is known.
+{
+  const brain = loadBrain();
+  for (const sig of signals) attachBrainScore(sig, brain);
+  const scored = signals.filter(s => s.probabilityAnalysis).length;
+  console.log(`brain scoring: ${scored}/${signals.length} signal(s) had enough episodes to quote a win chance`);
 }
 
 const beforeDedupe = signals.length;

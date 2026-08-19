@@ -66,6 +66,14 @@ jobs:
       # v464 — Recover attribution the watcher used to drop. Idempotent: it
       # only fills blanks, so once history is backfilled this is a no-op that
       # still catches any future gap.
+      # v469 — Build the learning brain here, not in Cloudflare. It used to be
+      # written by a Function into KV with a 14-day TTL; the key expired, the
+      # namespace emptied, and every signal started arriving unscored. Built in
+      # CI from the tracked book it costs no invocations, uses no KV, and
+      # cannot expire.
+      - name: Build learning brain
+        run: node tools/build-brain.mjs
+
       - name: Backfill attribution
         run: node tools/backfill-attribution.mjs
 

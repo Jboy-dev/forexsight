@@ -8351,6 +8351,14 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'Moves observed vs times it fired',
+    tags: 'episodes publications inflation duplicate repeated signals sample size pseudo replication counted twice',
+    what: 'While a setup\'s conditions hold, the engine republishes it on every scan. The watcher logs each publication. One ETH rally produced 28 near-identical BUY entries that all resolved as winners together.',
+    use: 'Those 28 rows are one piece of evidence, not 28. Everything in the Learning tab now collapses overlapping setups on the same pair and direction into a single move. On the current book that is 247 publications from 35 real moves — a factor of 7 — and it is the difference between the record reading -0.005R and the truthful -0.221R.' },
+  { area: 'How it judges itself', name: 'Where the learning runs',
+    tags: 'learning brain cloudflare kv offline independent server quota storage limits expire',
+    what: 'The learning brain is built by tools/build-brain.mjs in GitHub Actions and published as data/learning-brain.json. The app reads that file directly.',
+    use: 'It used to be a Cloudflare Function writing to KV with a 14-day expiry. The key expired, the namespace emptied, and every signal began arriving with no score. Built outside Cloudflare it consumes no invocations, uses no storage there, and has nothing that can expire.' },
   { area: 'Reading a signal honestly', name: '"Win chance not scored"',
     tags: 'win chance not scored brain verdict weak 0% zero percent probability missing kv learning brain',
     what: 'The win-chance figure comes from the learning brain stored in Cloudflare KV, which is written with a 14-day expiry. When it expires or Cloudflare Functions are down, signals arrive with no probability estimate.',
@@ -8826,6 +8834,106 @@ function _v465RenderDq() {
   </div>`;
 }
 
+// v469 — LEARNING BRAIN PANEL, SERVED FROM A STATIC FILE.
+//
+// The brain used to be a Cloudflare Function reading KV. It is now built in CI
+// and published as data/learning-brain.json, so the learning costs no
+// invocations, touches no KV and cannot expire. This renders what it knows,
+// including the distinction that matters most: how many times the engine fired
+// versus how many independent moves it has actually observed.
+let _v469Brain = null;
+async function _v469LoadBrain() {
+  const urls = [
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/learning-brain.json',
+    '/data/learning-brain.json',
+  ];
+  for (const u of urls) {
+    try {
+      const f = window._v428OrigFetch || fetch;
+      const r = await f(u, { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && typeof j.totalSamples === 'number') { _v469Brain = j; return j; }
+    } catch (_) {}
+  }
+  return null;
+}
+
+function _v469RenderBrain() {
+  const d = _v469Brain;
+  if (!d) return `<div class="card" id="v469-brain"><h3>🧠 What it has learned</h3><p class="muted">Loading…</p></div>`;
+  const sgn = v => (v >= 0 ? '+' : '') + Number(v).toFixed(3);
+  const ov = d.overall || {};
+
+  const rows = [];
+  for (const [group, label] of [['byPair','Instrument'],['byStrategy','Strategy'],['byCombo','Combination']]) {
+    const entries = Object.entries(d[group] || {})
+      .filter(([, v]) => v.samples >= 3)
+      .sort((a, b) => b[1].avgR - a[1].avgR)
+      .slice(0, 4);
+    for (const [k, v] of entries) rows.push({ group: label, key: k, ...v });
+  }
+
+  return `<div class="card" id="v469-brain">
+    <h3>🧠 What it has learned</h3>
+    <p class="muted" style="margin-top:-4px">
+      Built from setups this system published and then watched to resolution
+      against real candles. It runs outside Cloudflare entirely — no server
+      calls, no stored keys, nothing that can expire.
+    </p>
+
+    <div class="wl-row" style="margin:10px 0">
+      <div><div class="muted" style="font-size:12px">Independent moves observed</div>
+           <div style="font-size:20px;font-weight:700">${d.totalSamples}</div></div>
+      <div><div class="muted" style="font-size:12px">Times it fired</div>
+           <div style="font-size:20px;font-weight:700">${d.rawPublications ?? '—'}</div></div>
+      <div><div class="muted" style="font-size:12px">Average per move</div>
+           <div style="font-size:20px;font-weight:700;color:${ov.avgR >= 0 ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'}">
+             ${ov.avgR != null ? sgn(ov.avgR) + 'R' : '—'}</div></div>
+    </div>
+
+    ${d.inflationFactor > 1.5 ? `
+      <div style="padding:9px 11px;border-radius:9px;margin:6px 0;
+           background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.3)">
+        <strong>Why those two numbers differ</strong>
+        <div class="muted" style="margin-top:3px">
+          While a setup's conditions hold, the engine republishes it on every
+          scan, so a single move can be logged ${d.inflationFactor}× over — one ETH rally
+          produced 28 near-identical entries that all won together. Those are
+          not separate pieces of evidence, so everything here counts each move
+          once.${d.uncorrectedAvgR != null ? ` Counted the naive way this book would read
+          <strong>${sgn(d.uncorrectedAvgR)}R</strong> instead of <strong>${sgn(ov.avgR)}R</strong>.` : ''}
+        </div>
+      </div>` : ''}
+
+    <div style="padding:10px 12px;border-radius:10px;margin:8px 0;
+         background:${(d.provenSlices||[]).length ? 'rgba(38,166,91,.10)' : 'rgba(229,72,77,.09)'};
+         border:1px solid ${(d.provenSlices||[]).length ? 'rgba(38,166,91,.30)' : 'rgba(229,72,77,.25)'}">
+      <strong>${(d.provenSlices||[]).length ? 'Slices with a measured edge' : 'No proven edge yet'}</strong>
+      <div class="muted" style="margin-top:3px">${d.verdict || ''}</div>
+    </div>
+
+    ${rows.length ? `<div style="overflow-x:auto"><table class="votes-table">
+      <tr><th>Group</th><th>Which</th><th>Moves</th><th>Win rate</th><th>Avg R</th><th>95% interval</th></tr>
+      ${rows.map(r => `<tr>
+        <td class="muted">${r.group}</td><td>${r.key}</td><td>${r.samples}</td>
+        <td>${r.winRate != null ? Math.round(r.winRate*100) + '%' : '—'}</td>
+        <td style="color:${r.avgR >= 0 ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'};font-weight:600">${sgn(r.avgR)}</td>
+        <td class="muted" style="white-space:nowrap">${r.ci ? `${sgn(r.ci[0])} … ${sgn(r.ci[1])}` : '—'}</td>
+      </tr>`).join('')}
+    </table></div>
+    <p class="muted" style="margin-top:6px;font-size:12px">
+      A win chance is only quoted on a signal card once a slice reaches
+      ${d.minSamplesForUse} independent moves. Below that the card says
+      "not scored" rather than showing a number the evidence cannot support.
+    </p>` : ''}
+
+    <p class="muted" style="margin-top:8px;font-size:12px">
+      Rebuilt ${d.isoTime ? new Date(d.isoTime).toLocaleString('en-GB') : 'recently'} on every watch cycle.
+    </p>
+  </div>`;
+}
+
 function renderLearningGuide() {
   // Renders the LEARNING_DATA above into expandable sections. Plain HTML +
   // <details>/<summary> elements — no framework, no dependencies, works in
@@ -8954,7 +9062,7 @@ function renderPerformance() {
 
   // v247 — Prepend the self-evolving Learning guide so users see "what
   // every part of the website does" first, then their personal perf stats.
-  $('#performance-view').innerHTML = _v463RenderEval() + _v465RenderDq() + renderReferenceSearch() + renderLearningGuide() + html;
+  $('#performance-view').innerHTML = _v469RenderBrain() + _v463RenderEval() + _v465RenderDq() + renderReferenceSearch() + renderLearningGuide() + html;
   // v463 — fetch in the background, then swap just the panel in place so
   // the rest of the view never blanks while the measurement loads.
   _v463LoadEval().then(() => {
@@ -8964,6 +9072,10 @@ function renderPerformance() {
   _v465LoadDq().then(() => {
     const el = document.getElementById('v465-dq');
     if (el) el.outerHTML = _v465RenderDq();
+  }).catch(() => {});
+  _v469LoadBrain().then(() => {
+    const el = document.getElementById('v469-brain');
+    if (el) el.outerHTML = _v469RenderBrain();
   }).catch(() => {});
   try { initReferenceSearch(); } catch (e) { console.warn('[ref]', e.message); }
 }
