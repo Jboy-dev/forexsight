@@ -141,7 +141,31 @@ const rrOf = (s) => {
   if (!(risk > 0) || typeof s.tp3 !== 'number') return 0;
   return Math.abs(s.tp3 - s.entry) / risk;
 };
-signals.sort((a, b) => rrOf(b) - rrOf(a));
+// v470 — THE SORT WAS A TIE, SO THE FEED WAS ARBITRARY.
+//
+// rrOf is |tp3 - entry| / |entry - sl|, and the ladder sets tp3 at a fixed
+// multiple of the stop — 3.5R for every signal since v467, 1.5R before that.
+// So this comparator returned 0 for every pair and the order was whatever
+// Promise.all happened to resolve first. The basket cap below then kept "the
+// three strongest", which in practice meant the three that finished fetching
+// first. Gold analysed at confidence 88 with six strategies and 1274 pips to
+// TP3 and was dropped anyway, because three FX pairs won a race.
+//
+// R:R cannot rank these while the geometry is fixed, and nothing measured on
+// this book predicts outcome, so the tie is broken on facts about the setup
+// rather than a pretence of ranking: trend strength, then how much room the
+// move has in its own terms, then the pair name so the order is at least
+// stable between runs instead of changing on network timing.
+const adxOf = (s) => (typeof s.adx === 'number' ? s.adx : 0);
+const roomOf = (s) => {
+  const risk = Math.abs(s.entry - s.sl);
+  return risk > 0 && s.entry ? (risk / s.entry) : 0;   // stop as a share of price
+};
+signals.sort((a, b) =>
+  (rrOf(b) - rrOf(a))
+  || (adxOf(b) - adxOf(a))
+  || (roomOf(b) - roomOf(a))
+  || String(a.pair).localeCompare(String(b.pair)));
 
 // The live path runs correlation dedup and a basket cap in latest-signals.js
 // before anything reaches the user. This path bypasses that endpoint, so the
@@ -166,13 +190,31 @@ function dedupeCorrelated(list) {
       }
     }
   }
-  // Whole-book cap: if everything points the same way it is one position,
-  // not a portfolio. Keep the three strongest.
+  // v470 — CAP WITHIN AN ASSET CLASS, NOT ACROSS ALL OF THEM.
+  //
+  // The cap existed because a book of same-direction FX majors is one bet on
+  // the dollar wearing several names. That reasoning holds inside a class and
+  // breaks across them: gold, crypto and the FX majors answer to different
+  // things, so a long gold setup is not another copy of long EUR.
+  //
+  // Applied globally it removed gold whenever three FX pairs happened to point
+  // the same way — which, with the dollar trending, is most of the time. The
+  // instrument the user watches most was the one most often deleted.
+  const CLASS_OF = (pair) => {
+    if (pair === 'XAU/USD' || pair === 'XAG/USD') return 'metals';
+    if (['BTC/USD', 'ETH/USD', 'SOL/USD'].includes(pair)) return 'crypto';
+    if (['US30', 'NAS100', 'SPX500'].includes(pair)) return 'indices';
+    return 'fx';
+  };
+  const PER_CLASS_CAP = { fx: 3, crypto: 1, metals: 2, indices: 2 };
   for (const dir of ['BUY', 'SELL']) {
-    const sameDir = out.filter(s => s.direction === dir);
-    if (sameDir.length > 3) {
-      const drop = new Set(sameDir.slice(3));
-      out = out.filter(s => !drop.has(s));
+    for (const cls of ['fx', 'crypto', 'metals', 'indices']) {
+      const inClass = out.filter(s => s.direction === dir && CLASS_OF(s.pair) === cls);
+      const cap = PER_CLASS_CAP[cls] || 2;
+      if (inClass.length > cap) {
+        const drop = new Set(inClass.slice(cap));
+        out = out.filter(s => !drop.has(s));
+      }
     }
   }
   return out;

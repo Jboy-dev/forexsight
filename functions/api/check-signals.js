@@ -1369,6 +1369,40 @@ function studyChart(ohlc, direction, atrV) {
 // are relaxed so we don't lose the signal to noise filters.
 function strictAnalyze(pair, ohlc, brainTopWinners) {
   if (ohlc.length < 60) return null;
+  // v470 — ANALYSE CLOSED CANDLES ONLY.
+  //
+  // The last bar from any feed is the hour currently in progress. v268 added a
+  // walk-back that moves the index `n` off a degenerate final bar, and that
+  // protects the entry price — but it does not protect the analysis. Several
+  // strategies read `ohlc.slice(n - k, n + 1)`, and with `n` walked back by one
+  // that `n + 1` reaches straight into the forming bar again.
+  //
+  // Measured on live data, the leak changes what fires: gold read 3 strategies
+  // with the partial bar and 4 without, ETH 3 against 6. Those are the same
+  // setups being judged against a candle that has not finished printing, so a
+  // strategy can switch on and off as the hour fills in. That is repainting,
+  // and it is one reason cards appear and vanish.
+  //
+  // Trailing bars whose interval has not elapsed are dropped before anything
+  // reads them. Entry still comes from the most recent CLOSED candle, which is
+  // what a trader could actually have acted on.
+  {
+    const gaps = [];
+    for (let i = Math.max(1, ohlc.length - 40); i < ohlc.length; i++) {
+      const g = ohlc[i].t - ohlc[i - 1].t;
+      if (g > 0) gaps.push(g);
+    }
+    if (gaps.length) {
+      gaps.sort((a, b) => a - b);
+      const interval = gaps[Math.floor(gaps.length / 2)];
+      const now = Date.now();
+      let end = ohlc.length;
+      // Drop from the end while the bar's own interval has not yet completed.
+      while (end > 60 && (now - ohlc[end - 1].t) < interval) end--;
+      if (end < ohlc.length) ohlc = ohlc.slice(0, end);
+    }
+  }
+  if (ohlc.length < 60) return null;
   const closes = ohlc.map(b => b.c), highs = ohlc.map(b => b.h), lows = ohlc.map(b => b.l);
   // v268/v269c — DEGENERATE-BAR WALK-BACK. Yahoo sometimes returns 5+
   // tick-level "last bars" with range=0 stacked at the end (forming hour
