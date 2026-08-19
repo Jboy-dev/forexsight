@@ -6377,8 +6377,26 @@ async function loadSignals(force = false) {
     if (sigs.length > 0) {
       const src = d._source === 'cf-static-mirror' ? 'mirror' : 'server';
       applySignals(sigs, src);
-      const ageStr = isFinite(ageMin) ? `${Math.round(ageMin)}m ago` : 'unknown age';
-      $('#signals-status').textContent = `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`;
+      // v468 — say plainly when a snapshot is old.
+      //
+      // The deploy-baked /data copy only changes when the site is redeployed,
+      // while the GitHub mirror is rewritten every cycle. On the day this was
+      // added the Pages copy was 18.5 hours behind the GitHub one. The chain
+      // prefers the fresher source, but if it ever falls through to the stale
+      // one these cards are yesterday's setups at yesterday's prices, and
+      // "1114m ago" in small text does not convey that.
+      const STALE_MIN = 90;
+      const ageStr = isFinite(ageMin)
+        ? (ageMin >= 60 ? `${(ageMin / 60).toFixed(1)}h ago` : `${Math.round(ageMin)}m ago`)
+        : 'unknown age';
+      const stale = isFinite(ageMin) && ageMin > STALE_MIN;
+      $('#signals-status').textContent =
+        `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`
+        + (stale ? ' · OUT OF DATE — prices have moved, re-check before trading' : '');
+      try {
+        const el = $('#signals-status');
+        if (el) el.style.color = stale ? 'var(--bad,#e5484d)' : '';
+      } catch {}
       // v449 — the six-second heavy-scan timer is gone. It was scheduled
       // right after these signals painted, and when it finished it replaced
       // them with its own result, which is usually shorter because the
@@ -7841,13 +7859,40 @@ function cardHTML(s) {
         const best = q && q.bestStrategy ? q.bestStrategy : null;
         // Don't render the panel if we have nothing meaningful to summarise
         if (!pa.pWin && !ps && !cs && !best) return '';
-        // Verdict label by pWin
-        const pWin = pa.pWin || 0;
-        const verdict = pWin >= 75 ? { label: 'STRONG', cls: 'bv-strong', emoji: '🟢' }
-                      : pWin >= 65 ? { label: 'GOOD', cls: 'bv-good', emoji: '🟢' }
-                      : pWin >= 55 ? { label: 'OK', cls: 'bv-ok', emoji: '🟡' }
-                      : pWin >= 50 ? { label: 'MARGINAL', cls: 'bv-marginal', emoji: '🟡' }
-                      : { label: 'WEAK', cls: 'bv-weak', emoji: '🔴' };
+        // v468 — ABSENCE OF A SCORE IS NOT A SCORE OF ZERO.
+        //
+        // This read `pa.pWin || 0`. The probability estimate comes from the
+        // learning brain in KV, and the brain is written with a 14-day TTL.
+        // It expired, nothing rebuilt it, and the KV namespace is now empty —
+        // so every signal arrived with no probabilityAnalysis at all, `|| 0`
+        // turned that into 0, and 0 falls through every threshold to WEAK.
+        //
+        // The result: every single signal announced "WEAK — 0% win chance",
+        // including ones carrying confidence 87 with six strategies and a
+        // 3.5:1 reward. Nothing was wrong with those setups. The card was
+        // reporting a missing number as the worst possible number, which is
+        // the most damaging direction for a mistake like this to fail in.
+        //
+        // When there is no estimate the panel now says so and grades on what
+        // is actually measured — the chart-structure score — rather than
+        // inventing a probability. A number the system does not have must
+        // never be displayed as a number it does have.
+        const hasPWin = pa && typeof pa.pWin === 'number' && isFinite(pa.pWin);
+        const pWin = hasPWin ? pa.pWin : null;
+        const csScore = cs && typeof cs.score === 'number' ? cs.score : null;
+        const verdict = hasPWin
+          ? (pWin >= 75 ? { label: 'STRONG', cls: 'bv-strong', emoji: '🟢' }
+           : pWin >= 65 ? { label: 'GOOD', cls: 'bv-good', emoji: '🟢' }
+           : pWin >= 55 ? { label: 'OK', cls: 'bv-ok', emoji: '🟡' }
+           : pWin >= 50 ? { label: 'MARGINAL', cls: 'bv-marginal', emoji: '🟡' }
+           : { label: 'WEAK', cls: 'bv-weak', emoji: '🔴' })
+          // No probability available — grade on chart structure, which IS
+          // present, and label it as structure so it is not mistaken for a
+          // win probability.
+          : (csScore == null ? { label: 'NOT SCORED', cls: 'bv-marginal', emoji: '⚪' }
+           : csScore >= 75 ? { label: 'STRUCTURE STRONG', cls: 'bv-good', emoji: '🟢' }
+           : csScore >= 60 ? { label: 'STRUCTURE OK', cls: 'bv-ok', emoji: '🟡' }
+           : { label: 'STRUCTURE WEAK', cls: 'bv-weak', emoji: '🔴' });
         const slPips = s.pipsToSl || s.sl_pips || 0;
         const tp3Pips = s.pipsToTp3 || s.tp3_pips || 0;
         const rr = slPips > 0 ? Math.round((tp3Pips / slPips) * 10) / 10 : null;
@@ -7857,7 +7902,9 @@ function cardHTML(s) {
             <span class="bv-emoji">${verdict.emoji}</span>
             <span class="bv-title">BRAIN VERDICT</span>
             <span class="bv-label">${verdict.label}</span>
-            <span class="bv-pwin">${pWin}% win chance</span>
+            <span class="bv-pwin">${hasPWin ? `${pWin}% win chance`
+              : (csScore != null ? `structure ${csScore}/100 · win chance not scored`
+                                 : 'win chance not scored')}</span>
           </div>
           <div class="bv-rows">
             ${ps && ps.matched >= 3 ? `<div class="bv-row"><span class="bv-icon">🔍</span><span class="bv-text"><b>${ps.wins} of ${ps.matched}</b> past similar signals won — Bayes <b>${ps.bayesianWR || ps.perSignalWR}%</b>${ps.ciLower != null ? ` <span class="muted">(95% CI ${ps.ciLower}–${ps.ciUpper}%)</span>` : ''}</span></div>` : ''}
@@ -8304,6 +8351,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'Reading a signal honestly', name: '"Win chance not scored"',
+    tags: 'win chance not scored brain verdict weak 0% zero percent probability missing kv learning brain',
+    what: 'The win-chance figure comes from the learning brain stored in Cloudflare KV, which is written with a 14-day expiry. When it expires or Cloudflare Functions are down, signals arrive with no probability estimate.',
+    use: 'The card now says "win chance not scored" and grades on chart structure instead. Before v468 a missing estimate was read as 0, so every signal announced "WEAK - 0% win chance" - including ones with confidence 87, six strategies and 3.5:1 reward. If you saw a run of apparently terrible signals, that was the display, not the setups.' },
   { area: 'Risk and reward', name: 'TP1 is bigger than the stop',
     tags: 'tp1 bigger than sl stop first target 1R risk reward minimum profit larger',
     what: 'From v467 the first target sits at 1.2R — above the stop distance. Reaching TP1 banks more than the trade was risking, and still moves the stop to break-even on the remainder.',
