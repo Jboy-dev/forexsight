@@ -7365,7 +7365,17 @@ function renderSignals() {
   $('#signals-status').innerHTML = `
     ${filtered.length} signal${filtered.length === 1 ? '' : 's'} (${modeTag}) from ${totalTracked} pairs${proLine}. Click a card for full breakdown.
     <div class="reality-banner">
-      📊 <strong>What the numbers actually say.</strong> A replay of 5,971 signals across ~2.8 years of real hourly bars on 9 instruments: <strong>about 1 trade in 5 reaches a take-profit before the stop</strong> — roughly a 21% strike rate, not 60%. The edge is not in being right often; it is that winners run much further than losers. Most wins that get going reach TP3, so the average outcome is around <strong>+0.12R per trade</strong> — positive, but only if you let winners run and take the losses without widening stops. Sizing every trade at 1–2% risk is what keeps a 4-in-5 loss rate survivable. Past results do not predict future ones.
+      📊 <strong>What the record actually says.</strong> This banner used to quote
+      "+0.12R per trade — positive" from a replay of 5,971 signals. That replay ran a
+      different engine (predict-next.js) than the one that produces these cards, so it
+      was never evidence about this system. Measured on setups this engine published and
+      then watched to resolution on real candles, counting each move once rather than
+      once per republication: <strong>${(window._v469Brain && window._v469Brain.totalSamples) || '—'} independent moves,
+      averaging ${(window._v469Brain && window._v469Brain.overall) ? (window._v469Brain.overall.avgR >= 0 ? '+' : '') + window._v469Brain.overall.avgR : '—'}R</strong>,
+      with a confidence interval that still includes zero. <strong>No edge has been established
+      either way</strong> — the sample is too small to settle it. Treat these as candidates to
+      study, size at 1–2% risk at most, and do not stake money on an outcome the record
+      cannot yet support. Past results never predict future ones.
     </div>
   `;
   const proPickHTML = renderProPickBanner(state.signals);
@@ -8351,6 +8361,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'Is this system profitable?',
+    tags: 'profitable profit money edge works does it work should i trade real money worth it returns',
+    what: 'Not established, in either direction. The measured record is negative but its confidence interval includes zero, which means the sample is too small to settle the question.',
+    use: 'The Learning tab shows exactly how many more moves it would take to detect an edge of each size. There are already enough observations to have spotted a large edge, and none is there — so a big edge is ruled out. A modest one remains possible and needs more time. Until a slice clears its interval, size at 1-2% risk at most or paper-trade. Anyone telling you a trading system is guaranteed profitable, including this app, should be disbelieved.' },
   { area: 'How it judges itself', name: 'Moves observed vs times it fired',
     tags: 'episodes publications inflation duplicate repeated signals sample size pseudo replication counted twice',
     what: 'While a setup\'s conditions hold, the engine republishes it on every scan. The watcher logs each publication. One ETH rally produced 28 near-identical BUY entries that all resolved as winners together.',
@@ -8927,6 +8941,42 @@ function _v469RenderBrain() {
       ${d.minSamplesForUse} independent moves. Below that the card says
       "not scored" rather than showing a number the evidence cannot support.
     </p>` : ''}
+
+    ${Array.isArray(d.evidenceNeeded) && d.evidenceNeeded.length ? `
+      <h4 style="margin:14px 0 4px">When would we actually know?</h4>
+      <p class="muted" style="margin:0 0 6px;font-size:12px">
+        The interval above includes zero. That does not mean there is no edge —
+        it means ${d.totalSamples} moves cannot tell yet. A record can look bad on
+        too few observations for a long time, and it can look good for exactly
+        as long. So instead of guessing, here is what it would take to settle it:
+        moves needed to detect an edge of each size at 95% confidence, using the
+        spread of outcomes actually seen.
+      </p>
+      <div style="overflow-x:auto"><table class="votes-table">
+        <tr><th>If the true edge were</th><th>Moves needed</th><th>Still to go</th><th>At ${d.episodesPerDay}/day</th></tr>
+        ${d.evidenceNeeded.map(e => `<tr>
+          <td>+${e.edge.toFixed(2)}R per move</td>
+          <td>${e.episodesNeeded}</td>
+          <td>${e.stillToGo || '—'}</td>
+          <td class="muted">${e.stillToGo === 0 ? 'enough already' : (e.daysAtCurrentRate > 90 ? (e.daysAtCurrentRate/30).toFixed(1) + ' months' : e.daysAtCurrentRate + ' days')}</td>
+        </tr>`).join('')}
+      </table></div>
+      ${d.evidenceNeeded.some(e => e.stillToGo === 0) ? `
+      <div style="padding:9px 11px;border-radius:9px;margin:8px 0;
+           background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.3)">
+        <strong>What that already rules out</strong>
+        <div class="muted" style="margin-top:3px">
+          There are enough moves to have detected a large edge
+          (${d.evidenceNeeded.filter(e => e.stillToGo === 0).map(e => '+' + e.edge.toFixed(2) + 'R').join(', ')})
+          and none is present. A big edge is ruled out. A smaller one is still
+          open, and the rows above say how long it would take to find.
+        </div>
+      </div>` : ''}
+      <p class="muted" style="margin:6px 0 0;font-size:12px">
+        Until one of these clears, size small or paper-trade. The honest position
+        is not "this works" or "this fails" — it is "not yet known", and the
+        system is built to keep measuring rather than to reassure you.
+      </p>` : ''}
 
     <p class="muted" style="margin-top:8px;font-size:12px">
       Rebuilt ${d.isoTime ? new Date(d.isoTime).toLocaleString('en-GB') : 'recently'} on every watch cycle.

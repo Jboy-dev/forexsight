@@ -103,6 +103,34 @@ const all = slice(episodes);
 const recent = episodes.slice(-30);
 const recentAvg = recent.length ? mean(recent.map(x => x.resultR)) : 0;
 
+// ── v471 — HOW MUCH EVIDENCE WOULD SETTLE THIS ────────────────────────────
+//
+// The interval on this book includes zero. That does not mean the system has
+// no edge; it means the sample cannot tell yet, and the difference matters. A
+// record can look bad for a long time on too few observations, and it can look
+// good for exactly as long.
+//
+// So rather than assert either way, this reports what it would take. Episodes
+// needed to detect an edge of a given size at 95% confidence with 80% power,
+// using the spread of outcomes actually observed. It turns "is this
+// profitable?" into a question with a date on it.
+const rs = episodes.map(x => x.resultR);
+const sd = rs.length > 1
+  ? Math.sqrt(rs.reduce((a, b) => a + (b - mean(rs)) ** 2, 0) / rs.length)
+  : 0;
+const firstT = Date.parse(episodes[0]?.firedAt || Date.now());
+const lastT  = Date.parse(episodes[episodes.length - 1]?.firedAt || Date.now());
+const spanDays = Math.max(0.5, (lastT - firstT) / 86400000);
+const perDay = episodes.length / spanDays;
+const evidenceNeeded = [0.05, 0.10, 0.20, 0.30, 0.50].map(edge => {
+  const need = Math.ceil(Math.pow((1.96 + 0.84) * sd / edge, 2));
+  return {
+    edge, episodesNeeded: need,
+    stillToGo: Math.max(0, need - episodes.length),
+    daysAtCurrentRate: +((Math.max(0, need - episodes.length)) / Math.max(0.1, perDay)).toFixed(0),
+  };
+});
+
 const brain = {
   ts: Date.now(),
   isoTime: new Date().toISOString(),
@@ -129,6 +157,9 @@ const brain = {
     note: 'Describes how recent setups resolved. It is not a forecast.',
   },
   // Honest headline for anything that wants one number.
+  standardDeviation: +sd.toFixed(3),
+  episodesPerDay: +perDay.toFixed(1),
+  evidenceNeeded,
   provenSlices: Object.entries({ ...byCombo, ...byPair, ...byStrategy })
     .filter(([, v]) => v.proven).map(([k]) => k),
   verdict: null,

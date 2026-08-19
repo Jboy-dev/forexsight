@@ -193,6 +193,9 @@ jobs:
       # namespace emptied, and every signal started arriving unscored. Built in
       # CI from the tracked book it costs no invocations, uses no KV, and
       # cannot expire.
+      # v471 — Keep the brain honest about its own power. The evidence table it
+      # publishes is what turns "is this profitable?" into a question with a
+      # date on it, so it must be rebuilt with the data, not written once.
       - name: Build learning brain
         run: node tools/build-brain.mjs
 
