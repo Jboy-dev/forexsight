@@ -173,6 +173,12 @@ jobs:
       - name: Verify chart data
         run: node tools/verify-data.mjs
 
+      # v475 — Ask an unrelated provider what the price is. verify-data proves
+      # the bars are internally consistent; a single source that is confidently
+      # wrong passes that and produces a clean-looking bad signal.
+      - name: Verify prices against independent sources
+        run: node tools/verify-prices.mjs
+
       - name: Watch open setups
         run: node tools/watch-setups.mjs
 

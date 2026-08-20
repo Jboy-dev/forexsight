@@ -220,6 +220,71 @@ function dedupeCorrelated(list) {
   return out;
 }
 
+// ── v475 — GOLD IS QUOTED IN FUTURES; THE PAIR SAYS SPOT ───────────────────
+//
+// XAU/USD sources its candles from GC=F, which is COMEX gold futures. Futures
+// carry a premium over spot for financing and storage, and it is not small.
+// Measured across 46 matched hourly bars against PAXG (a token redeemable for
+// London Good Delivery gold, so a clean spot proxy): mean premium 1.37%,
+// sd 0.14%, currently about 68 points.
+//
+// The gold signals carry a stop of roughly 36 points. So the gap between the
+// price we publish and the price on a spot broker's chart is nearly TWICE the
+// whole trade's risk. Quoted as-is, an entry of 4551 is about 4483 on a spot
+// chart and the stop sits below the current price — the setup is not merely
+// slightly off, it is untradeable.
+//
+// Analysis still runs on the futures bars: the two series correlate almost
+// perfectly (sd of the basis is 0.14%), so indicator readings are unaffected.
+// Only the published LEVELS are converted, using a basis measured live each
+// run rather than a constant, because the premium drifts with rates and time
+// to expiry. If the spot reference is unavailable the levels are left in
+// futures terms and clearly marked, rather than converted against a guess.
+async function goldSpotBasis() {
+  try {
+    const [kl, ours] = await Promise.all([
+      fetch('https://api.binance.com/api/v3/klines?symbol=PAXGUSDT&interval=1h&limit=48',
+            { signal: AbortSignal.timeout(15000) }).then(r => r.ok ? r.json() : null),
+      Promise.resolve(JSON.parse(readFileSync('data/ohlc/XAU-USD.json', 'utf8'))),
+    ]);
+    if (!kl) return null;
+    const bars = Array.isArray(ours) ? ours : (ours.bars || ours.ohlc || []);
+    const spot = {};
+    for (const k of kl) spot[k[0]] = +k[4];
+    const ratios = [];
+    for (const b of bars) if (spot[b.t] > 0) ratios.push(b.c / spot[b.t]);
+    if (ratios.length < 6) return null;
+    ratios.sort((a, b) => a - b);
+    const median = ratios[Math.floor(ratios.length / 2)];
+    // Refuse an implausible basis rather than mangle every level with it.
+    if (!(median > 1.0 && median < 1.06)) return null;
+    return { ratio: median, samples: ratios.length };
+  } catch { return null; }
+}
+
+async function convertGoldToSpot(list) {
+  const gold = list.filter(s => s.pair === 'XAU/USD');
+  if (!gold.length) return;
+  const basis = await goldSpotBasis();
+  for (const s of gold) {
+    if (!basis) {
+      s.quotedIn = 'futures (GC=F)';
+      s.spotConversionNote = 'Spot reference unavailable this run, so levels are left in '
+        + 'futures terms. On a spot XAU/USD chart these sit roughly 1.4% high.';
+      continue;
+    }
+    const f = 1 / basis.ratio;
+    for (const k of ['entry', 'sl', 'tp1', 'tp2', 'tp3']) {
+      if (typeof s[k] === 'number') s[k] = Math.round(s[k] * f * 100) / 100;
+    }
+    s.quotedIn = 'spot (converted from GC=F futures)';
+    s.futuresPremiumPct = +((basis.ratio - 1) * 100).toFixed(3);
+    s.spotConversionNote = `Analysed on COMEX futures, quoted in spot. Futures were `
+      + `${((basis.ratio - 1) * 100).toFixed(2)}% above spot across ${basis.samples} matched hours, `
+      + `so every level was divided by ${basis.ratio.toFixed(5)} to match a spot XAU/USD chart.`;
+  }
+}
+
 // Score before dedupe so every emitted signal carries whatever is known.
 {
   const brain = loadBrain();
@@ -227,6 +292,10 @@ function dedupeCorrelated(list) {
   const scored = signals.filter(s => s.probabilityAnalysis).length;
   console.log(`brain scoring: ${scored}/${signals.length} signal(s) had enough episodes to quote a win chance`);
 }
+
+// Convert gold to spot BEFORE dedupe/validation so everything downstream —
+// R:R checks, pip floors, the mirror gatekeeper — sees the tradeable numbers.
+await convertGoldToSpot(signals);
 
 const beforeDedupe = signals.length;
 const kept = dedupeCorrelated(signals);
