@@ -1,15 +1,15 @@
 {
   "ok": true,
   "version": "v364-conditions-score",
-  "timestamp": "2026-08-19T23:55:43.089Z",
-  "score": 49,
+  "timestamp": "2026-08-20T00:31:04.746Z",
+  "score": 56,
   "verdict": "CAUTION",
   "action": "Marginal — cut size in half, wait for cleanest setups only",
   "breakdown": {
     "session": {
-      "points": 3,
+      "points": 8,
       "max": 30,
-      "note": "Dead hours — extremely thin liquidity, avoid"
+      "note": "Asian session — thin for USD majors, OK for JPY/AUD"
     },
     "volatility": {
       "points": 20,
@@ -17,14 +17,14 @@
       "note": "VIX 14.89 — calm, ideal for trend-following"
     },
     "news": {
-      "points": 15,
-      "max": 15,
-      "note": "No tier-1 news in next 60 min"
-    },
-    "recentWR": {
       "points": 0,
       "max": 15,
-      "note": "Recent 33% WR — take a break, review journal before next trade"
+      "note": "⚠️ Employment Change — DO NOT enter within 15min before/after"
+    },
+    "recentWR": {
+      "points": 8,
+      "max": 15,
+      "note": "No recent trade data"
     },
     "correlationCrowding": {
       "points": 10,
@@ -32,9 +32,9 @@
       "note": "No open trades — full risk budget available"
     },
     "systemTrust": {
-      "points": 1,
+      "points": 10,
       "max": 10,
-      "note": "System trust 2/100 — very low, treat all signals as \"consider\" not \"take\""
+      "note": "System trust 100/100 — well calibrated, trust its verdicts"
     }
   },
   "honestNote": "Retail traders lose money mostly by taking BAD TRADES in poor conditions, not by missing good ones. Use this score as a first filter: if score < 40, do NOT trade regardless of how good a signal looks. This is the single most valuable rule in the app."
