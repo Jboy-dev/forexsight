@@ -9062,7 +9062,7 @@ function _v477ControlPanel(s) {
     else if (sameUsd) clashes.push(`${t.pair} ${t.direction} is the same dollar bet`);
   }
 
-  if (!c && !clashes.length) return '';
+  if (!c && !clashes.length && !(s.repeatOf && s.repeatOf.count > 1)) return '';
   const gradeColour = c ? (c.grade === 'low' ? 'var(--good,#26a65b)'
                         : c.grade === 'moderate' ? '#f59e0b' : 'var(--bad,#e5484d)') : '';
   return `<div class="v477-control" style="margin-top:8px;padding:9px 11px;border-radius:9px;
@@ -9073,6 +9073,20 @@ function _v477ControlPanel(s) {
       (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
       TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
     </div>` : ''}
+    ${s.repeatOf && s.repeatOf.count > 1 ? `
+      <div style="font-size:13px;margin-top:5px;padding:7px 9px;border-radius:7px;
+           background:${s.repeatOf.alreadyLost >= 3 ? 'rgba(229,72,77,.13)' : 'rgba(245,158,11,.10)'};
+           border:1px solid ${s.repeatOf.alreadyLost >= 3 ? 'rgba(229,72,77,.35)' : 'rgba(245,158,11,.3)'}">
+        <strong>${s.repeatOf.alreadyLost >= 3 ? '⚠ You have seen this before, and it has been losing' : '↻ Not a new setup'}</strong>
+        <div style="margin-top:3px">
+          Signalled <strong>${s.repeatOf.count}×</strong> in the last ${s.repeatOf.runningForHours}h${
+            s.repeatOf.alreadyResolved ? `, of which <strong>${s.repeatOf.alreadyLost}</strong> stopped out` : ''
+          }${s.repeatOf.stillOpen ? `, ${s.repeatOf.stillOpen} still open` : ''}.
+          ${s.repeatOf.alreadyLost >= 3
+            ? 'Taking it again repeats a trade that has not been working, rather than adding a new one.'
+            : 'This is the same setup continuing while its conditions hold — not a second opportunity.'}
+        </div>
+      </div>` : ''}
     ${clashes.length ? `<div style="font-size:13px;margin-top:5px;color:var(--bad,#e5484d)">
       ⚠ Overlaps what you already hold: ${clashes.slice(0,3).join('; ')}.
       Taking it makes one bet bigger rather than adding a second.

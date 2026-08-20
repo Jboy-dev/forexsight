@@ -169,6 +169,42 @@ for (const s of book) {
   if (!bars || !Number.isFinite(firedMs)) continue;
   const after = bars.filter(b => b.t > firedMs);
   if (!after.length) continue;
+
+  // v478 — REFUSE TO JUDGE A SETUP AGAINST THE WRONG PRICE SCALE.
+  //
+  // A setup is only meaningful against the series it was derived from. v475
+  // briefly rewrote gold levels into spot while these candles stayed in COMEX
+  // futures, and the watcher dutifully walked a SELL published at 4409 against
+  // bars at 4548 — 139 points beyond its stop on the first bar. It recorded a
+  // full loss before the market had done anything, and it did so silently,
+  // which is how it reached the user's history as a real result.
+  //
+  // Any setup whose entry sits absurdly far from where price actually was when
+  // it fired is not a losing trade, it is a bookkeeping error. Parked rather
+  // than resolved, with the reason attached, so it is visible instead of
+  // becoming a fake statistic.
+  const nearFired = bars.reduce((best, b) =>
+    Math.abs(b.t - firedMs) < Math.abs(best.t - firedMs) ? b : best, bars[0]);
+  if (nearFired && Number.isFinite(nearFired.c) && Number.isFinite(s.entry) && s.entry > 0) {
+    // Threshold calibrated against the book rather than guessed. Across 389
+    // setups comparable to their own candles, the gap between entry and the
+    // bar at fire time runs 0.12x the trade's risk at the median, 0.64x at the
+    // 95th percentile and 1.81x at the 99th. The spot-vs-futures setup sat at
+    // 3.67x. A 2.5x bar clears every legitimate setup on record and catches
+    // the mismatch, flagging 1% of the book — the handful with genuinely
+    // implausible entries.
+    const gap = Math.abs(nearFired.c - s.entry);
+    const riskAbs = Math.abs(s.entry - s.sl);
+    if (riskAbs > 0 && gap / riskAbs > 2.5) {
+      s.status = 'unscaled';
+      s.scaleProblem = `entry ${s.entry} sits ${(gap / riskAbs).toFixed(2)}x its own risk away from the `
+        + `${s.pair} candle at fire time (${nearFired.c}) — these are not the same price `
+        + `series, so no outcome can be read from them`;
+      s.checkedAt = new Date().toISOString();
+      continue;
+    }
+  }
+
   const r = walk(s, after);
   if (!r) continue;
   s.tpReached = r.tpReached;

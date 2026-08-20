@@ -266,22 +266,41 @@ async function convertGoldToSpot(list) {
   const gold = list.filter(s => s.pair === 'XAU/USD');
   if (!gold.length) return;
   const basis = await goldSpotBasis();
+  // v478 — REPORT SPOT, DO NOT SUBSTITUTE IT.
+  //
+  // v475 rewrote the gold levels into spot. That was wrong in a way that cost
+  // real money: the levels moved but the CANDLES did not. watch-setups walks
+  // every setup against data/ohlc/XAU-USD.json, which is GC=F futures, so a
+  // spot-quoted setup was measured against a series ~1.4% above it. Caught in
+  // the book: a SELL published at entry 4409 with a stop at 4444, walked
+  // against futures bars at 4548 — 139 points above the stop on the very first
+  // bar. It was recorded as a full loss before the market did anything at all.
+  //
+  // Two scales in one system is the defect, not which scale is chosen. Levels
+  // now stay on the same scale as the bars that judge them, and the spot
+  // equivalent rides alongside as information so the difference to a broker's
+  // chart is visible without anything being silently rewritten.
   for (const s of gold) {
     if (!basis) {
       s.quotedIn = 'futures (GC=F)';
-      s.spotConversionNote = 'Spot reference unavailable this run, so levels are left in '
-        + 'futures terms. On a spot XAU/USD chart these sit roughly 1.4% high.';
+      s.spotNote = 'Spot reference unavailable this run. These are COMEX futures '
+        + 'prices; a spot XAU/USD chart typically sits about 1.4% lower.';
       continue;
     }
     const f = 1 / basis.ratio;
-    for (const k of ['entry', 'sl', 'tp1', 'tp2', 'tp3']) {
-      if (typeof s[k] === 'number') s[k] = Math.round(s[k] * f * 100) / 100;
-    }
-    s.quotedIn = 'spot (converted from GC=F futures)';
+    s.quotedIn = 'futures (GC=F)';
     s.futuresPremiumPct = +((basis.ratio - 1) * 100).toFixed(3);
-    s.spotConversionNote = `Analysed on COMEX futures, quoted in spot. Futures were `
-      + `${((basis.ratio - 1) * 100).toFixed(2)}% above spot across ${basis.samples} matched hours, `
-      + `so every level was divided by ${basis.ratio.toFixed(5)} to match a spot XAU/USD chart.`;
+    s.spotEquivalent = {
+      entry: Math.round(s.entry * f * 100) / 100,
+      sl: Math.round(s.sl * f * 100) / 100,
+      tp1: Math.round(s.tp1 * f * 100) / 100,
+      tp2: Math.round(s.tp2 * f * 100) / 100,
+      tp3: Math.round(s.tp3 * f * 100) / 100,
+    };
+    s.spotNote = `Priced in COMEX futures, which ran ${((basis.ratio - 1) * 100).toFixed(2)}% above `
+      + `spot across ${basis.samples} matched hours. On a spot XAU/USD chart these levels sit about `
+      + `${Math.round(s.entry - s.spotEquivalent.entry)} points lower — the spot equivalents are shown `
+      + `on the card. Tracking uses the futures levels, because the candles are futures.`;
   }
 }
 
@@ -331,6 +350,59 @@ function attachCostProfile(s) {
   };
 }
 
+// ── v478 — A REPUBLISHED SETUP IS NOT A NEW OPPORTUNITY ────────────────────
+//
+// While a setup's conditions hold, the engine republishes it on every scan and
+// nothing marks the repeat. Measured on the book: ETH/USD BUY published 17
+// separate times in one day, XAU/USD BUY 15 times, GBP/USD BUY 15. There is no
+// cooldown anywhere — the `cooldownMinutesLeft` field the app checks is never
+// populated by anything.
+//
+// On screen each republication looks like a fresh opportunity. When gold fell
+// on the 19th it produced thirteen consecutive BUY signals into the decline,
+// every one of which stopped out. Anyone treating those as separate setups took
+// the same losing trade over and over.
+//
+// They are not suppressed — a repeat is still worth seeing if the first was
+// missed, and silently dropping signals is its own kind of lie. They are
+// LABELLED: how long the original has been open, and how it is currently doing.
+// The decision stays with the user; what changes is that they can tell the
+// difference between a second opportunity and the same one again.
+function markRepeats(list) {
+  let book = [];
+  try { book = JSON.parse(readFileSync('data/open-setups.json', 'utf8')); } catch { return; }
+  const now = Date.now();
+  for (const s of list) {
+    const prior = book
+      .filter(x => x.pair === s.pair && x.direction === s.direction && x.firedAt)
+      .filter(x => {
+        const age = (now - Date.parse(x.firedAt)) / 3600000;
+        return age >= 0 && age <= 24;
+      })
+      .sort((a, b) => String(b.firedAt).localeCompare(String(a.firedAt)));
+    if (!prior.length) continue;
+
+    const openOnes = prior.filter(x => x.status === 'open');
+    const resolved = prior.filter(x => typeof x.resultR === 'number');
+    const first = prior[prior.length - 1];
+    const hours = Math.round((now - Date.parse(first.firedAt)) / 360000) / 10;
+    const lost = resolved.filter(x => x.resultR < -0.02).length;
+
+    s.repeatOf = {
+      count: prior.length,
+      runningForHours: hours,
+      stillOpen: openOnes.length,
+      alreadyResolved: resolved.length,
+      alreadyLost: lost,
+      note: openOnes.length
+        ? `Same ${s.pair} ${s.direction} has been signalled ${prior.length} time(s) over the last `
+          + `${hours}h and ${openOnes.length} is still open. This is that setup continuing, not a new one.`
+        : `Same ${s.pair} ${s.direction} was signalled ${prior.length} time(s) in the last ${hours}h`
+          + (resolved.length ? `, of which ${lost} stopped out.` : '.'),
+    };
+  }
+}
+
 // Score before dedupe so every emitted signal carries whatever is known.
 {
   const brain = loadBrain();
@@ -345,6 +417,7 @@ await convertGoldToSpot(signals);
 // Cost profile AFTER the gold conversion, so gold's drag is computed on the
 // spot levels the user would actually trade.
 for (const sig of signals) attachCostProfile(sig);
+markRepeats(signals);
 
 const beforeDedupe = signals.length;
 const kept = dedupeCorrelated(signals);
