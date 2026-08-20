@@ -1,141 +1,51 @@
 {
   "ok": true,
-  "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-08-20T07:56:39.566Z",
-  "trustScore": 100,
-  "trustLabel": "System Readiness",
-  "performanceScore": 62,
-  "readiness": {
-    "score": 100,
-    "activeGates": 11,
-    "totalGates": 11,
-    "gates": [
-      {
-        "name": "R:R ≥ 3 gate",
-        "pts": 10,
-        "active": true,
-        "since": "v419"
-      },
-      {
-        "name": "Positive EV gate",
-        "pts": 10,
-        "active": true,
-        "since": "v424"
-      },
-      {
-        "name": "Hard MTF agreement",
-        "pts": 10,
-        "active": true,
-        "since": "v424"
-      },
-      {
-        "name": "News blackout",
-        "pts": 10,
-        "active": true,
-        "since": "v423"
-      },
-      {
-        "name": "Patience gate (90s)",
-        "pts": 10,
-        "active": true,
-        "since": "v423"
-      },
-      {
-        "name": "Algo-read confirm",
-        "pts": 10,
-        "active": true,
-        "since": "v415"
-      },
-      {
-        "name": "Conditions floor 65",
-        "pts": 10,
-        "active": true,
-        "since": "v414"
-      },
-      {
-        "name": "Session guard",
-        "pts": 8,
-        "active": true,
-        "since": "v414"
-      },
-      {
-        "name": "Loss-pattern filter",
-        "pts": 8,
-        "active": true,
-        "since": "v411"
-      },
-      {
-        "name": "Correlation dedup",
-        "pts": 7,
-        "active": true,
-        "since": "v411"
-      },
-      {
-        "name": "SL sanity ceiling",
-        "pts": 7,
-        "active": true,
-        "since": "v398"
-      }
-    ],
-    "note": "Every gate is a proven filter against a real failure mode. All active."
-  },
+  "version": "v359-self-trust",
+  "timestamp": "2026-08-20T08:25:44.701Z",
+  "trustScore": 2,
   "autoCorrection": {
-    "edgeAdjPts": -6,
-    "pWinAdjPts": -2,
-    "note": "Trust high — loosening gate"
+    "edgeAdjPts": 8,
+    "pWinAdjPts": 5,
+    "note": "Trust low — tightening gate hard"
   },
-  "components": {
-    "filteredLive": {
-      "label": "Filtered-tier WR (what you actually trade)",
-      "score": null,
-      "note": "insufficient data"
-    },
-    "recentAll": {
-      "label": "Recent 20-signal momentum",
-      "score": null,
-      "note": "insufficient data"
-    },
-    "calibration": {
-      "label": "Confidence calibration",
-      "score": null,
-      "note": "insufficient data"
-    },
-    "activeQuality": {
-      "label": "Live setup quality",
-      "score": 50,
-      "weight": 0.2
-    },
-    "selectivity": {
-      "label": "Filter selectivity",
-      "score": 85,
-      "weight": 0.1
+  "historicalBacktest": {
+    "totalYearsCovered": 70.1,
+    "totalSignals": 1969,
+    "wins": 515,
+    "losses": 1417,
+    "winRate": 27,
+    "score": 0
+  },
+  "liveTrades": {
+    "totalResolved": 3,
+    "lifetimeWinRate": 33,
+    "recentWindowSize": 3,
+    "recentWinRate": 33,
+    "score": 6
+  },
+  "calibration": {
+    "accuracyPct": 0,
+    "meanErrorPts": 52,
+    "buckets": {
+      "60-70": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "70-80": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "80-90": {
+        "samples": 3,
+        "winRate": 33,
+        "expected": 85,
+        "error": 52
+      },
+      "90+": {
+        "samples": 0,
+        "note": "too few samples"
+      }
     }
   },
-  "filteredTier": {
-    "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 0,
-    "lifetimeWinRate": null,
-    "recentWinRate": null
-  },
-  "allTier": {
-    "note": "All resolved signals including lower tiers",
-    "totalResolved": 0,
-    "lifetimeWinRate": null,
-    "recentWindowSize": 0,
-    "recentWinRate": null
-  },
-  "activeQuality": {
-    "signalCount": 0,
-    "note": "No active signals — system holding cash (neutral)",
-    "score": 50
-  },
-  "selectivity": {
-    "note": "candidate count unavailable — assuming baseline strict filter",
-    "score": 85
-  },
-  "calibration": null,
-  "historicalBacktest": {
-    "note": "not yet computed — running in background"
-  },
-  "interpretation": "VERY HIGH TRUST — filtered signals calibrated & outperforming"
+  "interpretation": "VERY LOW TRUST — protective mode; only elite setups will pass"
 }
