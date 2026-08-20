@@ -368,6 +368,40 @@ function attachCostProfile(s) {
 // LABELLED: how long the original has been open, and how it is currently doing.
 // The decision stays with the user; what changes is that they can tell the
 // difference between a second opportunity and the same one again.
+// Published separately as data/repeats.json because the cards on screen are
+// usually built by the in-browser scan, which never passes through this
+// generator. Without a compact summary to fetch, the repeat warning would only
+// appear on server-sourced cards — which is to say, rarely on the ones the
+// user is actually looking at. Small file, one entry per pair+direction.
+function publishRepeatSummary() {
+  let book = [];
+  try { book = JSON.parse(readFileSync('data/open-setups.json', 'utf8')); } catch { return; }
+  const now = Date.now();
+  const out = {};
+  for (const x of book) {
+    if (!x.pair || !x.direction || !x.firedAt) continue;
+    const age = (now - Date.parse(x.firedAt)) / 3600000;
+    if (!(age >= 0 && age <= 24)) continue;
+    const k = `${x.pair}|${x.direction}`;
+    const e = (out[k] ||= { pair: x.pair, direction: x.direction, count: 0, lost: 0, won: 0, open: 0, firstAt: x.firedAt });
+    e.count++;
+    if (x.status === 'open') e.open++;
+    if (typeof x.resultR === 'number') { if (x.resultR < -0.02) e.lost++; else if (x.resultR > 0.02) e.won++; }
+    if (String(x.firedAt) < String(e.firstAt)) e.firstAt = x.firedAt;
+  }
+  for (const e of Object.values(out)) {
+    e.runningForHours = Math.round((now - Date.parse(e.firstAt)) / 360000) / 10;
+  }
+  writeFileSync('data/repeats.json', JSON.stringify({
+    ts: now, isoTime: new Date().toISOString(),
+    windowHours: 24,
+    note: 'How many times each pair+direction has been published in the last 24h, '
+        + 'and how those resolved. A republication is the same setup continuing while '
+        + 'its conditions hold, not a new opportunity.',
+    repeats: Object.values(out).sort((a, b) => b.count - a.count),
+  }, null, 2));
+}
+
 function markRepeats(list) {
   let book = [];
   try { book = JSON.parse(readFileSync('data/open-setups.json', 'utf8')); } catch { return; }
@@ -418,6 +452,7 @@ await convertGoldToSpot(signals);
 // spot levels the user would actually trade.
 for (const sig of signals) attachCostProfile(sig);
 markRepeats(signals);
+publishRepeatSummary();
 
 const beforeDedupe = signals.length;
 const kept = dedupeCorrelated(signals);

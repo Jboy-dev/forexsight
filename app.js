@@ -6422,6 +6422,13 @@ function applySignals(next, source) {
 
 async function loadSignals(force = false) {
   if (force) saveCache({});
+  // v478b — the repeat summary must be here, not on the Learning tab render.
+  // Attached there first, it only loaded if the user happened to open that tab,
+  // so the warning that matters most — "you have taken this one 16 times and it
+  // keeps stopping out" — was absent from the feed where the decision is made.
+  if (!_v478Repeats) {
+    _v478LoadRepeats().then(() => { _v478PatchCards(); }).catch(() => {});
+  }
   // v449 — only claim to be loading when there is nothing to look at. This
   // ran on every poll, so the status line flashed "Loading signals…" over a
   // perfectly good feed every 90 seconds.
@@ -8442,6 +8449,14 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'Reading a signal honestly', name: 'Why the same signal keeps appearing',
+    tags: 'same signal repeat again duplicate keeps showing 19 times losses repeated cooldown',
+    what: 'While a setup\'s conditions hold, the engine republishes it on every scan. There is no cooldown — the field the app checks for one is populated by nothing. Measured on the book: ETH/USD BUY published 17 separate times in a day, XAU/USD BUY 15, GBP/USD BUY 15.',
+    use: 'Each republication looks like a fresh opportunity and is not. When gold fell on 19 August it produced thirteen consecutive BUY signals into the decline and every one stopped out; at one point the card read "signalled 19 times in 23 hours, 16 already stopped out" while presenting itself as new. Cards now carry that count. If it says a setup has been running for hours and losing, taking it again repeats one trade rather than adding another.' },
+  { area: 'How it judges itself', name: 'Setups marked "unscaled"',
+    tags: 'unscaled parked scale mismatch not tracked spot futures error bookkeeping',
+    what: 'A setup whose entry sits more than 2.5x its own risk away from the candle at the moment it fired is parked rather than resolved. It means the levels and the candles are not the same price series, so no outcome can honestly be read from them.',
+    use: 'This exists because it happened. A gold SELL was published at 4409 in spot terms while the tracking candles were COMEX futures around 4548 — 139 points past its stop on the first bar — and it was recorded as a genuine loss. The threshold was calibrated on 389 real setups, where the gap runs 0.12x at the median and 1.81x at the 99th percentile. Parked setups are excluded from the record rather than counted as losses.' },
   { area: 'Reading a signal honestly', name: 'How to choose between signals',
     tags: 'choose pick which signal best select compare avoid losing trades decide filter',
     what: 'Every field this system records before a trade resolves has been tested against its own outcomes — confidence, strategy count, which strategies fired, the combination, ADX, regime, higher-timeframe alignment, killzone session, independence. None separates winners from losers. There is currently no honest way to rank these by likelihood of winning.',
@@ -9032,8 +9047,71 @@ function _v477CostProfile(s) {
   };
 }
 
+// v478b — repeat data for cards the in-browser scan built.
+// The generator attaches repeatOf to its own signals, but most cards on screen
+// come from the client scan and would show nothing. This reads the compact
+// summary the generator publishes and applies it to any signal by pair and
+// direction.
+let _v478Repeats = null;
+async function _v478LoadRepeats() {
+  const urls = [
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/repeats.json',
+    '/data/repeats.json',
+  ];
+  for (const u of urls) {
+    try {
+      const f = window._v428OrigFetch || fetch;
+      const r = await f(u + '?b=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) continue;
+      const j = await r.json();
+      if (j && Array.isArray(j.repeats)) { _v478Repeats = j; return j; }
+    } catch (_) {}
+  }
+  return null;
+}
+function _v478RepeatFor(s) {
+  if (s.repeatOf) return s.repeatOf;
+  if (!_v478Repeats) return null;
+  const r = _v478Repeats.repeats.find(x => x.pair === s.pair && x.direction === s.direction);
+  if (!r || r.count < 2) return null;
+  return {
+    count: r.count, runningForHours: r.runningForHours,
+    stillOpen: r.open, alreadyResolved: r.lost + r.won, alreadyLost: r.lost,
+  };
+}
+
+// v478c — patch the cards in place once the repeat data arrives.
+//
+// The cards are built before this fetch returns, and calling renderSignals()
+// afterwards did not refresh them. Rather than fight the render path, the
+// panel is rebuilt directly on each card that is already on screen. This is
+// the warning that matters most on this page — "you have taken this one 16
+// times and it keeps stopping out" — so it needs to arrive even a few seconds
+// late rather than not at all.
+function _v478PatchCards() {
+  try {
+    if (!_v478Repeats) return;
+    const cards = document.querySelectorAll('[data-pair]');
+    for (const card of cards) {
+      const pair = card.dataset.pair;
+      if (!pair) continue;
+      const sig = (state.signals || []).find(x => x.pair === pair);
+      if (!sig) continue;
+      const html = _v477ControlPanel(sig);
+      if (!html) continue;
+      const existing = card.querySelector('.v477-control');
+      if (existing) existing.outerHTML = html;
+      else {
+        const anchor = card.querySelector('.v433-clean') || card.querySelector('.v433-flags');
+        if (anchor) anchor.insertAdjacentHTML('afterend', html);
+      }
+    }
+  } catch (_) {}
+}
+
 function _v477ControlPanel(s) {
   const c = _v477CostProfile(s);
+  const rep = _v478RepeatFor(s);
   const open = (typeof getTrades === 'function' ? getTrades() : []).filter(t => t && !t.closedAt && !t.outcome);
 
   // Correlation: same-direction exposure to the same underlying.
@@ -9062,7 +9140,7 @@ function _v477ControlPanel(s) {
     else if (sameUsd) clashes.push(`${t.pair} ${t.direction} is the same dollar bet`);
   }
 
-  if (!c && !clashes.length && !(s.repeatOf && s.repeatOf.count > 1)) return '';
+  if (!c && !clashes.length && !(rep && rep.count > 1)) return '';
   const gradeColour = c ? (c.grade === 'low' ? 'var(--good,#26a65b)'
                         : c.grade === 'moderate' ? '#f59e0b' : 'var(--bad,#e5484d)') : '';
   return `<div class="v477-control" style="margin-top:8px;padding:9px 11px;border-radius:9px;
@@ -9073,16 +9151,16 @@ function _v477ControlPanel(s) {
       (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
       TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
     </div>` : ''}
-    ${s.repeatOf && s.repeatOf.count > 1 ? `
+    ${rep && rep.count > 1 ? `
       <div style="font-size:13px;margin-top:5px;padding:7px 9px;border-radius:7px;
-           background:${s.repeatOf.alreadyLost >= 3 ? 'rgba(229,72,77,.13)' : 'rgba(245,158,11,.10)'};
-           border:1px solid ${s.repeatOf.alreadyLost >= 3 ? 'rgba(229,72,77,.35)' : 'rgba(245,158,11,.3)'}">
-        <strong>${s.repeatOf.alreadyLost >= 3 ? '⚠ You have seen this before, and it has been losing' : '↻ Not a new setup'}</strong>
+           background:${rep.alreadyLost >= 3 ? 'rgba(229,72,77,.13)' : 'rgba(245,158,11,.10)'};
+           border:1px solid ${rep.alreadyLost >= 3 ? 'rgba(229,72,77,.35)' : 'rgba(245,158,11,.3)'}">
+        <strong>${rep.alreadyLost >= 3 ? '⚠ You have seen this before, and it has been losing' : '↻ Not a new setup'}</strong>
         <div style="margin-top:3px">
-          Signalled <strong>${s.repeatOf.count}×</strong> in the last ${s.repeatOf.runningForHours}h${
-            s.repeatOf.alreadyResolved ? `, of which <strong>${s.repeatOf.alreadyLost}</strong> stopped out` : ''
-          }${s.repeatOf.stillOpen ? `, ${s.repeatOf.stillOpen} still open` : ''}.
-          ${s.repeatOf.alreadyLost >= 3
+          Signalled <strong>${rep.count}×</strong> in the last ${rep.runningForHours}h${
+            rep.alreadyResolved ? `, of which <strong>${rep.alreadyLost}</strong> stopped out` : ''
+          }${rep.stillOpen ? `, ${rep.stillOpen} still open` : ''}.
+          ${rep.alreadyLost >= 3
             ? 'Taking it again repeats a trade that has not been working, rather than adding a new one.'
             : 'This is the same setup continuing while its conditions hold — not a second opportunity.'}
         </div>
