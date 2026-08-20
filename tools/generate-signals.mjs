@@ -285,6 +285,52 @@ async function convertGoldToSpot(list) {
   }
 }
 
+// ── v477 — WHAT YOU CAN CONTROL, SINCE YOU CANNOT PREDICT ─────────────────
+//
+// Every field knowable at entry has now been tested against this system's own
+// record: confidence, strategy count, which strategies, the combination, ADX,
+// regime, higher-timeframe alignment, killzone, independence. None separates
+// winners from losers. Ranking signals by likelihood of winning would be
+// invention, so this does not attempt it.
+//
+// What genuinely differs between two signals, and genuinely changes what you
+// keep, is cost. Spread is charged on every trade whatever the outcome, and it
+// is not uniform: measured live it runs about 2% of risk on GBP/USD and about
+// 7% on NZD/USD and gold. If two setups are indistinguishable on evidence —
+// and measurement says they are — the one that hands less away is strictly
+// better. That is arithmetic, not forecasting.
+//
+// Typical retail spreads. Deliberately conservative: understating them would
+// make the drag look smaller than it is.
+const TYPICAL_SPREAD_PIPS = {
+  'EUR/USD': 0.8, 'GBP/USD': 1.2, 'AUD/USD': 1.0, 'NZD/USD': 1.5,
+  'USD/CAD': 1.5, 'USD/CHF': 1.4, 'USD/JPY': 0.9,
+  'XAU/USD': 25, 'BTC/USD': 20, 'ETH/USD': 15,
+};
+const PIP_SIZE = (p) => p === 'XAU/USD' ? 0.1 : p.includes('JPY') ? 0.01
+  : p === 'BTC/USD' ? 1 : p === 'ETH/USD' ? 0.1 : 0.0001;
+
+function attachCostProfile(s) {
+  const pip = PIP_SIZE(s.pair);
+  const spreadPips = TYPICAL_SPREAD_PIPS[s.pair] ?? 1.5;
+  const riskPips = Math.abs(s.entry - s.sl) / pip;
+  if (!(riskPips > 0)) return;
+  const dragPct = (spreadPips / riskPips) * 100;
+  // Reward after paying the spread, over risk after paying it — what TP1
+  // actually returns rather than its nominal multiple.
+  const tp1Pips = Math.abs(s.tp1 - s.entry) / pip;
+  s.costProfile = {
+    spreadPips,
+    riskPips: Math.round(riskPips * 10) / 10,
+    spreadAsPctOfRisk: Math.round(dragPct * 10) / 10,
+    tp1NetR: Math.round(((tp1Pips - spreadPips) / (riskPips + spreadPips)) * 100) / 100,
+    grade: dragPct <= 3 ? 'low' : dragPct <= 6 ? 'moderate' : 'high',
+    note: `The spread costs ${dragPct.toFixed(1)}% of what you are risking on this trade. `
+        + `This is charged whether it wins or loses, and it is one of the few things `
+        + `separating these setups that is actually measurable.`,
+  };
+}
+
 // Score before dedupe so every emitted signal carries whatever is known.
 {
   const brain = loadBrain();
@@ -296,6 +342,9 @@ async function convertGoldToSpot(list) {
 // Convert gold to spot BEFORE dedupe/validation so everything downstream —
 // R:R checks, pip floors, the mirror gatekeeper — sees the tradeable numbers.
 await convertGoldToSpot(signals);
+// Cost profile AFTER the gold conversion, so gold's drag is computed on the
+// spot levels the user would actually trade.
+for (const sig of signals) attachCostProfile(sig);
 
 const beforeDedupe = signals.length;
 const kept = dedupeCorrelated(signals);

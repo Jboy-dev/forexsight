@@ -8104,6 +8104,7 @@ function cardHTML(s) {
         ${s._warnings.length
           ? `<ul class="v433-warn-list">${s._warnings.map(w => `<li>${_cdEsc(w)}</li>`).join('')}</ul>`
           : `<div class="v433-clean">No flags — passes every check</div>`}
+          ${_v477ControlPanel(s)}
       </div>` : ''}
       <div class="levels">
         <span class="lbl">Entry</span><span class="val">${s.entry}</span><span class="pips">now · spread ~${s.spread_pips}p</span>
@@ -8441,6 +8442,14 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'Reading a signal honestly', name: 'How to choose between signals',
+    tags: 'choose pick which signal best select compare avoid losing trades decide filter',
+    what: 'Every field this system records before a trade resolves has been tested against its own outcomes — confidence, strategy count, which strategies fired, the combination, ADX, regime, higher-timeframe alignment, killzone session, independence. None separates winners from losers. There is currently no honest way to rank these by likelihood of winning.',
+    use: 'So rank on what is real instead. The "What you control" box on each card shows two things: how much of your risk the spread takes (2% on GBP/USD, nearly 9% on gold — charged win or lose), and whether the trade repeats exposure you already hold. Between two setups the evidence cannot separate, the cheaper one and the one that is not a duplicate of an open position are strictly better choices. That is arithmetic, not prediction.' },
+  { area: 'Reading a signal honestly', name: 'Why MAE is not a warning sign you can use',
+    tags: 'mae adverse excursion drawdown early warning exit predict losing',
+    what: 'It is tempting to read "trades that went deep against you lost" as a rule for spotting losers early. Measured here, 132 of 133 setups with MAE at or beyond 1R were full stop-outs — because MAE reaching 1R IS the stop being hit.',
+    use: 'That statistic is the outcome restated, not a predictor of it, and it is only knowable after the trade is over. Any indicator built on it would look powerful in testing and be useless live. It is listed here because it is exactly the kind of circular finding that makes systems appear to work when they do not.' },
   { area: 'Reading a signal honestly', name: 'Simulated results vs real results',
     tags: 'simulated backtest million samples 1232369 brain stats real results difference trustworthy',
     what: 'The app shows two very different sets of numbers. The Brain panel on the Signals tab replays 90 days of historical candles and simulates an outcome for each — assuming a perfect fill at entry and exit, no spread and no slippage. That is where sample counts in the millions and win rates near 53% come from. The Learning tab shows setups this engine actually published, walked forward on real candles, with republications collapsed into single moves.',
@@ -8981,6 +8990,101 @@ async function _v469LoadBrain() {
 // It is now appended after whatever the status line says, on every path, and
 // reads its numbers from the offline brain so it can never drift from the
 // measured record.
+// v477 — WHAT YOU CAN CONTROL.
+//
+// Every field knowable before a trade resolves has been tested against this
+// system's own record — confidence, strategy count, which strategies, the
+// combination, ADX, regime, higher-timeframe alignment, killzone,
+// independence — and none separates winners from losers. So this deliberately
+// does NOT rank signals by how likely they are to win. It shows the
+// differences between them that are real and that you decide: what the spread
+// takes, and whether this trade repeats one you already hold.
+//
+// Both change what you keep regardless of which way price goes.
+// Mirror of TYPICAL_SPREAD_PIPS in tools/generate-signals.mjs. The client
+// scan builds its own signal objects and never passes through the generator,
+// so without this the panel appeared only on server-sourced cards — which is
+// most of the time not the ones on screen.
+const _V477_SPREAD = {
+  'EUR/USD': 0.8, 'GBP/USD': 1.2, 'AUD/USD': 1.0, 'NZD/USD': 1.5,
+  'USD/CAD': 1.5, 'USD/CHF': 1.4, 'USD/JPY': 0.9,
+  'XAU/USD': 25, 'BTC/USD': 20, 'ETH/USD': 15,
+};
+function _v477CostProfile(s) {
+  if (s.costProfile) return s.costProfile;
+  const p = s.pair || '';
+  const pip = p === 'XAU/USD' ? 0.1 : p.includes('JPY') ? 0.01
+            : p === 'BTC/USD' ? 1 : p === 'ETH/USD' ? 0.1 : 0.0001;
+  const entry = Number(s.entry), sl = Number(s.sl), tp1 = Number(s.tp1);
+  if (![entry, sl, tp1].every(v => Number.isFinite(v))) return null;
+  const riskPips = Math.abs(entry - sl) / pip;
+  if (!(riskPips > 0)) return null;
+  const spreadPips = _V477_SPREAD[p] ?? 1.5;
+  const tp1Pips = Math.abs(tp1 - entry) / pip;
+  const dragPct = (spreadPips / riskPips) * 100;
+  return {
+    spreadPips,
+    riskPips: Math.round(riskPips * 10) / 10,
+    spreadAsPctOfRisk: Math.round(dragPct * 10) / 10,
+    tp1NetR: Math.round(((tp1Pips - spreadPips) / (riskPips + spreadPips)) * 100) / 100,
+    nominalTp1R: Math.round((tp1Pips / riskPips) * 100) / 100,
+    grade: dragPct <= 3 ? 'low' : dragPct <= 6 ? 'moderate' : 'high',
+  };
+}
+
+function _v477ControlPanel(s) {
+  const c = _v477CostProfile(s);
+  const open = (typeof getTrades === 'function' ? getTrades() : []).filter(t => t && !t.closedAt && !t.outcome);
+
+  // Correlation: same-direction exposure to the same underlying.
+  const GROUPS = [
+    ['EUR/USD','GBP/USD','AUD/USD','NZD/USD'],   // anti-dollar together
+    ['USD/CAD','USD/CHF','USD/JPY'],             // pro-dollar together
+    ['BTC/USD','ETH/USD'],                       // crypto beta
+    ['XAU/USD','XAG/USD'],                       // metals
+  ];
+  const dollarSide = (p, d) => {
+    if (!p.includes('/')) return null;
+    const [base, quote] = p.split('/');
+    if (['XAU','XAG','BTC','ETH'].includes(base)) return null;
+    if (quote === 'USD') return d === 'BUY' ? 'short-usd' : 'long-usd';
+    if (base === 'USD') return d === 'BUY' ? 'long-usd' : 'short-usd';
+    return null;
+  };
+  const clashes = [];
+  for (const t of open) {
+    if (!t.pair || !t.direction) continue;
+    const sameGroup = GROUPS.some(g => g.includes(t.pair) && g.includes(s.pair)) && t.pair !== s.pair;
+    const sameUsd = dollarSide(t.pair, t.direction) &&
+                    dollarSide(t.pair, t.direction) === dollarSide(s.pair, s.direction);
+    if (t.pair === s.pair && t.direction === s.direction) clashes.push(`you already hold ${t.pair} ${t.direction}`);
+    else if (sameGroup && sameUsd) clashes.push(`${t.pair} ${t.direction} moves with this`);
+    else if (sameUsd) clashes.push(`${t.pair} ${t.direction} is the same dollar bet`);
+  }
+
+  if (!c && !clashes.length) return '';
+  const gradeColour = c ? (c.grade === 'low' ? 'var(--good,#26a65b)'
+                        : c.grade === 'moderate' ? '#f59e0b' : 'var(--bad,#e5484d)') : '';
+  return `<div class="v477-control" style="margin-top:8px;padding:9px 11px;border-radius:9px;
+       background:rgba(127,127,127,.07);border:1px solid rgba(127,127,127,.22)">
+    <div style="font-weight:600;margin-bottom:4px">⚖️ What you control</div>
+    ${c ? `<div style="font-size:13px">
+      Spread takes <strong style="color:${gradeColour}">${c.spreadAsPctOfRisk}%</strong> of your risk
+      (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
+      TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
+    </div>` : ''}
+    ${clashes.length ? `<div style="font-size:13px;margin-top:5px;color:var(--bad,#e5484d)">
+      ⚠ Overlaps what you already hold: ${clashes.slice(0,3).join('; ')}.
+      Taking it makes one bet bigger rather than adding a second.
+    </div>` : ''}
+    <div class="muted" style="font-size:11.5px;margin-top:5px">
+      Nothing here predicts direction — no field this system records has been
+      shown to. These are the costs and overlaps you decide on, which is the
+      part that is actually within your control.
+    </div>
+  </div>`;
+}
+
 function _v471RealityBanner() {
   const b = window._v469Brain;
   const n = b && typeof b.totalSamples === 'number' ? b.totalSamples : null;
