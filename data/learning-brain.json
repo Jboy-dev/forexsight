@@ -1,33 +1,33 @@
 {
-  "ts": 1787256022291,
-  "isoTime": "2026-08-20T20:00:22.291Z",
+  "ts": 1787258180541,
+  "isoTime": "2026-08-20T20:36:20.541Z",
   "source": "offline-brain",
   "builtBy": "tools/build-brain.mjs",
   "totalSamples": 30,
-  "rawPublications": 265,
-  "inflationFactor": 8.83,
-  "uncorrectedAvgR": 0.021,
+  "rawPublications": 264,
+  "inflationFactor": 8.8,
+  "uncorrectedAvgR": 0.024,
   "overall": {
     "w": 11,
     "l": 19,
     "samples": 30,
     "winRate": 0.3667,
-    "avgR": -0.242,
+    "avgR": -0.241,
     "ci": [
-      -0.541,
-      0.084
+      -0.535,
+      0.077
     ],
     "usable": true,
     "proven": false
   },
   "minSamplesForUse": 20,
   "byCombo": {
-    "SELL_BOLLINGER+ICHIMOKU+ICT+MOMENTUM+TREND+VWAP": {
+    "SELL_TREND": {
       "w": 0,
       "l": 1,
       "samples": 1,
       "winRate": 0,
-      "avgR": -0.208,
+      "avgR": -0.168,
       "ci": null,
       "usable": false,
       "proven": false
@@ -89,7 +89,7 @@
       "winRate": 0.8,
       "avgR": 0.382,
       "ci": [
-        -0.372,
+        -0.359,
         1.301
       ],
       "usable": false,
@@ -232,7 +232,7 @@
       "l": 2,
       "samples": 3,
       "winRate": 0.3333,
-      "avgR": 0.224,
+      "avgR": 0.237,
       "ci": null,
       "usable": false,
       "proven": false
@@ -379,22 +379,12 @@
       "usable": false,
       "proven": false
     },
-    "15": {
-      "w": 0,
-      "l": 1,
-      "samples": 1,
-      "winRate": 0,
-      "avgR": -0.208,
-      "ci": null,
-      "usable": false,
-      "proven": false
-    },
     "16": {
       "w": 2,
-      "l": 1,
-      "samples": 3,
-      "winRate": 0.6667,
-      "avgR": -0.027,
+      "l": 2,
+      "samples": 4,
+      "winRate": 0.5,
+      "avgR": -0.062,
       "ci": null,
       "usable": false,
       "proven": false
@@ -460,86 +450,73 @@
       "avgR": -0.227,
       "ci": [
         -0.809,
-        0.514
+        0.513
       ],
       "usable": false,
       "proven": false
     }
   },
   "byStrategy": {
-    "MOMENTUM": {
-      "w": 1,
-      "l": 5,
-      "samples": 6,
-      "winRate": 0.1667,
-      "avgR": -0.462,
+    "TREND": {
+      "w": 6,
+      "l": 7,
+      "samples": 13,
+      "winRate": 0.4615,
+      "avgR": -0.137,
       "ci": [
-        -0.956,
-        0.245
+        -0.521,
+        0.324
       ],
       "usable": false,
       "proven": false
     },
     "ICT": {
       "w": 4,
-      "l": 3,
-      "samples": 7,
-      "winRate": 0.5714,
-      "avgR": 0.209,
-      "ci": [
-        -0.374,
-        0.813
-      ],
-      "usable": false,
-      "proven": false
-    },
-    "TREND": {
-      "w": 6,
-      "l": 7,
-      "samples": 13,
-      "winRate": 0.4615,
-      "avgR": -0.14,
-      "ci": [
-        -0.523,
-        0.321
-      ],
-      "usable": false,
-      "proven": false
-    },
-    "BOLLINGER": {
-      "w": 1,
       "l": 2,
-      "samples": 3,
-      "winRate": 0.3333,
-      "avgR": -0.365,
-      "ci": null,
+      "samples": 6,
+      "winRate": 0.6667,
+      "avgR": 0.278,
+      "ci": [
+        -0.385,
+        0.965
+      ],
       "usable": false,
       "proven": false
     },
     "VWAP": {
       "w": 10,
-      "l": 12,
-      "samples": 22,
-      "winRate": 0.4545,
-      "avgR": -0.048,
+      "l": 11,
+      "samples": 21,
+      "winRate": 0.4762,
+      "avgR": -0.04,
       "ci": [
-        -0.414,
-        0.364
+        -0.424,
+        0.371
       ],
       "usable": true,
       "proven": false
     },
     "ICHIMOKU": {
       "w": 10,
-      "l": 12,
-      "samples": 22,
-      "winRate": 0.4545,
-      "avgR": -0.067,
+      "l": 11,
+      "samples": 21,
+      "winRate": 0.4762,
+      "avgR": -0.06,
       "ci": [
-        -0.422,
-        0.365
+        -0.438,
+        0.363
       ],
       "usable": true,
+      "proven": false
+    },
+    "BOLLINGER": {
+      "w": 1,
+      "l": 1,
+      "samples": 2,
+      "winRate": 0.5,
+      "avgR": -0.444,
+      "ci": null,
+      "usable": false,
       "proven": false
     },
     "MACD": {
@@ -559,6 +536,19 @@
       "winRate": 0.5,
       "avgR": 0.688,
       "ci": null,
+      "usable": false,
+      "proven": false
+    },
+    "MOMENTUM": {
+      "w": 1,
+      "l": 4,
+      "samples": 5,
+      "winRate": 0.2,
+      "avgR": -0.512,
+      "ci": [
+        -0.985,
+        0.343
+      ],
       "usable": false,
       "proven": false
     },
@@ -599,10 +589,10 @@
     },
     "1": {
       "w": 0,
-      "l": 1,
-      "samples": 1,
+      "l": 2,
+      "samples": 2,
       "winRate": 0,
-      "avgR": -1,
+      "avgR": -0.584,
       "ci": null,
       "usable": false,
       "proven": false
@@ -624,8 +614,8 @@
       "winRate": 0.5,
       "avgR": -0.064,
       "ci": [
-        -0.458,
-        0.404
+        -0.461,
+        0.42
       ],
       "usable": false,
       "proven": false
@@ -652,39 +642,19 @@
       "ci": null,
       "usable": false,
       "proven": false
-    },
-    "6": {
-      "w": 0,
-      "l": 1,
-      "samples": 1,
-      "winRate": 0,
-      "avgR": -0.208,
-      "ci": null,
-      "usable": false,
-      "proven": false
     }
   },
   "byRegime": {
-    "RANGING": {
-      "w": 8,
-      "l": 12,
-      "samples": 20,
-      "winRate": 0.4,
-      "avgR": -0.166,
-      "ci": [
-        -0.532,
-        0.219
-      ],
-      "usable": true,
-      "proven": false
-    },
     "MIXED": {
       "w": 2,
-      "l": 2,
-      "samples": 4,
-      "winRate": 0.5,
-      "avgR": 0.19,
-      "ci": null,
+      "l": 3,
+      "samples": 5,
+      "winRate": 0.4,
+      "avgR": 0.118,
+      "ci": [
+        -0.624,
+        1.104
+      ],
       "usable": false,
       "proven": false
     },
@@ -697,28 +667,41 @@
       "ci": null,
       "usable": false,
       "proven": false
+    },
+    "RANGING": {
+      "w": 8,
+      "l": 11,
+      "samples": 19,
+      "winRate": 0.4211,
+      "avgR": -0.164,
+      "ci": [
+        -0.531,
+        0.27
+      ],
+      "usable": false,
+      "proven": false
     }
   },
   "currentRegime": {
     "label": "unfavourable",
-    "recentAvgR": -0.242,
+    "recentAvgR": -0.241,
     "basedOn": 30,
     "note": "Describes how recent setups resolved. It is not a forecast."
   },
   "standardDeviation": 0.878,
-  "episodesPerDay": 6.6,
+  "episodesPerDay": 6.7,
   "evidenceNeeded": [
     {
       "edge": 0.05,
-      "episodesNeeded": 2415,
-      "stillToGo": 2385,
-      "daysAtCurrentRate": 360
+      "episodesNeeded": 2416,
+      "stillToGo": 2386,
+      "daysAtCurrentRate": 357
     },
     {
       "edge": 0.1,
       "episodesNeeded": 604,
       "stillToGo": 574,
-      "daysAtCurrentRate": 87
+      "daysAtCurrentRate": 86
     },
     {
       "edge": 0.2,
