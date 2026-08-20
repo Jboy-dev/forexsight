@@ -835,9 +835,20 @@ function isBestSetup(s) {
     if (s.winProbability < 60 + adaptiveFloor) return false;
   }
   if (s.adxNow != null && s.adxNow < 25) return false;
+  // v473 — this required either a killzone session OR a "strong backtest".
+  // The backtest was a proxy strategy measured on overlapping in-sample
+  // windows (see backtestPattern), so that second door was opened by a
+  // statistic that meant nothing. Removing it outright would leave only the
+  // killzone requirement and silently halve the feed outside London/NY hours,
+  // which is not a change the evidence asks for either.
+  //
+  // The alternative door is now a fact about the setup rather than a claim
+  // about its history: a strong trend reading with several strategies aligned.
+  // Whether that predicts anything is unproven — as is everything else here —
+  // but at least it describes the chart in front of you.
   const inKillzone = s.session && s.session.toLowerCase().includes('killzone');
-  const strongBacktest = s.winProbability != null && s.backtestSamples >= 10 && s.winProbability >= 65;
-  if (!inKillzone && !strongBacktest) return false;
+  const strongConditions = (s.adxNow != null && s.adxNow >= 30) && alignedStrats >= 4;
+  if (!inKillzone && !strongConditions) return false;
   return true;
 }
 
@@ -922,8 +933,16 @@ function isProSetup(s) {
   ).length;
   if (alignedStrats < 4) return false;
   if (s.confidence < 82) return false;
-  if (s.winProbability == null || s.winProbability < 65) return false;
-  if (s.backtestSamples < 15) return false;
+  // v473 — the two lines that used to sit here required winProbability >= 65
+  // on 15+ backtest "samples". With the proxy backtest disabled those are
+  // permanently null, so leaving them would have meant no signal was ever
+  // marked PRO again — a silent removal of the badge rather than a decision
+  // about it. PRO now rests on what is actually observable: four or more
+  // aligned strategies, confidence at 82 or above, inside a killzone session.
+  //
+  // Worth stating plainly: none of those three is proven to predict outcome.
+  // PRO marks a setup that meets the strictest conditions the engine can
+  // describe, not one that is likely to win.
   const inKillzone = s.session && s.session.toLowerCase().includes('killzone');
   if (!inKillzone) return false;
   return true;
@@ -2555,7 +2574,39 @@ function trend4H(closes) {
 // Not a full simulation — uses a fast approximation of the vote direction at
 // each past bar (RSI + MACD + EMA stack alignment). Good enough as a probability
 // estimator and runs in <100ms per pair.
+// v473 — THIS BACKTEST WAS MEASURING THE WRONG THING, AND EVERYTHING
+// DOWNSTREAM BELIEVED IT.
+//
+// It scored a signal by replaying a DIFFERENT strategy: approxDirAt() below is
+// an RSI + MACD + EMA20/50 vote, while the signal on the card comes from
+// strictAnalyze with its own gates. It then measured that proxy against a
+// symmetric 1.5-ATR target and stop — a 1:1 ladder — while the trade actually
+// proposed is 1.2R / 2.0R / 3.5R under a managed ladder. So the win rate it
+// produced described neither the strategy being shown nor the trade being
+// taken.
+//
+// The sampling was worse. It scans bar 200 to n-30, which on a 272-bar file
+// leaves a 41-bar window. Measured on live gold data it reported 23 "samples"
+// where the longest identical run was 12 consecutive bars, each carrying a
+// 30-bar lookahead — so those overlap by about 97% and resolve as one trade.
+// `backtestSamples >= 10` was therefore satisfied by a single move, and a
+// Wilson confidence interval was computed on top, lending statistical dress to
+// one observation.
+//
+// That number then gated PRO status, added up to 35 points of quality score,
+// contributed to the confluence count, and boosted displayed confidence.
+//
+// A correct version of this already exists and runs properly: the offline
+// brain replays the REAL engine over setups that were actually published, then
+// collapses republications into episodes before computing anything. That is
+// the single source of win-rate truth now. This proxy is disabled rather than
+// deleted so the reasoning stays attached to the code, and because every
+// consumer already guards on `winProbability != null && backtestSamples >= 10`
+// — returning nothing makes all 46 of them correctly show and score nothing.
+const _V473_PROXY_BACKTEST_DISABLED = true;
+
 function backtestPattern(pair, ohlc, arrs, direction) {
+  if (_V473_PROXY_BACKTEST_DISABLED) return { wins: 0, losses: 0, samples: 0, winRate: null };
   if (direction === 'HOLD') return { wins: 0, losses: 0, samples: 0, winRate: null };
   const n = ohlc.length - 1;
   if (n < 230) return { wins: 0, losses: 0, samples: 0, winRate: null };
@@ -6194,10 +6245,33 @@ async function loadBrainStatus() {
           <span class="brain-toggle">▾</span>
         </summary>
         <div class="brain-body">
-          ${pairDistHtml ? `<div class="bs-sec"><div class="bs-sec-title">📊 Pairs being backtested (${data.pairsAnalyzed?.length || 0})</div><div class="bs-pair-grid">${pairDistHtml}</div></div>` : ''}
-          <div class="bs-sec"><div class="bs-sec-title">🏆 Top winning patterns (labeled by pair)</div>${winnersHtml || '<em class="muted">accumulating data…</em>'}</div>
-          ${hoursHtml ? `<div class="bs-sec"><div class="bs-sec-title">⏰ Best hours of day</div>${hoursHtml}</div>` : ''}
-          <div class="bs-foot muted">Brain backtests 1 of ${cycleTotal} pairs per run (rotation) · adds ${data.lastScan?.resolved || 0} resolved samples · last update ${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'never'}</div>
+          <!-- v473 — these are SIMULATED trades, and the panel never said so.
+               learning-brain.js replays 90 days of hourly bars and simulates an
+               outcome over the following 40, and its own source comments state
+               the assumptions: perfect entry and exit, no slippage, no spread.
+               Displayed as "AUD/USD · 1,232,369" with win rates near 53%, that
+               reads as a system validated on 1.2 million real trades. It is not.
+               The real record — setups this engine actually published, walked
+               forward on real candles, republications collapsed into single
+               moves — is in the Learning tab and is a far smaller and less
+               flattering number. Both are shown; only one is evidence about
+               what happens when you trade this. -->
+          <div class="bs-sec" style="padding:9px 11px;border-radius:9px;
+               background:rgba(245,158,11,.10);border:1px solid rgba(245,158,11,.3);margin-bottom:8px">
+            <strong>These are simulated trades, not results</strong>
+            <div class="muted" style="margin-top:3px;font-size:12px">
+              Everything in this panel comes from replaying historical candles and
+              assuming a perfect fill at every entry and exit, with no spread and no
+              slippage. Real trading has all three. Large sample counts here mean the
+              replay ran many times — not that the system has won many trades.
+              For what actually happened to setups this app published, see
+              <strong>What it has learned</strong> in the Learning tab.
+            </div>
+          </div>
+          ${pairDistHtml ? `<div class="bs-sec"><div class="bs-sec-title">📊 Pairs simulated (${data.pairsAnalyzed?.length || 0})</div><div class="bs-pair-grid">${pairDistHtml}</div></div>` : ''}
+          <div class="bs-sec"><div class="bs-sec-title">🏆 Top patterns in simulation (labeled by pair)</div>${winnersHtml || '<em class="muted">accumulating data…</em>'}</div>
+          ${hoursHtml ? `<div class="bs-sec"><div class="bs-sec-title">⏰ Best hours of day (in simulation)</div>${hoursHtml}</div>` : ''}
+          <div class="bs-foot muted">Simulates 1 of ${cycleTotal} pairs per run (rotation) · adds ${data.lastScan?.resolved || 0} simulated outcomes · last update ${data.lastUpdated ? new Date(data.lastUpdated).toLocaleString() : 'never'}</div>
         </div>
       </details>`;
     // v259 — Already inserted at the top of this function; isNew handled above.
@@ -8367,6 +8441,22 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'Reading a signal honestly', name: 'Simulated results vs real results',
+    tags: 'simulated backtest million samples 1232369 brain stats real results difference trustworthy',
+    what: 'The app shows two very different sets of numbers. The Brain panel on the Signals tab replays 90 days of historical candles and simulates an outcome for each — assuming a perfect fill at entry and exit, no spread and no slippage. That is where sample counts in the millions and win rates near 53% come from. The Learning tab shows setups this engine actually published, walked forward on real candles, with republications collapsed into single moves.',
+    use: 'Only the second is evidence about what happens when you trade this. A large number in the Brain panel means the replay ran many times, not that the system won many trades. When the two disagree, believe the Learning tab.' },
+  { area: 'How it judges itself', name: 'Is this website trustworthy?',
+    tags: 'trustworthy trust honest reliable can i believe it lying accurate scam',
+    what: 'The plumbing is: signals generate from live verified candles, stops and targets are checked against real bars, prices match independent sources to about 0.08 on gold, and every data file has a working fallback. The claims about performance were not, and several have been removed — a "+0.12R per trade, positive" banner taken from a replay of a different engine, a win-probability on every card computed from a proxy strategy on overlapping in-sample windows, and a brain panel presenting simulated trades as results.',
+    use: 'Trust the mechanics and the Learning tab. Do not trust any number that implies this system is proven to make money — none is. Where the app does not know something it now says so rather than filling the gap with a figure.' },
+  { area: 'Reading a signal honestly', name: 'Why win % no longer appears on cards',
+    tags: 'win probability percentage backtest removed missing pro badge quality score wilson',
+    what: 'Cards used to show a backtested win probability with a confidence interval. That number came from replaying a DIFFERENT strategy (an RSI/MACD/EMA vote) against a symmetric 1.5-ATR target and stop, not the strategy or the ladder on the card. It scanned a 41-bar window and counted overlapping bars as separate samples — measured on live gold, 23 "samples" whose longest identical run was 12 consecutive bars, each with a 30-bar lookahead, so they were one trade counted twelve times.',
+    use: 'That figure gated the PRO badge, added up to 35 points of quality score, and boosted confidence. It is disabled. Win rates now come only from the offline brain, which replays the real engine over setups that were actually published and collapses republications into single episodes first. If a card says "not scored", that is because there genuinely is not enough evidence yet.' },
+  { area: 'Reading a signal honestly', name: 'What the PRO badge means now',
+    tags: 'pro badge best setup quality label meaning criteria',
+    what: 'PRO means four or more aligned strategies, confidence 82 or above, during a killzone session. Best means the setup cleared the standard filters plus either a killzone session or a strong trend reading with four or more strategies aligned.',
+    use: 'These describe the chart, not the odds. None of the three criteria is proven to predict outcome — measured on this system\'s own record, higher confidence and more strategies have not produced better results. PRO marks the strictest conditions the engine can describe, not a setup that is likely to win.' },
   { area: 'How it judges itself', name: 'Is this system profitable?',
     tags: 'profitable profit money edge works does it work should i trade real money worth it returns',
     what: 'Not established, in either direction. The measured record is negative but its confidence interval includes zero, which means the sample is too small to settle the question.',
