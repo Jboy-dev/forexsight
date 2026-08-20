@@ -1,7 +1,7 @@
 {
-  "ts": 1787252848435,
-  "isoTime": "2026-08-20T19:07:28.435Z",
-  "count": 3,
+  "ts": 1787254592276,
+  "isoTime": "2026-08-20T19:36:32.276Z",
+  "count": 4,
   "signals": [
     {
       "pair": "USD/CHF",
@@ -96,16 +96,16 @@
         "afterTp2": 0.79706,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-20T19:07:28.394Z",
+      "detectedAt": "2026-08-20T19:36:32.014Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "hitTp1Pct": 43,
+        "hitTp1Pct": 42,
         "hitTp2Pct": 2,
         "hitTp3Pct": 0,
-        "hitSlPct": 55,
+        "hitSlPct": 56,
         "undecidedPct": 0,
-        "expectedR": -0.07,
-        "winProbability": 45
+        "expectedR": -0.11,
+        "winProbability": 44
       },
       "generatedOffline": true,
       "barAgeMinutes": 0,
@@ -119,12 +119,134 @@
         "note": "The spread costs 4.7% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 7,
-        "runningForHours": 17.9,
-        "stillOpen": 2,
+        "count": 8,
+        "runningForHours": 18.4,
+        "stillOpen": 3,
         "alreadyResolved": 5,
         "alreadyLost": 2,
-        "note": "Same USD/CHF SELL has been signalled 7 time(s) over the last 17.9h and 2 is still open. This is that setup continuing, not a new one."
+        "note": "Same USD/CHF SELL has been signalled 8 time(s) over the last 18.4h and 3 is still open. This is that setup continuing, not a new one."
+      }
+    },
+    {
+      "pair": "XAU/USD",
+      "direction": "BUY",
+      "confidence": 80,
+      "tier": "best",
+      "chartStudy": {
+        "score": 73,
+        "reasons": [
+          "Trend clean: 10/20 bars in direction (+14)",
+          "Pullback to EMA20 (+8)",
+          "Candle conviction: 52% body (+11)",
+          "Compression 32% (+7)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+3)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "BUY",
+        "strength": 83,
+        "alignment": "aligned",
+        "score": 98,
+        "adx4h": 33,
+        "reasons": [
+          "4H trend UP (price > EMA20 > EMA50, ADX 33)",
+          "✓ Signal direction matches 4H trend (+48.24075636993854)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "aligned",
+        "trend": "up",
+        "bias": 10,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "MIXED",
+        "adx": 0,
+        "atrRatio": 1.29,
+        "compression": 1.29
+      },
+      "entry": 4578.5,
+      "sl": 4541.87,
+      "tp1": 4622.45,
+      "tp2": 4651.76,
+      "tp3": 4706.7,
+      "adx": 26,
+      "agreement": 83,
+      "indicators": 6,
+      "strategies": 3,
+      "namedStrategies": [
+        "MOMENTUM",
+        "TREND",
+        "VWAP"
+      ],
+      "comboKey": "BUY_MOMENTUM+TREND+VWAP",
+      "independentFamilies": 1,
+      "familyBreakdown": {
+        "moving-average": [
+          "MOMENTUM",
+          "TREND",
+          "VWAP"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 2,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": false,
+      "weakSignal": false,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.05,
+      "pipPotential": 1282,
+      "pipsToTp1": 440,
+      "pipsToTp2": 733,
+      "pipsToTp3": 1282,
+      "pipsToSl": 366,
+      "atrV": 20.014229910714285,
+      "slDistAtr": 1.83,
+      "tp1DistAtr": 2.196,
+      "tp2DistAtr": 3.66,
+      "tp3DistAtr": 6.405,
+      "slMethod": "capped",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 4578.5,
+        "afterTp2": 4622.45,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-08-20T19:36:32.101Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "hitTp1Pct": 43,
+        "hitTp2Pct": 2,
+        "hitTp3Pct": 0,
+        "hitSlPct": 56,
+        "undecidedPct": 0,
+        "expectedR": -0.1,
+        "winProbability": 44
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 10,
+      "brainNote": "no resolved history for this setup yet",
+      "quotedIn": "futures (GC=F)",
+      "spotNote": "Spot reference unavailable this run. These are COMEX futures prices; a spot XAU/USD chart typically sits about 1.4% lower.",
+      "costProfile": {
+        "spreadPips": 25,
+        "riskPips": 366.3,
+        "spreadAsPctOfRisk": 6.8,
+        "tp1NetR": 1.06,
+        "grade": "high",
+        "note": "The spread costs 6.8% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+      },
+      "repeatOf": {
+        "count": 16,
+        "runningForHours": 23.4,
+        "stillOpen": 6,
+        "alreadyResolved": 10,
+        "alreadyLost": 10,
+        "note": "Same XAU/USD BUY has been signalled 16 time(s) over the last 23.4h and 6 is still open. This is that setup continuing, not a new one."
       }
     },
     {
@@ -215,16 +337,16 @@
         "afterTp2": 160.096,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-20T19:07:28.348Z",
+      "detectedAt": "2026-08-20T19:36:32.073Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "hitTp1Pct": 37,
+        "hitTp1Pct": 44,
         "hitTp2Pct": 0,
         "hitTp3Pct": 0,
-        "hitSlPct": 52,
-        "undecidedPct": 11,
-        "expectedR": -0.15,
-        "winProbability": 37
+        "hitSlPct": 49,
+        "undecidedPct": 8,
+        "expectedR": -0.05,
+        "winProbability": 44
       },
       "generatedOffline": true,
       "barAgeMinutes": 0,
@@ -238,12 +360,12 @@
         "note": "The spread costs 1.1% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 1,
-        "runningForHours": 1.8,
-        "stillOpen": 1,
+        "count": 2,
+        "runningForHours": 2.2,
+        "stillOpen": 2,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same USD/JPY BUY has been signalled 1 time(s) over the last 1.8h and 1 is still open. This is that setup continuing, not a new one."
+        "note": "Same USD/JPY BUY has been signalled 2 time(s) over the last 2.2h and 2 is still open. This is that setup continuing, not a new one."
       }
     },
     {
@@ -334,16 +456,16 @@
         "afterTp2": 1.36722,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-20T19:07:28.406Z",
+      "detectedAt": "2026-08-20T19:36:32.142Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "hitTp1Pct": 44,
-        "hitTp2Pct": 1,
+        "hitTp1Pct": 46,
+        "hitTp2Pct": 0,
         "hitTp3Pct": 0,
-        "hitSlPct": 53,
+        "hitSlPct": 51,
         "undecidedPct": 2,
-        "expectedR": -0.08,
-        "winProbability": 44
+        "expectedR": -0.05,
+        "winProbability": 46
       },
       "generatedOffline": true,
       "barAgeMinutes": 1,
@@ -357,12 +479,12 @@
         "note": "The spread costs 3.3% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 13,
-        "runningForHours": 22.9,
-        "stillOpen": 13,
+        "count": 14,
+        "runningForHours": 23.4,
+        "stillOpen": 14,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same GBP/USD BUY has been signalled 13 time(s) over the last 22.9h and 13 is still open. This is that setup continuing, not a new one."
+        "note": "Same GBP/USD BUY has been signalled 14 time(s) over the last 23.4h and 14 is still open. This is that setup continuing, not a new one."
       }
     }
   ],
