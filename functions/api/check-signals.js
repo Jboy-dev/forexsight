@@ -752,7 +752,10 @@ function _silverBulletStrategy(ohlc, dir) {
   // matter which candle it was handed, and answered against today's clock when
   // walking history. It never fired once in 165 sampled bar positions. Reads
   // the bar's own hour now, like _ictStrategy already did.
-  const _t = ohlc[n] && ohlc[n].t ? new Date(ohlc[n].t) : new Date();
+  // v476 — evaluated at bar close, the moment the trade would be entered, for
+  // the same reason as the killzone above.
+  const _iv = (n >= 1 && ohlc[n].t && ohlc[n - 1].t) ? (ohlc[n].t - ohlc[n - 1].t) : 3600000;
+  const _t = ohlc[n] && ohlc[n].t ? new Date(ohlc[n].t + _iv) : new Date();
   const h = _t.getUTCHours();
   const inSilverBullet = (h === 10) || (h === 14);
   if (!inSilverBullet) return false;
@@ -1575,9 +1578,29 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   // candle produced a different verdict depending on the hour the workflow
   // fired — and in any historical evaluation every bar was judged against
   // today's clock.
-  const _barT = ohlc[n] && ohlc[n].t ? new Date(ohlc[n].t) : new Date();
-  const h = _barT.getUTCHours();
-  const min = _barT.getUTCMinutes();
+  // v476 — the session that matters is the one you ENTER in, not the one the
+  // candle formed in.
+  //
+  // v474 fixed this reading the wall clock instead of the bar. v470 separately
+  // stopped analysing the still-forming candle, which is also right. Together
+  // they were wrong: the newest CLOSED bar is always the previous hour, so at
+  // 12:30 UTC — squarely inside the London/NY killzone — the engine judged the
+  // 11:00 candle and reported inKillzone=false on every signal. The whole
+  // window was shifted an hour late, and signals fired during the killzone
+  // were marked outside it, losing the +5 confidence, tripping the
+  // outside-killzone ADX rejection, and blocking the PRO badge.
+  //
+  // A signal on a closed bar is entered when that bar closes, so the entry
+  // falls in the FOLLOWING hour. Evaluating the session at bar close is
+  // correct live and stays correct in replay, because it is derived from the
+  // bar rather than from the clock.
+  const _barInterval = (n >= 1 && ohlc[n].t && ohlc[n - 1].t)
+    ? (ohlc[n].t - ohlc[n - 1].t) : 3600000;
+  const _entryT = ohlc[n] && ohlc[n].t
+    ? new Date(ohlc[n].t + _barInterval)   // when this bar closes = when you enter
+    : new Date();
+  const h = _entryT.getUTCHours();
+  const min = _entryT.getUTCMinutes();
   const inKZ = (h >= 7 && h < 10) || (h >= 12 && h < 15);
   // v337 — SESSION-BOUNDARY BLOCK. The last 4 signals showed a clear
   // pattern: signals firing within ±15 min of London open (07:00 UTC) or
