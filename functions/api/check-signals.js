@@ -747,7 +747,13 @@ function _breakoutRetestStrategy(ohlc, dir) {
 // on retracement to OTE zone (61.8-78.6% Fib) during the window.
 function _silverBulletStrategy(ohlc, dir) {
   const n = ohlc.length - 1;
-  const h = new Date().getUTCHours();
+  // v474 — was `new Date()`, the wall clock. The window is 10:00 and 14:00
+  // UTC, so this strategy could only fire during two hours of the real day no
+  // matter which candle it was handed, and answered against today's clock when
+  // walking history. It never fired once in 165 sampled bar positions. Reads
+  // the bar's own hour now, like _ictStrategy already did.
+  const _t = ohlc[n] && ohlc[n].t ? new Date(ohlc[n].t) : new Date();
+  const h = _t.getUTCHours();
   const inSilverBullet = (h === 10) || (h === 14);
   if (!inSilverBullet) return false;
   if (n < 30) return false;
@@ -1554,8 +1560,24 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
   if (agreement < minAgreement) return null;
   if (ad < minADX) return null;
 
-  const h = new Date().getUTCHours();
-  const min = new Date().getUTCMinutes();
+  // v474 — THE SESSION WAS READ FROM THE WALL CLOCK, NOT THE CANDLE.
+  //
+  // This asked what time it is right now and judged the bar against that. The
+  // bar has its own timestamp, and the two are rarely the same: measured live,
+  // the newest gold candle was 06:15 UTC while the process ran at 07:42, so a
+  // pre-London bar was being marked as inside the London killzone purely
+  // because of when the scan happened to run.
+  //
+  // That flag is not cosmetic. It swings confidence by 8 points (+5 inside,
+  // -3 outside), it hard-rejects signals outside a killzone when ADX is below
+  // the floor, it gates the elite-pattern and big-move classifications, and
+  // it is the `inKillzone` field the app requires for a PRO badge. So the same
+  // candle produced a different verdict depending on the hour the workflow
+  // fired — and in any historical evaluation every bar was judged against
+  // today's clock.
+  const _barT = ohlc[n] && ohlc[n].t ? new Date(ohlc[n].t) : new Date();
+  const h = _barT.getUTCHours();
+  const min = _barT.getUTCMinutes();
   const inKZ = (h >= 7 && h < 10) || (h >= 12 && h < 15);
   // v337 — SESSION-BOUNDARY BLOCK. The last 4 signals showed a clear
   // pattern: signals firing within ±15 min of London open (07:00 UTC) or
