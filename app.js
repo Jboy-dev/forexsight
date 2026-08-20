@@ -9008,6 +9008,18 @@ function _v471AttachBanner() {
     const existing = host.querySelector('.reality-banner');
     if (existing) existing.remove();
     host.insertAdjacentHTML('beforeend', _v471RealityBanner());
+    // v476b — the brain is only fetched when the Learning tab renders, so on
+    // the signals feed this banner was reporting "too few independent moves to
+    // measure yet" regardless of what the record actually says. A statement
+    // about performance should not depend on which tab you visited first.
+    // Fetch it here too, then redraw once with real figures.
+    if (!window._v469Brain && typeof _v469LoadBrain === 'function') {
+      _v469LoadBrain().then(() => {
+        const h = document.getElementById('signals-status');
+        const e = h && h.querySelector('.reality-banner');
+        if (e) e.outerHTML = _v471RealityBanner();
+      }).catch(() => {});
+    }
   } catch (_) {}
 }
 
