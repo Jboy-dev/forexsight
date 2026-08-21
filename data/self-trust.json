@@ -1,10 +1,10 @@
 {
   "ok": true,
   "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-08-21T00:44:15.369Z",
+  "timestamp": "2026-08-21T02:12:30.289Z",
   "trustScore": 100,
   "trustLabel": "System Readiness",
-  "performanceScore": 62,
+  "performanceScore": 86,
   "readiness": {
     "score": 100,
     "activeGates": 11,
@@ -87,13 +87,13 @@
   "components": {
     "filteredLive": {
       "label": "Filtered-tier WR (what you actually trade)",
-      "score": null,
-      "note": "insufficient data"
+      "score": 100,
+      "weight": 0.35
     },
     "recentAll": {
       "label": "Recent 20-signal momentum",
-      "score": null,
-      "note": "insufficient data"
+      "score": 100,
+      "weight": 0.2
     },
     "calibration": {
       "label": "Confidence calibration",
@@ -113,16 +113,16 @@
   },
   "filteredTier": {
     "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 0,
-    "lifetimeWinRate": null,
+    "resolvedSignals": 1,
+    "lifetimeWinRate": 100,
     "recentWinRate": null
   },
   "allTier": {
     "note": "All resolved signals including lower tiers",
-    "totalResolved": 0,
-    "lifetimeWinRate": null,
-    "recentWindowSize": 0,
-    "recentWinRate": null
+    "totalResolved": 1,
+    "lifetimeWinRate": 100,
+    "recentWindowSize": 1,
+    "recentWinRate": 100
   },
   "activeQuality": {
     "signalCount": 0,
@@ -135,7 +135,12 @@
   },
   "calibration": null,
   "historicalBacktest": {
-    "note": "not yet computed — running in background"
+    "note": "INFORMATIONAL ONLY — raw strategy without filters. Not in trust score.",
+    "totalYearsCovered": 108.8,
+    "totalSignals": 3227,
+    "wins": 982,
+    "losses": 2200,
+    "winRate": 31
   },
   "interpretation": "VERY HIGH TRUST — filtered signals calibrated & outperforming"
 }
