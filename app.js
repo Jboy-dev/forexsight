@@ -6833,26 +6833,49 @@ async function _v427cFetchSignalsWithMirror() {
     'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/latest-signals.json?_b=' + Date.now(),
     '/data/latest-signals.json?_b=' + Date.now(),
   ];
-  for (const url of mirrors) {
+  // v479 — TAKE THE FRESHEST SOURCE, NOT THE FIRST ONE THAT ANSWERS.
+  //
+  // This tried each mirror in order and kept whichever replied first. The two
+  // are not equivalent: the GitHub copy is rewritten by CI every cycle, while
+  // the Pages copy only changes when the site is redeployed — and this project
+  // has no git integration on Cloudflare (Git Provider: No), so nothing
+  // redeploys it automatically. Measured today, GitHub was 11 minutes old and
+  // the Pages copy was 1,722 minutes — more than a day behind.
+  //
+  // Order alone protected that only while GitHub kept working. One rate-limit
+  // or blocked request and the app would quietly fall through to day-old
+  // setups at day-old prices, presented exactly like current ones. So both are
+  // fetched and the newer wins outright, whichever that turns out to be.
+  const fetched = [];
+  await Promise.all(mirrors.map(async (url) => {
     try {
       const r = await fetch(url, { cache: 'no-store' });
-      if (!r.ok) continue;
+      if (!r.ok) return;
       const text = await r.text();
       const head = text.trim().charAt(0);
-      if (head !== '{' && head !== '[') continue;
+      if (head !== '{' && head !== '[') return;
       const d = JSON.parse(text);
-      if (d && typeof d === 'object') {
+      if (d && typeof d === 'object' && Array.isArray(d.signals)) {
         d._source = url.startsWith('http') ? 'github-mirror' : 'cf-static-mirror';
-        if (Array.isArray(d.signals)) {
-          d.signals.forEach(_v428dNormaliseSignal);
-          const before = d.signals.length;
-          d.signals = _v432GateSignals(d.signals);   // v432 — see gate rationale
-          d.count = d.signals.length;
-          d._gatedOut = before - d.signals.length;
-          d._gateRejects = _v432Rejects.slice();
-        }
-        return d;
+        fetched.push(d);
       }
+    } catch {}
+  }));
+  fetched.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  for (const d of fetched) {
+    try {
+      d.signals.forEach(_v428dNormaliseSignal);
+      const before = d.signals.length;
+      d.signals = _v432GateSignals(d.signals);   // v432 — see gate rationale
+      d.count = d.signals.length;
+      d._gatedOut = before - d.signals.length;
+      d._gateRejects = _v432Rejects.slice();
+      // How much fresher this source is than the worst one available, so the
+      // UI can report a gap instead of presenting stale data as current.
+      if (fetched.length > 1) {
+        d._freshnessLeadMin = Math.round(((d.ts || 0) - (fetched[fetched.length - 1].ts || 0)) / 60000);
+      }
+      return d;
     } catch {}
   }
   return null;
