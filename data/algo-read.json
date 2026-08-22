@@ -1,12 +1,17 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-08-22T07:59:01.147Z",
+  "timestamp": "2026-08-22T08:25:11.959Z",
   "algoWindow": {
-    "utcTime": "07:59",
-    "activeWindow": null,
-    "algoIntensity": "normal",
-    "note": "No specific algo window"
+    "utcTime": "08:25",
+    "activeWindow": {
+      "name": "London morning fix",
+      "start": 495,
+      "end": 525,
+      "algo": "high"
+    },
+    "algoIntensity": "high",
+    "note": "🕒 Active: London morning fix (high algo activity)"
   },
   "overallBias": "net-SELL",
   "pairsScanned": 9,
@@ -24,12 +29,12 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 77284.9375,
-      "atr": 692.83147,
+      "price": 77281.4,
+      "atr": 772.47857,
       "vwap": {
-        "vwap": 77864.4342,
-        "price": 77284.9375,
-        "distanceATR": -0.84,
+        "vwap": 77723.71337,
+        "price": 77281.4,
+        "distanceATR": -0.57,
         "position": "below",
         "bias": "institutional-SELL",
         "bars": 9
@@ -37,14 +42,16 @@
       "absorption": {
         "detected": false
       },
-      "wick": null,
+      "wick": {
+        "detected": false
+      },
       "roundNumber": {
         "roundBelow": 77000,
         "roundAbove": 77500,
         "nearestLevel": 77500,
-        "distanceATR": 0.31,
-        "isMagnetized": false,
-        "note": "Nearest round: 77500 (0.31× ATR away)"
+        "distanceATR": 0.28,
+        "isMagnetized": true,
+        "note": "⚡ Price magnetized to roundAbove 77500 (0.28× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "SELL",
@@ -90,6 +97,6 @@
       "error": "no bars"
     }
   ],
-  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 1 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 1 SELL. Currently in \"London morning fix\" window with high algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
