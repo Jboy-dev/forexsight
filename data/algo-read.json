@@ -1,9 +1,9 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-08-22T02:04:26.161Z",
+  "timestamp": "2026-08-22T03:05:09.602Z",
   "algoWindow": {
-    "utcTime": "02:04",
+    "utcTime": "03:05",
     "activeWindow": null,
     "algoIntensity": "normal",
     "note": "No specific algo window"
@@ -13,7 +13,7 @@
   "marketState": {
     "buyBiased": 1,
     "sellBiased": 0,
-    "neutral": 1
+    "neutral": 0
   },
   "pairs": [
     {
@@ -24,15 +24,15 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 77972.7,
-      "atr": 766.28571,
+      "price": 78577,
+      "atr": 711.67143,
       "vwap": {
-        "vwap": 77905.22482,
-        "price": 77972.7,
-        "distanceATR": 0.09,
-        "position": "at",
-        "bias": "neutral",
-        "bars": 3
+        "vwap": 78049.16995,
+        "price": 78577,
+        "distanceATR": 0.74,
+        "position": "above",
+        "bias": "institutional-BUY",
+        "bars": 4
       },
       "absorption": {
         "detected": false
@@ -41,18 +41,18 @@
         "detected": false
       },
       "roundNumber": {
-        "roundBelow": 77500,
-        "roundAbove": 78000,
-        "nearestLevel": 78000,
-        "distanceATR": 0.04,
+        "roundBelow": 78500,
+        "roundAbove": 79000,
+        "nearestLevel": 78500,
+        "distanceATR": 0.11,
         "isMagnetized": true,
-        "note": "⚡ Price magnetized to roundAbove 78000 (0.04× ATR away)"
+        "note": "⚡ Price magnetized to roundBelow 78500 (0.11× ATR away)"
       },
       "rangeCompression": null,
-      "algoBias": "NEUTRAL",
-      "algoStrength": 0,
+      "algoBias": "BUY",
+      "algoStrength": 2,
       "votes": {
-        "BUY": 0,
+        "BUY": 2,
         "SELL": 0
       }
     },
@@ -68,36 +68,8 @@
     },
     {
       "pair": "USD/JPY",
-      "ok": true,
-      "price": 158.94000244140625,
-      "atr": 0.15264,
-      "vwap": {
-        "vwap": 158.84038,
-        "price": 158.94000244140625,
-        "distanceATR": 0.65,
-        "position": "above",
-        "bias": "institutional-BUY",
-        "bars": 24
-      },
-      "absorption": {
-        "detected": false
-      },
-      "wick": null,
-      "roundNumber": {
-        "roundBelow": 158.5,
-        "roundAbove": 159,
-        "nearestLevel": 159,
-        "distanceATR": 0.39,
-        "isMagnetized": false,
-        "note": "Nearest round: 159 (0.39× ATR away)"
-      },
-      "rangeCompression": null,
-      "algoBias": "BUY",
-      "algoStrength": 2,
-      "votes": {
-        "BUY": 2,
-        "SELL": 0
-      }
+      "ok": false,
+      "error": "no bars"
     },
     {
       "pair": "AUD/USD",
@@ -120,6 +92,6 @@
       "error": "no bars"
     }
   ],
-  "interpretation": "Algo footprints across 2 pairs · 1 showing institutional BUY bias, 0 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 1 pairs · 1 showing institutional BUY bias, 0 SELL. Currently in \"no specific\" window with normal algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
