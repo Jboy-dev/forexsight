@@ -30,6 +30,7 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   }
 
   const issues = [];
+  let marketClosedNote = null;
   if (!bars.length) { report.problems.push(`${pair}: no bars`); continue; }
 
   // Ordering, duplicates, gaps.
@@ -97,11 +98,38 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   if (nonFinite)   issues.push(`${nonFinite} bar(s) with missing or non-numeric fields`);
   if (nonPositive) issues.push(`${nonPositive} bar(s) with a non-positive price`);
   if (spikes)      issues.push(`${spikes} bar(s) open disconnected from the previous close — possible feed splice`);
-  if (ageH > MAX_AGE_H) issues.push(`last bar is ${ageH.toFixed(1)}h old — not a live read`);
+  // v480 — A CLOSED MARKET IS NOT A STALE FEED.
+  //
+  // This flagged any instrument whose last bar was over six hours old. On a
+  // Sunday that is every FX pair and gold, because the market shut at 22:00
+  // Friday — so the report read 2/10 clean and pointed at nothing wrong.
+  // A checker that alarms every weekend teaches you to ignore it, which is
+  // worse than not having one, and it is the second time this file has made
+  // that mistake (the first flagged the real USD/JPY selloff as corrupt).
+  //
+  // FX and metals trade roughly 22:00 Sunday to 22:00 Friday UTC. Crypto never
+  // closes, so it is held to the live standard at all times.
+  const isCrypto = ['BTC/USD', 'ETH/USD', 'SOL/USD'].includes(pair);
+  const nowD = new Date();
+  const dow = nowD.getUTCDay();            // 0=Sun .. 6=Sat
+  const hourUTC = nowD.getUTCHours();
+  const marketClosed = !isCrypto && (
+    dow === 6 ||                            // all Saturday
+    (dow === 0 && hourUTC < 22) ||          // Sunday before the open
+    (dow === 5 && hourUTC >= 22)            // Friday after the close
+  );
+  if (ageH > MAX_AGE_H && !marketClosed) {
+    issues.push(`last bar is ${ageH.toFixed(1)}h old — not a live read`);
+  } else if (marketClosed && ageH > MAX_AGE_H) {
+    // Recorded, not raised: the data is as fresh as the market allows.
+    marketClosedNote = `market closed — last bar ${ageH.toFixed(1)}h old, which is the Friday close`;
+  }
   if (bars.length < 200) issues.push(`only ${bars.length} bars — some strategies need 200`);
 
   report.instruments.push({
     pair, bars: bars.length,
+    marketClosed: !!marketClosedNote,
+    marketNote: marketClosedNote,
     lastBarAgeHours: +ageH.toFixed(2),
     medianSpacingMinutes: Math.round(median / 60000),
     clean: issues.length === 0,

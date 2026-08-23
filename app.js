@@ -6479,9 +6479,22 @@ async function loadSignals(force = false) {
       const ageStr = isFinite(ageMin)
         ? (ageMin >= 60 ? `${(ageMin / 60).toFixed(1)}h ago` : `${Math.round(ageMin)}m ago`)
         : 'unknown age';
-      const stale = isFinite(ageMin) && ageMin > STALE_MIN;
+      // v480 — do not call a closed market "out of date".
+      //
+      // This warned whenever the snapshot passed 90 minutes. Over a weekend
+      // that is always true for FX and gold, because the market shut at 22:00
+      // Friday, and the warning told the user prices had moved when nothing
+      // had. isForexClosed() already exists and drives the weekend banner
+      // right below this; the warning simply was not consulting it.
+      //
+      // Crypto trades through the weekend, so if the feed is only carrying
+      // crypto the age still means what it usually means.
+      const marketShut = (typeof isForexClosed === 'function') && isForexClosed();
+      const allCrypto = sigs.length > 0 && sigs.every(x => ['BTC/USD','ETH/USD','SOL/USD'].includes(x.pair));
+      const stale = isFinite(ageMin) && ageMin > STALE_MIN && (!marketShut || allCrypto);
       const _line = `${sigs.length} signal${sigs.length===1?'':'s'} · ${src} · ${ageStr}`
-        + (stale ? ' · OUT OF DATE — prices have moved, re-check before trading' : '');
+        + (stale ? ' · OUT OF DATE — prices have moved, re-check before trading'
+                 : (marketShut && !allCrypto ? ' · forex closed for the weekend' : ''));
       const _span = document.getElementById('signals-status-line');
       if (_span) _span.textContent = _line;            // keeps the banner alive
       else $('#signals-status').textContent = _line;   // before the first render

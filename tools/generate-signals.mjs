@@ -113,7 +113,20 @@ await Promise.all(Object.entries(PAIR_SYMBOLS).map(async ([pair, sym]) => {
     if (bars.length < 120) { errors.push(`${pair}: only ${bars.length} bars`); return; }
     // Staleness guard — never emit a signal off a chart that stopped updating.
     const ageMin = (Date.now() - bars[bars.length - 1].t) / 60000;
-    if (ageMin > 240) { errors.push(`${pair}: last bar ${Math.round(ageMin)}min old`); return; }
+    // v480 — refuse stale bars, but say WHY. Over a weekend every FX pair and
+    // gold trips this because the market shut at 22:00 Friday, and the run log
+    // filled with what looked like ten failures when nothing was wrong. Not
+    // generating FX signals into a closed market is correct; reporting it as a
+    // fault is not.
+    if (ageMin > 240) {
+      const d = new Date(), dow = d.getUTCDay(), hr = d.getUTCHours();
+      const isCrypto = ['BTC/USD', 'ETH/USD', 'SOL/USD'].includes(pair);
+      const shut = !isCrypto && (dow === 6 || (dow === 0 && hr < 22) || (dow === 5 && hr >= 22));
+      errors.push(shut
+        ? `${pair}: market closed for the weekend (last bar ${Math.round(ageMin / 60)}h old) — not a fault`
+        : `${pair}: last bar ${Math.round(ageMin)}min old`);
+      return;
+    }
     const s = strictAnalyze(pair, bars, []);
     if (s && s.direction && s.entry != null && s.sl != null) {
       signals.push({ ...s, generatedOffline: true, barAgeMinutes: Math.round(ageMin) });
