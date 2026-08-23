@@ -1,19 +1,19 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-08-23T08:14:35.650Z",
+  "timestamp": "2026-08-23T08:48:37.878Z",
   "algoWindow": {
-    "utcTime": "08:14",
+    "utcTime": "08:48",
     "activeWindow": null,
     "algoIntensity": "normal",
     "note": "No specific algo window"
   },
-  "overallBias": "net-SELL",
+  "overallBias": "balanced",
   "pairsScanned": 9,
   "marketState": {
     "buyBiased": 0,
-    "sellBiased": 1,
-    "neutral": 0
+    "sellBiased": 0,
+    "neutral": 1
   },
   "pairs": [
     {
@@ -24,15 +24,15 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 76179.8,
-      "atr": 391.57857,
+      "price": 76565.51251358911,
+      "atr": 667.83865,
       "vwap": {
-        "vwap": 76457.81988,
-        "price": 76179.8,
-        "distanceATR": -0.71,
-        "position": "below",
-        "bias": "institutional-SELL",
-        "bars": 9
+        "vwap": 76655.65296,
+        "price": 76565.51251358911,
+        "distanceATR": -0.13,
+        "position": "at",
+        "bias": "neutral",
+        "bars": 10
       },
       "absorption": {
         "detected": false
@@ -41,19 +41,19 @@
         "detected": false
       },
       "roundNumber": {
-        "roundBelow": 76000,
-        "roundAbove": 76500,
-        "nearestLevel": 76000,
-        "distanceATR": 0.46,
-        "isMagnetized": false,
-        "note": "Nearest round: 76000 (0.46× ATR away)"
+        "roundBelow": 76500,
+        "roundAbove": 77000,
+        "nearestLevel": 76500,
+        "distanceATR": 0.1,
+        "isMagnetized": true,
+        "note": "⚡ Price magnetized to roundBelow 76500 (0.10× ATR away)"
       },
       "rangeCompression": null,
-      "algoBias": "SELL",
-      "algoStrength": 2,
+      "algoBias": "NEUTRAL",
+      "algoStrength": 0,
       "votes": {
         "BUY": 0,
-        "SELL": 2
+        "SELL": 0
       }
     },
     {
@@ -92,6 +92,6 @@
       "error": "no bars"
     }
   ],
-  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 1 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 0 SELL. Currently in \"no specific\" window with normal algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
