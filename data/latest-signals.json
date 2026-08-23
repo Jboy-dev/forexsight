@@ -1,22 +1,22 @@
 {
-  "ts": 1787504094806,
-  "isoTime": "2026-08-23T16:54:54.806Z",
+  "ts": 1787504402163,
+  "isoTime": "2026-08-23T17:00:02.163Z",
   "count": 1,
   "signals": [
     {
-      "pair": "ETH/USD",
+      "pair": "BTC/USD",
       "direction": "BUY",
       "confidence": 97,
       "tier": "best",
       "chartStudy": {
-        "score": 78,
+        "score": 82,
         "reasons": [
-          "Trend clean: 8/20 bars in direction (+11)",
+          "Trend clean: 10/20 bars in direction (+14)",
           "Pullback to EMA20 (+15)",
-          "Candle conviction: 40% body (+9)",
-          "Compression 40% (+7)",
+          "Candle conviction: 44% body (+10)",
+          "Compression 26% (+10)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+6)",
+          "Rejection wicks (+3)",
           "Momentum (RSI) (+10)"
         ]
       },
@@ -24,11 +24,12 @@
         "direction": "BUY",
         "strength": 100,
         "alignment": "aligned",
-        "score": 100,
-        "adx4h": 57,
+        "score": 90,
+        "adx4h": 63,
         "reasons": [
-          "4H trend UP (price > EMA20 > EMA50, ADX 57)",
-          "✓ Signal direction matches 4H trend (+50)"
+          "4H trend UP (price > EMA20 > EMA50, ADX 63)",
+          "✓ Signal direction matches 4H trend (+50)",
+          "⚠ 4H RSI overbought (71)"
         ]
       },
       "dailyHtf": {
@@ -38,85 +39,93 @@
         "daysAnalysed": 20
       },
       "regime": {
-        "label": "BREAKOUT",
+        "label": "MIXED",
         "adx": 0,
-        "atrRatio": 1.59,
-        "compression": 1.59
+        "atrRatio": 1.06,
+        "compression": 1.06
       },
-      "entry": 2438.38989,
-      "sl": 2377.43015,
-      "tp1": 2511.54159,
-      "tp2": 2560.30939,
-      "tp3": 2651.74901,
-      "adx": 19,
+      "entry": 77416.35156,
+      "sl": 75868.02453,
+      "tp1": 79274.344,
+      "tp2": 80513.00563,
+      "tp3": 82835.49617,
+      "adx": 15,
       "agreement": 100,
-      "indicators": 4.1,
-      "strategies": 1,
+      "indicators": 8,
+      "strategies": 5,
       "namedStrategies": [
-        "TREND"
+        "ICT",
+        "TREND",
+        "MACD",
+        "VWAP"
       ],
-      "comboKey": "BUY_TREND",
-      "independentFamilies": 1,
+      "comboKey": "BUY_ICT+MACD+TREND+VWAP",
+      "independentFamilies": 2,
       "familyBreakdown": {
+        "structure": [
+          "ICT"
+        ],
         "moving-average": [
-          "TREND"
+          "TREND",
+          "MACD",
+          "VWAP"
         ]
       },
       "dominantFamily": "moving-average",
-      "redundantCount": 0,
+      "redundantCount": 2,
       "isEliteBrainPattern": false,
       "eliteBrainWR": null,
       "inKillzone": false,
       "weakSignal": false,
       "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 1.43,
-      "pipPotential": 2134,
-      "pipsToTp1": 732,
-      "pipsToTp2": 1219,
-      "pipsToTp3": 2134,
-      "pipsToSl": 610,
-      "atrV": 27.733590262276785,
-      "slDistAtr": 2.198,
-      "tp1DistAtr": 2.638,
-      "tp2DistAtr": 4.396,
-      "tp3DistAtr": 7.693,
+      "atrExpansion": 1.3,
+      "pipPotential": 5419,
+      "pipsToTp1": 1858,
+      "pipsToTp2": 3097,
+      "pipsToTp3": 5419,
+      "pipsToSl": 1548,
+      "atrV": 500.97767857142856,
+      "slDistAtr": 3.091,
+      "tp1DistAtr": 3.709,
+      "tp2DistAtr": 6.181,
+      "tp3DistAtr": 10.817,
       "slMethod": "capped",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 2438.38989,
-        "afterTp2": 2511.54159,
+        "afterTp1": 77416.35156,
+        "afterTp2": 79274.344,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-23T16:54:54.601Z",
+      "detectedAt": "2026-08-23T17:00:02.125Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "hitTp1Pct": 49,
-        "hitTp2Pct": 1,
+        "hitTp1Pct": 43,
+        "hitTp2Pct": 0,
         "hitTp3Pct": 0,
         "hitSlPct": 50,
-        "undecidedPct": 1,
-        "expectedR": 0,
-        "winProbability": 49
+        "undecidedPct": 7,
+        "expectedR": -0.06,
+        "winProbability": 43
       },
       "generatedOffline": true,
       "barAgeMinutes": 0,
-      "brainNote": "only 2 episode(s) for this combination — below the 20 needed to quote a win chance",
+      "brainNote": "no resolved history for this setup yet",
       "costProfile": {
-        "spreadPips": 15,
-        "riskPips": 609.6,
-        "spreadAsPctOfRisk": 2.5,
-        "tp1NetR": 1.15,
+        "spreadPips": 20,
+        "riskPips": 1548.3,
+        "spreadAsPctOfRisk": 1.3,
+        "tp1NetR": 1.17,
         "grade": "low",
-        "note": "The spread costs 2.5% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+        "note": "The spread costs 1.3% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 7,
-        "runningForHours": 10,
-        "stillOpen": 7,
-        "alreadyResolved": 0,
-        "alreadyLost": 0,
-        "note": "Same ETH/USD BUY has been signalled 7 time(s) over the last 10h and 7 is still open. This is that setup continuing, not a new one."
+        "count": 10,
+        "runningForHours": 23.6,
+        "stillOpen": 2,
+        "alreadyResolved": 8,
+        "alreadyLost": 8,
+        "note": "Same BTC/USD BUY has been signalled 10 time(s) over the last 23.6h and 2 is still open. This is that setup continuing, not a new one."
       }
     }
   ],
@@ -124,13 +133,13 @@
   "correlationFiltered": 1,
   "note": "Generated by tools/generate-signals.mjs (GitHub Actions) using the same strictAnalyze() the live endpoint uses. Produced independently of Cloudflare so signals stay current when Functions are unavailable.",
   "errors": [
-    "AUD/USD: last bar 2635min old",
-    "GBP/USD: last bar 2635min old",
-    "NZD/USD: last bar 2575min old",
-    "XAU/USD: last bar 2635min old",
-    "USD/CHF: last bar 2695min old",
-    "USD/JPY: last bar 2516min old",
-    "USD/CAD: last bar 2635min old",
-    "EUR/USD: last bar 2635min old"
+    "XAU/USD: last bar 2640min old",
+    "EUR/USD: last bar 2640min old",
+    "USD/JPY: last bar 2521min old",
+    "NZD/USD: last bar 2580min old",
+    "AUD/USD: last bar 2640min old",
+    "GBP/USD: last bar 2640min old",
+    "USD/CHF: last bar 2700min old",
+    "USD/CAD: last bar 2640min old"
   ]
 }
