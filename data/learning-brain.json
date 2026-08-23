@@ -1,20 +1,20 @@
 {
-  "ts": 1787518583473,
-  "isoTime": "2026-08-23T20:56:23.473Z",
+  "ts": 1787519489758,
+  "isoTime": "2026-08-23T21:11:29.758Z",
   "source": "offline-brain",
   "builtBy": "tools/build-brain.mjs",
   "totalSamples": 19,
-  "rawPublications": 366,
-  "inflationFactor": 19.26,
-  "uncorrectedAvgR": 0.517,
+  "rawPublications": 365,
+  "inflationFactor": 19.21,
+  "uncorrectedAvgR": 0.518,
   "overall": {
     "w": 10,
     "l": 8,
     "samples": 19,
     "winRate": 0.5263,
-    "avgR": 0.116,
+    "avgR": 0.101,
     "ci": [
-      -0.318,
+      -0.342,
       0.553
     ],
     "usable": false,
@@ -22,16 +22,6 @@
   },
   "minSamplesForUse": 20,
   "byCombo": {
-    "BUY_ICHIMOKU+VWAP": {
-      "w": 0,
-      "l": 1,
-      "samples": 1,
-      "winRate": 0,
-      "avgR": -0.718,
-      "ci": null,
-      "usable": false,
-      "proven": false
-    },
     "SELL_ICHIMOKU+MACD+VWAP": {
       "w": 0,
       "l": 1,
@@ -53,6 +43,16 @@
       "proven": false
     },
     "SELL_BOLLINGER+ICHIMOKU+VWAP": {
+      "w": 0,
+      "l": 1,
+      "samples": 1,
+      "winRate": 0,
+      "avgR": -1,
+      "ci": null,
+      "usable": false,
+      "proven": false
+    },
+    "BUY_ICHIMOKU+MOMENTUM+VWAP": {
       "w": 0,
       "l": 1,
       "samples": 1,
@@ -164,16 +164,6 @@
     }
   },
   "byPair": {
-    "USD/CAD": {
-      "w": 1,
-      "l": 1,
-      "samples": 2,
-      "winRate": 0.5,
-      "avgR": 0.119,
-      "ci": null,
-      "usable": false,
-      "proven": false
-    },
     "NZD/USD": {
       "w": 1,
       "l": 1,
@@ -200,6 +190,16 @@
       "samples": 3,
       "winRate": 0.6667,
       "avgR": 0.584,
+      "ci": null,
+      "usable": false,
+      "proven": false
+    },
+    "USD/CAD": {
+      "w": 1,
+      "l": 1,
+      "samples": 2,
+      "winRate": 0.5,
+      "avgR": -0.022,
       "ci": null,
       "usable": false,
       "proven": false
@@ -338,23 +338,23 @@
     },
     "21": {
       "w": 1,
-      "l": 2,
-      "samples": 3,
-      "winRate": 0.3333,
-      "avgR": -0.213,
+      "l": 1,
+      "samples": 2,
+      "winRate": 0.5,
+      "avgR": 0.039,
       "ci": null,
       "usable": false,
       "proven": false
     },
     "22": {
       "w": 2,
-      "l": 3,
-      "samples": 5,
-      "winRate": 0.4,
-      "avgR": -0.18,
+      "l": 4,
+      "samples": 6,
+      "winRate": 0.3333,
+      "avgR": -0.317,
       "ci": [
         -1,
-        0.785
+        0.487
       ],
       "usable": false,
       "proven": false
@@ -371,15 +371,28 @@
     }
   },
   "byStrategy": {
+    "MACD": {
+      "w": 3,
+      "l": 2,
+      "samples": 5,
+      "winRate": 0.6,
+      "avgR": 0.533,
+      "ci": [
+        -0.367,
+        1.454
+      ],
+      "usable": false,
+      "proven": false
+    },
     "VWAP": {
       "w": 5,
       "l": 6,
       "samples": 11,
       "winRate": 0.4545,
-      "avgR": -0.009,
+      "avgR": -0.035,
       "ci": [
-        -0.541,
-        0.518
+        -0.572,
+        0.505
       ],
       "usable": false,
       "proven": false
@@ -389,23 +402,10 @@
       "l": 5,
       "samples": 9,
       "winRate": 0.4444,
-      "avgR": -0.099,
+      "avgR": -0.13,
       "ci": [
-        -0.72,
-        0.526
-      ],
-      "usable": false,
-      "proven": false
-    },
-    "MACD": {
-      "w": 3,
-      "l": 2,
-      "samples": 5,
-      "winRate": 0.6,
-      "avgR": 0.533,
-      "ci": [
-        -0.316,
-        1.454
+        -0.769,
+        0.525
       ],
       "usable": false,
       "proven": false
@@ -417,8 +417,8 @@
       "winRate": 0.8,
       "avgR": 0.596,
       "ci": [
-        0.007,
-        1.161
+        -0.002,
+        1.155
       ],
       "usable": false,
       "proven": false
@@ -439,6 +439,16 @@
       "samples": 3,
       "winRate": 0.6667,
       "avgR": 0.113,
+      "ci": null,
+      "usable": false,
+      "proven": false
+    },
+    "MOMENTUM": {
+      "w": 0,
+      "l": 1,
+      "samples": 1,
+      "winRate": 0,
+      "avgR": -1,
       "ci": null,
       "usable": false,
       "proven": false
@@ -507,21 +517,24 @@
     },
     "2": {
       "w": 0,
-      "l": 3,
-      "samples": 3,
+      "l": 2,
+      "samples": 2,
       "winRate": 0,
-      "avgR": -0.906,
+      "avgR": -1,
       "ci": null,
       "usable": false,
       "proven": false
     },
     "3": {
       "w": 1,
-      "l": 3,
-      "samples": 4,
-      "winRate": 0.25,
-      "avgR": -0.366,
-      "ci": null,
+      "l": 4,
+      "samples": 5,
+      "winRate": 0.2,
+      "avgR": -0.493,
+      "ci": [
+        -1,
+        0.472
+      ],
       "usable": false,
       "proven": false
     },
@@ -562,10 +575,10 @@
       "l": 6,
       "samples": 14,
       "winRate": 0.5,
-      "avgR": 0.077,
+      "avgR": 0.057,
       "ci": [
-        -0.444,
-        0.627
+        -0.466,
+        0.607
       ],
       "usable": false,
       "proven": false
@@ -593,41 +606,41 @@
   },
   "currentRegime": {
     "label": "favourable",
-    "recentAvgR": 0.116,
+    "recentAvgR": 0.101,
     "basedOn": 19,
     "note": "Describes how recent setups resolved. It is not a forecast."
   },
-  "standardDeviation": 0.954,
-  "episodesPerDay": 10.3,
+  "standardDeviation": 0.969,
+  "episodesPerDay": 10.4,
   "evidenceNeeded": [
     {
       "edge": 0.05,
-      "episodesNeeded": 2854,
-      "stillToGo": 2835,
-      "daysAtCurrentRate": 274
+      "episodesNeeded": 2945,
+      "stillToGo": 2926,
+      "daysAtCurrentRate": 281
     },
     {
       "edge": 0.1,
-      "episodesNeeded": 714,
-      "stillToGo": 695,
-      "daysAtCurrentRate": 67
+      "episodesNeeded": 737,
+      "stillToGo": 718,
+      "daysAtCurrentRate": 69
     },
     {
       "edge": 0.2,
-      "episodesNeeded": 179,
-      "stillToGo": 160,
-      "daysAtCurrentRate": 15
+      "episodesNeeded": 185,
+      "stillToGo": 166,
+      "daysAtCurrentRate": 16
     },
     {
       "edge": 0.3,
-      "episodesNeeded": 80,
-      "stillToGo": 61,
+      "episodesNeeded": 82,
+      "stillToGo": 63,
       "daysAtCurrentRate": 6
     },
     {
       "edge": 0.5,
-      "episodesNeeded": 29,
-      "stillToGo": 10,
+      "episodesNeeded": 30,
+      "stillToGo": 11,
       "daysAtCurrentRate": 1
     }
   ],
