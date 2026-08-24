@@ -6426,8 +6426,14 @@ async function loadSignals(force = false) {
   // Attached there first, it only loaded if the user happened to open that tab,
   // so the warning that matters most — "you have taken this one 16 times and it
   // keeps stopping out" — was absent from the feed where the decision is made.
+  _v478WatchGrid();
   if (!_v478Repeats) {
-    _v478LoadRepeats().then(() => { _v478PatchCards(); }).catch(() => {});
+    _v478LoadRepeats().then(() => {
+      // Patch now and once more after the next paint, since the render that
+      // follows this fetch may not have happened yet.
+      _v478PatchCards();
+      setTimeout(() => { try { _v478PatchCards(); } catch (_) {} }, 1200);
+    }).catch(() => {});
   }
   // v449 — only claim to be loading when there is nothing to look at. This
   // ran on every poll, so the status line flashed "Loading signals…" over a
@@ -7501,6 +7507,9 @@ function renderSignals() {
 
   `;
   _v471AttachBanner();
+  // v481b — repaint the control panels after every render, otherwise they only
+  // ever appear on the one render that happens to follow the repeats fetch.
+  setTimeout(() => { try { _v478PatchCards(); } catch (_) {} }, 0);
   const proPickHTML = renderProPickBanner(state.signals);
   const radiantHTML = renderRadiantBanner();
   // Per-strategy OPEN signal counter — shows at a glance how many active
@@ -9124,10 +9133,47 @@ function _v478RepeatFor(s) {
 // the warning that matters most on this page — "you have taken this one 16
 // times and it keeps stopping out" — so it needs to arrive even a few seconds
 // late rather than not at all.
+// v481d — patch whenever cards appear, not on a guessed delay.
+//
+// The panel function was correct and the selector was correct; the calls simply
+// fired before the cards existed. The in-browser scan can take fifteen seconds
+// or more to paint, so a setTimeout after render and a retry at 1.2s both ran
+// against an empty grid, and the drag figure and the repeat warning appeared on
+// nothing. Manual invocation produced all nine panels immediately, which is how
+// it was clear the timing was the whole problem.
+//
+// An observer removes the guesswork: whenever the grid gains children, the
+// panels are applied to whatever is now there.
+let _v478Observer = null;
+function _v478WatchGrid() {
+  try {
+    if (_v478Observer) return;
+    const grid = document.getElementById('signals-grid')
+              || document.querySelector('.signals-grid, #signals');
+    if (!grid || typeof MutationObserver !== 'function') return;
+    let queued = false;
+    _v478Observer = new MutationObserver(() => {
+      if (queued) return;
+      queued = true;
+      setTimeout(() => { queued = false; try { _v478PatchCards(); } catch (_) {} }, 120);
+    });
+    _v478Observer.observe(grid, { childList: true, subtree: true });
+  } catch (_) {}
+}
+
 function _v478PatchCards() {
   try {
     if (!_v478Repeats) return;
-    const cards = document.querySelectorAll('[data-pair]');
+    // v481c — [data-pair] also matches elements INSIDE a card, so the same
+    // pair came back three times and only the outermost had an anchor to
+    // insert against. The inner matches quietly failed and the panel appeared
+    // on nothing. Select the card elements themselves.
+    let cards = [...document.querySelectorAll('.card[data-pair]')];
+    if (!cards.length) {
+      // Fall back to outermost [data-pair] elements only.
+      cards = [...document.querySelectorAll('[data-pair]')]
+        .filter(el => !el.parentElement || !el.parentElement.closest('[data-pair]'));
+    }
     for (const card of cards) {
       const pair = card.dataset.pair;
       if (!pair) continue;
@@ -9136,11 +9182,24 @@ function _v478PatchCards() {
       const html = _v477ControlPanel(sig);
       if (!html) continue;
       const existing = card.querySelector('.v477-control');
-      if (existing) existing.outerHTML = html;
-      else {
-        const anchor = card.querySelector('.v433-clean') || card.querySelector('.v433-flags');
-        if (anchor) anchor.insertAdjacentHTML('afterend', html);
-      }
+      if (existing) { existing.outerHTML = html; continue; }
+      // v481b — the anchor has to exist on the card actually in front of the
+      // user. This looked only for .v433-clean / .v433-flags, which belong to
+      // the server-signal template. Cards built by the in-browser scan use a
+      // different one entirely (.levels, .card-note-wrap, .card-strats), so on
+      // a quiet morning — when the server produces nothing and every card on
+      // screen is client-scanned — the cost drag and the "you have taken this
+      // 16 times and it keeps losing" warning were rendered nowhere at all.
+      //
+      // Falls through the templates in order and appends to the card as a last
+      // resort, so the panel cannot silently vanish again if a template changes.
+      const anchor = card.querySelector('.v433-clean')
+                  || card.querySelector('.v433-flags')
+                  || card.querySelector('.card-note-wrap')
+                  || card.querySelector('.card-strats')
+                  || card.querySelector('.levels');
+      if (anchor) anchor.insertAdjacentHTML('beforebegin', html);
+      else card.insertAdjacentHTML('beforeend', html);
     }
   } catch (_) {}
 }
