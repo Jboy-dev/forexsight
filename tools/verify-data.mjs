@@ -85,8 +85,21 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   }
   const sortedGap = gapsFromClose.slice().sort((a, b) => a - b);
   const medGap = sortedGap[Math.floor(sortedGap.length / 2)] || 0;
-  // 0.4% mid-session open-to-prior-close discontinuity is not a market move.
-  const spikes = gapsFromClose.filter(g => g > Math.max(0.004, medGap * 50)).length;
+  // v481 — the discontinuity threshold has to know what it is looking at.
+  //
+  // A flat 0.4% flagged ETH for a 0.53% hourly open gap on 29 July, which was
+  // a real crypto move. That is the third false alarm this file has produced:
+  // it once reported the genuine USD/JPY selloff as corrupt, and it called
+  // every weekend a dead feed. Each time the data was right and the check was
+  // wrong, and a check that cries wolf gets ignored, which defeats the purpose
+  // of having it.
+  //
+  // Crypto routinely gaps a percent between hourly opens; FX majors almost
+  // never move that far mid-session, so the same number cannot serve both.
+  const cryptoPair = ['BTC/USD', 'ETH/USD', 'SOL/USD'].includes(pair);
+  const goldPair = ['XAU/USD', 'XAG/USD'].includes(pair);
+  const jumpFloor = cryptoPair ? 0.025 : goldPair ? 0.010 : 0.004;
+  const spikes = gapsFromClose.filter(g => g > Math.max(jumpFloor, medGap * 50)).length;
 
   const last = bars[bars.length - 1];
   const ageH = (Date.now() - (last.t || 0)) / 3600000;

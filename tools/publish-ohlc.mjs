@@ -29,7 +29,21 @@ const PAIRS = {
 // 14 days of hourly bars. Long enough to cover any trade the app would still
 // consider open (the longest time-stop is 4h, and expiry is 48h) with a wide
 // margin, while keeping each file small enough to commit every cycle.
-const RANGE = '14d';
+// v481 — 14 days was starving the indicators.
+//
+// At 14d Yahoo returned 241 hourly bars for gold. _trendStrategy is built on
+// EMA200, so only 41 of those bars carried a valid reading — the trend filter
+// was operating on almost no established history, which makes it unstable
+// between runs and is part of why gold stopped producing signals while its bar
+// count drifted down from 272 to 241.
+//
+// Yahoo serves 485 bars at 1mo and 974 at 2mo for the same request. 1mo gives
+// EMA200 roughly 285 valid points instead of 41, so every strategy gets the
+// lookback it was designed for. The files roughly double, from about 236KB
+// total to under 600KB, which is immaterial next to correct indicator values —
+// and the publish step already skips rewriting a file whose last bar has not
+// advanced, so the repository does not grow any faster per cycle.
+const RANGE = '1mo';
 const DRY = process.argv.includes('--dry-run');
 
 export const slugFor = (pair) => pair.replace('/', '-');
