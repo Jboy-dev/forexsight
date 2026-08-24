@@ -1,6 +1,6 @@
 {
-  "ts": 1787594608016,
-  "isoTime": "2026-08-24T18:03:28.016Z",
+  "ts": 1787597431502,
+  "isoTime": "2026-08-24T18:50:31.502Z",
   "count": 3,
   "signals": [
     {
@@ -25,9 +25,9 @@
         "strength": 20,
         "alignment": "neutral",
         "score": 50,
-        "adx4h": 39,
+        "adx4h": 38,
         "reasons": [
-          "4H ranging (ADX 39)"
+          "4H ranging (ADX 38)"
         ]
       },
       "dailyHtf": {
@@ -93,16 +93,16 @@
         "afterTp2": 1.39233,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-24T18:03:27.524Z",
+      "detectedAt": "2026-08-24T18:50:31.403Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.06,
-        "hitTp1Pct": 42,
-        "hitTp2Pct": 24,
-        "hitTp3Pct": 5,
-        "hitSlPct": 51,
+        "expectedR": 0.08,
+        "hitTp1Pct": 43,
+        "hitTp2Pct": 23,
+        "hitTp3Pct": 6,
+        "hitSlPct": 50,
         "undecidedPct": 26,
-        "winProbability": 42,
+        "winProbability": 43,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
@@ -127,25 +127,25 @@
       },
       "repeatOf": {
         "count": 4,
-        "runningForHours": 7.8,
+        "runningForHours": 8.6,
         "stillOpen": 4,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same USD/CAD BUY has been signalled 4 time(s) over the last 7.8h and 4 is still open. This is that setup continuing, not a new one."
+        "note": "Same USD/CAD BUY has been signalled 4 time(s) over the last 8.6h and 4 is still open. This is that setup continuing, not a new one."
       }
     },
     {
-      "pair": "ETH/USD",
+      "pair": "BTC/USD",
       "direction": "BUY",
       "confidence": 97,
       "tier": "best",
       "chartStudy": {
-        "score": 61,
+        "score": 67,
         "reasons": [
-          "Trend clean: 12/20 bars in direction (+17)",
-          "Pullback to EMA20 (+4)",
-          "Candle conviction: 45% body (+10)",
-          "Compression 34% (+7)",
+          "Trend clean: 9/20 bars in direction (+13)",
+          "Pullback to EMA20 (+15)",
+          "Candle conviction: 40% body (+9)",
+          "Compression 37% (+7)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
           "Rejection wicks (+3)",
           "Momentum (RSI) (+0)"
@@ -155,11 +155,12 @@
         "direction": "BUY",
         "strength": 100,
         "alignment": "aligned",
-        "score": 100,
-        "adx4h": 51,
+        "score": 90,
+        "adx4h": 58,
         "reasons": [
-          "4H trend UP (price > EMA20 > EMA50, ADX 51)",
-          "✓ Signal direction matches 4H trend (+50)"
+          "4H trend UP (price > EMA20 > EMA50, ADX 58)",
+          "✓ Signal direction matches 4H trend (+50)",
+          "⚠ 4H RSI overbought (71)"
         ]
       },
       "dailyHtf": {
@@ -171,68 +172,72 @@
       "regime": {
         "label": "BREAKOUT",
         "adx": 0,
-        "atrRatio": 1.34,
-        "compression": 1.34
+        "atrRatio": 1.47,
+        "compression": 1.47
       },
-      "entry": 2468.54004,
-      "sl": 2414.38007,
-      "tp1": 2533.53201,
-      "tp2": 2576.85999,
-      "tp3": 2658.09995,
-      "adx": 24,
+      "entry": 78744.9375,
+      "sl": 77170.03875,
+      "tp1": 80634.816,
+      "tp2": 81894.735,
+      "tp3": 84257.08313,
+      "adx": 23,
       "agreement": 100,
-      "indicators": 4.2,
-      "strategies": 2,
+      "indicators": 7,
+      "strategies": 4,
       "namedStrategies": [
         "TREND",
-        "ORDER_BLOCK"
+        "VWAP",
+        "FIB",
+        "ICHIMOKU"
       ],
-      "comboKey": "BUY_ORDER_BLOCK+TREND",
+      "comboKey": "BUY_FIB+ICHIMOKU+TREND+VWAP",
       "independentFamilies": 2,
       "familyBreakdown": {
         "moving-average": [
-          "TREND"
+          "TREND",
+          "VWAP",
+          "ICHIMOKU"
         ],
         "structure": [
-          "ORDER_BLOCK"
+          "FIB"
         ]
       },
       "dominantFamily": "moving-average",
-      "redundantCount": 0,
+      "redundantCount": 2,
       "isEliteBrainPattern": false,
       "eliteBrainWR": null,
       "inKillzone": false,
       "weakSignal": false,
       "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 1.2,
-      "pipPotential": 1896,
-      "pipsToTp1": 650,
-      "pipsToTp2": 1083,
-      "pipsToTp3": 1896,
-      "pipsToSl": 542,
-      "atrV": 30.948556082589285,
-      "slDistAtr": 1.75,
-      "tp1DistAtr": 2.1,
-      "tp2DistAtr": 3.5,
-      "tp3DistAtr": 6.125,
-      "slMethod": "atr-floor",
+      "atrExpansion": 1.51,
+      "pipPotential": 5512,
+      "pipsToTp1": 1890,
+      "pipsToTp2": 3150,
+      "pipsToTp3": 5512,
+      "pipsToSl": 1575,
+      "atrV": 824.7321428571429,
+      "slDistAtr": 1.91,
+      "tp1DistAtr": 2.292,
+      "tp2DistAtr": 3.819,
+      "tp3DistAtr": 6.684,
+      "slMethod": "capped",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 2468.54004,
-        "afterTp2": 2533.53201,
+        "afterTp1": 78744.9375,
+        "afterTp2": 80634.816,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-24T18:03:27.897Z",
+      "detectedAt": "2026-08-24T18:50:31.417Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.09,
-        "hitTp1Pct": 44,
-        "hitTp2Pct": 32,
-        "hitTp3Pct": 16,
-        "hitSlPct": 56,
+        "expectedR": 0.08,
+        "hitTp1Pct": 46,
+        "hitTp2Pct": 30,
+        "hitTp3Pct": 14,
+        "hitSlPct": 53,
         "undecidedPct": 2,
-        "winProbability": 44,
+        "winProbability": 46,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
@@ -248,20 +253,20 @@
         }
       },
       "costProfile": {
-        "spreadPips": 15,
-        "riskPips": 541.6,
-        "spreadAsPctOfRisk": 2.8,
-        "tp1NetR": 1.14,
+        "spreadPips": 20,
+        "riskPips": 1574.9,
+        "spreadAsPctOfRisk": 1.3,
+        "tp1NetR": 1.17,
         "grade": "low",
-        "note": "The spread costs 2.8% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+        "note": "The spread costs 1.3% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 12,
+        "count": 11,
         "runningForHours": 23.9,
         "stillOpen": 10,
-        "alreadyResolved": 2,
+        "alreadyResolved": 1,
         "alreadyLost": 0,
-        "note": "Same ETH/USD BUY has been signalled 12 time(s) over the last 23.9h and 10 is still open. This is that setup continuing, not a new one."
+        "note": "Same BTC/USD BUY has been signalled 11 time(s) over the last 23.9h and 10 is still open. This is that setup continuing, not a new one."
       }
     },
     {
@@ -286,9 +291,9 @@
         "strength": 20,
         "alignment": "neutral",
         "score": 50,
-        "adx4h": 53,
+        "adx4h": 54,
         "reasons": [
-          "4H ranging (ADX 53)"
+          "4H ranging (ADX 54)"
         ]
       },
       "dailyHtf": {
@@ -356,16 +361,16 @@
         "afterTp2": 1.16281,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-08-24T18:03:27.551Z",
+      "detectedAt": "2026-08-24T18:50:31.296Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.08,
-        "hitTp1Pct": 39,
-        "hitTp2Pct": 18,
-        "hitTp3Pct": 3,
-        "hitSlPct": 44,
-        "undecidedPct": 43,
-        "winProbability": 39,
+        "expectedR": 0.04,
+        "hitTp1Pct": 37,
+        "hitTp2Pct": 15,
+        "hitTp3Pct": 2,
+        "hitSlPct": 45,
+        "undecidedPct": 42,
+        "winProbability": 37,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
@@ -390,11 +395,11 @@
       },
       "repeatOf": {
         "count": 1,
-        "runningForHours": 0,
+        "runningForHours": 0.8,
         "stillOpen": 1,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same EUR/USD SELL has been signalled 1 time(s) over the last 0h and 1 is still open. This is that setup continuing, not a new one."
+        "note": "Same EUR/USD SELL has been signalled 1 time(s) over the last 0.8h and 1 is still open. This is that setup continuing, not a new one."
       }
     }
   ],
