@@ -22,6 +22,7 @@
 
 import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { strictAnalyze } from '../functions/api/check-signals.js';
+import { fetchHighImpact, assess as assessNews, WINDOWS as NEWS_WINDOWS } from './news-gate.mjs';
 
 const PAIR_SYMBOLS = {
   'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X', 'USD/JPY': 'USDJPY=X',
@@ -334,6 +335,14 @@ async function convertGoldToSpot(list) {
 //
 // Typical retail spreads. Deliberately conservative: understating them would
 // make the drag look smaller than it is.
+// v482 — THESE ARE ESTIMATES, AND THE CODE NOW SAYS SO.
+// Typical retail spreads, not measured from a feed. Yahoo's OHLC carries no
+// bid/ask, so there is nothing here to derive a real spread from — every
+// figure below is a broker-typical value chosen conservatively. The drag
+// percentage computed from them is arithmetic, but its input is an assumption,
+// and a number presented as measured when it is assumed is exactly the kind of
+// thing this project has had to unpick repeatedly. Your broker's actual spread
+// may be wider, especially outside London/NY hours.
 const TYPICAL_SPREAD_PIPS = {
   'EUR/USD': 0.8, 'GBP/USD': 1.2, 'AUD/USD': 1.0, 'NZD/USD': 1.5,
   'USD/CAD': 1.5, 'USD/CHF': 1.4, 'USD/JPY': 0.9,
@@ -450,6 +459,42 @@ function markRepeats(list) {
   }
 }
 
+// ── v482 — REFUSE TO TRADE INTO A SCHEDULED RELEASE ────────────────────────
+//
+// /api/calendar has existed since v300 and returns real Forex Factory data.
+// Nothing consulted it: check-signals.js contains no calendar reference, and
+// this generator had none, which matters more because it produces every signal
+// whenever Cloudflare Functions are down.
+//
+// A high-impact release is the one market event whose TIMING is known exactly
+// in advance. A stop placed on chart structure has no idea a rate decision is
+// eleven minutes away. This is not a prediction of the number or the direction
+// — only the arithmetic that a scheduled repricing is inside the window and a
+// setup sized for normal conditions is not sized for it.
+async function applyNewsGate(list) {
+  const events = await fetchHighImpact();
+  const kept = [];
+  for (const s of list) {
+    const a = assessNews(s.pair, events);
+    s.newsCheck = {
+      verdict: a.verdict,
+      note: a.note || null,
+      events: (a.events || []).slice(0, 3).map(e => ({
+        title: e.title, country: e.country, minutesAway: e.minutesAway,
+        forecast: e.forecast, previous: e.previous,
+      })),
+      windows: NEWS_WINDOWS,
+    };
+    if (a.verdict === 'block') {
+      console.log(`  news-blocked ${s.pair} ${s.direction}: ${a.note}`);
+      continue;
+    }
+    if (a.verdict === 'warn') console.log(`  news-warn ${s.pair} ${s.direction}: ${a.note}`);
+    kept.push(s);
+  }
+  return { kept, feedOk: Array.isArray(events), eventCount: events ? events.length : 0 };
+}
+
 // Score before dedupe so every emitted signal carries whatever is known.
 {
   const brain = loadBrain();
@@ -460,6 +505,17 @@ function markRepeats(list) {
 
 // Convert gold to spot BEFORE dedupe/validation so everything downstream —
 // R:R checks, pip floors, the mirror gatekeeper — sees the tradeable numbers.
+// News gate first: a setup that should not be published at all does not need
+// costing, repeat-marking or scoring.
+{
+  const ng = await applyNewsGate(signals);
+  const blocked = signals.length - ng.kept.length;
+  signals.length = 0;
+  signals.push(...ng.kept);
+  console.log(`news gate: ${ng.feedOk ? ng.eventCount + ' high-impact event(s) loaded' : 'CALENDAR UNAVAILABLE — news risk unchecked'}`
+    + (blocked ? `, ${blocked} signal(s) blocked` : ''));
+}
+
 await convertGoldToSpot(signals);
 // Cost profile AFTER the gold conversion, so gold's drag is computed on the
 // spot levels the user would actually trade.

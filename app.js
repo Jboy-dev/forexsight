@@ -8494,6 +8494,14 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'Reading a signal honestly', name: 'News and the economic calendar',
+    tags: 'news calendar economic events nfp cpi rate decision blackout blocked high impact',
+    what: 'Before publishing, every signal is checked against the week\'s high-impact releases for the currencies it is exposed to. Inside 30 minutes either side of a release the signal is not published at all. Between 30 and 120 minutes it is published with the event, its forecast and its previous value shown on the card. Gold and crypto are treated as USD-exposed, because they are.',
+    use: 'This is the one market event whose timing is known exactly in advance. A stop placed on chart structure has no idea a rate decision is eleven minutes away. The check makes no prediction about the number or the direction — only that a scheduled repricing is inside the window and a setup sized for normal conditions is not sized for it. If the calendar cannot be reached the card says so rather than showing an all-clear.' },
+  { area: 'Reading a signal honestly', name: 'Which numbers are measured and which are assumed',
+    tags: 'estimates assumptions guesswork measured spread accurate calculation real',
+    what: 'Prices, candles, stops, targets, R multiples, win rates and every figure in the Learning tab are measured or computed from real data. The spread figures behind the "What you control" box are NOT measured — Yahoo\'s OHLC carries no bid/ask, so those are broker-typical estimates chosen conservatively.',
+    use: 'The drag percentage is real arithmetic on an assumed input. Your broker\'s spread may be wider, particularly outside London and New York hours, which would make the drag worse than shown rather than better. Everything else on the site is calculated; this is the one place an assumption is unavoidable, and it is labelled rather than hidden.' },
   { area: 'Reading a signal honestly', name: 'Why the same signal keeps appearing',
     tags: 'same signal repeat again duplicate keeps showing 19 times losses repeated cooldown',
     what: 'While a setup\'s conditions hold, the engine republishes it on every scan. There is no cooldown — the field the app checks for one is populated by nothing. Measured on the book: ETH/USD BUY published 17 separate times in a day, XAU/USD BUY 15, GBP/USD BUY 15.',
@@ -9065,6 +9073,14 @@ async function _v469LoadBrain() {
 // scan builds its own signal objects and never passes through the generator,
 // so without this the panel appeared only on server-sourced cards — which is
 // most of the time not the ones on screen.
+// v482 — THESE ARE ESTIMATES, AND THE CODE NOW SAYS SO.
+// Typical retail spreads, not measured from a feed. Yahoo's OHLC carries no
+// bid/ask, so there is nothing here to derive a real spread from — every
+// figure below is a broker-typical value chosen conservatively. The drag
+// percentage computed from them is arithmetic, but its input is an assumption,
+// and a number presented as measured when it is assumed is exactly the kind of
+// thing this project has had to unpick repeatedly. Your broker's actual spread
+// may be wider, especially outside London/NY hours.
 const _V477_SPREAD = {
   'EUR/USD': 0.8, 'GBP/USD': 1.2, 'AUD/USD': 1.0, 'NZD/USD': 1.5,
   'USD/CAD': 1.5, 'USD/CHF': 1.4, 'USD/JPY': 0.9,
@@ -9246,6 +9262,25 @@ function _v477ControlPanel(s) {
       (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
       TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
     </div>` : ''}
+    ${s.newsCheck && s.newsCheck.verdict === 'warn' && s.newsCheck.events && s.newsCheck.events.length ? `
+      <div style="font-size:13px;margin-top:5px;padding:7px 9px;border-radius:7px;
+           background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35)">
+        <strong>📅 Scheduled news inside the trade window</strong>
+        <div style="margin-top:3px">
+          ${s.newsCheck.events.map(e => `${e.country} ${e.title}${
+            e.minutesAway >= 0 ? ` in ${e.minutesAway >= 60 ? Math.round(e.minutesAway/60)+'h' : e.minutesAway+' min'}`
+                               : ` ${Math.abs(e.minutesAway)} min ago`}${
+            e.forecast ? ` (forecast ${e.forecast}${e.previous ? `, previous ${e.previous}` : ''})` : ''}`).join('<br>')}
+          <div class="muted" style="margin-top:3px">
+            A high-impact release can move price further than this stop allows. The
+            timing is known exactly; the reaction is not.
+          </div>
+        </div>
+      </div>` : ''}
+    ${s.newsCheck && s.newsCheck.verdict === 'unknown' ? `
+      <div class="muted" style="font-size:12px;margin-top:5px">
+        📅 Economic calendar unavailable this run — news risk was not checked.
+      </div>` : ''}
     ${rep && rep.count > 1 ? `
       <div style="font-size:13px;margin-top:5px;padding:7px 9px;border-radius:7px;
            background:${rep.alreadyLost >= 3 ? 'rgba(229,72,77,.13)' : 'rgba(245,158,11,.10)'};
