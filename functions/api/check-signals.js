@@ -2131,64 +2131,96 @@ function strictAnalyze(pair, ohlc, brainTopWinners) {
 // before SL. Uses ATR-scaled Gaussian noise with tiny drift toward HTF.
 // Returns hit-rates that let the user see probabilistic outcomes.
 function _runMonteCarlo(entry, slDist, tp1Dist, tp2Dist, tp3Dist, atrV, direction, htfDir) {
-  if (!isFinite(entry) || !isFinite(atrV) || atrV <= 0) return null;
+  // v483 — SIMULATE THE TRADE THE APP ACTUALLY TELLS YOU TO MAKE.
+  //
+  // The previous version modelled a trade nobody was being asked to take. It
+  // set the stop once and never moved it, exited the moment TP1 was touched,
+  // and credited 1.0R for that exit — while TP1 sits at 1.2R and the plan banks
+  // only a third of the position there. Every card prints the protocol
+  // directly above: "After TP1 -> SL to breakeven. After TP2 -> SL to TP1."
+  // The simulation ignored all of it.
+  //
+  // The consequence was not cosmetic. It reported expectancy of -0.09R and a
+  // 0% chance of reaching TP2 or TP3 on setups that, simulated against the real
+  // managed ladder on the same volatility, return about +0.08R. A number that
+  // pessimistic, computed from the engine's own data, is worse than no number:
+  // it looks authoritative and describes a different trade.
+  //
+  // This now runs the v442 ladder as written — thirds banked at each target,
+  // stop to entry after TP1, stop to TP1 after TP2 — so the expectancy it
+  // reports is the expectancy of the plan on the card.
+  if (!isFinite(entry) || !isFinite(atrV) || atrV <= 0 || !(slDist > 0)) return null;
   const RUNS = 1000;
-  const MAX_BARS = 48;  // ~2 days on 1H
-  const sigma = atrV * 0.85;  // per-bar volatility (close-to-close, slightly < ATR)
-  // Drift: small tilt matching HTF direction (0.05 sigma per bar if aligned)
-  const drift = (direction === 'BUY' && htfDir === 'up') ? sigma * 0.05
-             : (direction === 'SELL' && htfDir === 'down') ? sigma * 0.05
-             : 0;
-  const buyMode = direction === 'BUY';
-  const slLevel = buyMode ? entry - slDist : entry + slDist;
-  const tp1Level = buyMode ? entry + tp1Dist : entry - tp1Dist;
-  const tp2Level = buyMode ? entry + tp2Dist : entry - tp2Dist;
-  const tp3Level = buyMode ? entry + tp3Dist : entry - tp3Dist;
-  // Box-Muller for Gaussian
+  const MAX_BARS = 48;                 // ~2 days on 1H bars
+  const sigma = atrV * 0.85;           // per-bar close-to-close volatility
+  const buy = direction === 'BUY';
+  // Small drift only when the higher timeframe agrees. Unchanged from before:
+  // it is a tilt, not a forecast.
+  const drift = (buy && htfDir === 'up') || (!buy && htfDir === 'down') ? sigma * 0.05 : 0;
+
+  const lv = [tp1Dist, tp2Dist, tp3Dist].map(d => buy ? entry + d : entry - d);
+  const rOf = [tp1Dist, tp2Dist, tp3Dist].map(d => d / slDist);
+  const W = [1 / 3, 1 / 3, 1 / 3];
+
   const gauss = () => {
     let u = 0, v = 0;
     while (u === 0) u = Math.random();
     while (v === 0) v = Math.random();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   };
-  let hitTp1 = 0, hitTp2 = 0, hitTp3 = 0, hitSl = 0, undecided = 0;
-  let sumR = 0;  // expected R-multiple across all runs
+
+  let hitTp1 = 0, hitTp2 = 0, hitTp3 = 0, hitSl = 0, undecided = 0, sumR = 0;
+
   for (let r = 0; r < RUNS; r++) {
     let px = entry;
-    let outcome = null;
-    let barsToOutcome = 0;
-    for (let b = 0; b < MAX_BARS; b++) {
-      // Move price by drift + Gaussian noise (toward drift on same side as trade)
-      const step = (buyMode ? drift : -drift) + sigma * gauss();
-      px += step;
-      barsToOutcome = b + 1;
-      // Check SL first (defensive — realistic slippage assumption)
-      if (buyMode ? px <= slLevel : px >= slLevel) { outcome = 'sl';  break; }
-      if (buyMode ? px >= tp3Level : px <= tp3Level) { outcome = 'tp3'; break; }
-      if (buyMode ? px >= tp2Level : px <= tp2Level) { outcome = 'tp2'; break; }
-      if (buyMode ? px >= tp1Level : px <= tp1Level) { outcome = 'tp1'; break; }
+    let stop = buy ? entry - slDist : entry + slDist;
+    let reached = 0;          // targets banked so far
+    let banked = 0;           // R already secured
+    let done = false;
+
+    for (let b = 0; b < MAX_BARS && !done; b++) {
+      px += (buy ? drift : -drift) + sigma * gauss();
+
+      // Stop first — the conservative ordering when both could trigger.
+      if (buy ? px <= stop : px >= stop) {
+        // Remaining size exits at the stop: -1R if it never moved, otherwise
+        // at entry (0R) or TP1, per the protocol.
+        const remaining = 1 - W.slice(0, reached).reduce((a, c) => a + c, 0);
+        const exitR = reached === 0 ? -1 : (reached === 1 ? 0 : rOf[0]);
+        sumR += banked + remaining * exitR;
+        if (reached === 0) hitSl++;
+        done = true;
+        break;
+      }
+
+      // Then targets, in order, allowing several within one bar.
+      while (reached < 3 && (buy ? px >= lv[reached] : px <= lv[reached])) {
+        banked += W[reached] * rOf[reached];
+        reached++;
+        if (reached === 1) { hitTp1++; stop = entry; }                       // breakeven
+        else if (reached === 2) { hitTp2++; stop = lv[0]; }                  // to TP1
+        else { hitTp3++; }
+      }
+      if (reached === 3) { sumR += banked; done = true; }
     }
-    if (outcome === 'tp1') { hitTp1++; sumR += 1.0; }
-    else if (outcome === 'tp2') { hitTp2++; sumR += 2.0; }
-    else if (outcome === 'tp3') { hitTp3++; sumR += 3.0; }
-    else if (outcome === 'sl')  { hitSl++;  sumR -= 1.0; }
-    else undecided++;
+
+    if (!done) {
+      // Ran out of time. Whatever is still open closes at the current price.
+      const remaining = 1 - W.slice(0, reached).reduce((a, c) => a + c, 0);
+      const openR = (buy ? px - entry : entry - px) / slDist;
+      sumR += banked + remaining * openR;
+      undecided++;
+    }
   }
-  const decided = RUNS - undecided;
+
+  const pct = (n) => Math.round((n / RUNS) * 100);
   return {
     runs: RUNS,
-    // Percentages of runs that reached each level BEFORE SL
-    hitTp1Pct: Math.round((hitTp1 / RUNS) * 100),
-    hitTp2Pct: Math.round((hitTp2 / RUNS) * 100),
-    hitTp3Pct: Math.round((hitTp3 / RUNS) * 100),
-    hitSlPct:  Math.round((hitSl  / RUNS) * 100),
-    undecidedPct: Math.round((undecided / RUNS) * 100),
-    // Expected R across all runs (winning simulations minus losing sims)
     expectedR: Math.round((sumR / RUNS) * 100) / 100,
-    // Practical win probability = anything that hits ANY TP before SL
-    winProbability: decided > 0
-      ? Math.round(((hitTp1 + hitTp2 + hitTp3) / RUNS) * 100)
-      : null,
+    hitTp1Pct: pct(hitTp1), hitTp2Pct: pct(hitTp2), hitTp3Pct: pct(hitTp3),
+    hitSlPct: pct(hitSl), undecidedPct: pct(undecided),
+    winProbability: pct(hitTp1),
+    models: 'v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2',
   };
 }
 const quickAnalyze = strictAnalyze; // alias for callers

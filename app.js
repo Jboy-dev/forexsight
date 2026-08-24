@@ -9262,6 +9262,36 @@ function _v477ControlPanel(s) {
       (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
       TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
     </div>` : ''}
+    ${(() => {
+      // v483 — show what the engine computed and then threw away.
+      //
+      // Two genuinely useful analyses were being calculated on every signal and
+      // used nowhere: a Monte Carlo of the managed ladder, and a daily
+      // higher-timeframe check. confidence is baseConf + sessionBoost +
+      // elitePatternBonus and consults neither, so a setup could print 97%
+      // confidence while its own daily trend read "opposed". Shown, not
+      // enforced — the gates are unchanged; the disagreement is simply no
+      // longer invisible.
+      const mc = s.monteCarloOutcome;
+      const daily = s.dailyHtf;
+      const bits = [];
+      if (mc && typeof mc.expectedR === 'number') {
+        const good = mc.expectedR > 0;
+        bits.push(`<div>Simulated on this pair's volatility over 48 bars:
+          <strong style="color:${good ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'}">${mc.expectedR >= 0 ? '+' : ''}${mc.expectedR}R</strong>
+          expected · TP1 ${mc.hitTp1Pct}% · TP2 ${mc.hitTp2Pct}% · TP3 ${mc.hitTp3Pct}% · stopped ${mc.hitSlPct}%</div>`);
+      }
+      if (daily && daily.aligned === 'opposed') {
+        bits.push(`<div style="color:var(--bad,#e5484d)">Daily trend is <strong>opposed</strong> to this direction
+          (${daily.trend}, ${daily.daysAnalysed} days) — the headline confidence does not account for this.</div>`);
+      }
+      if (!bits.length) return '';
+      return `<div style="font-size:12.5px;margin-top:5px;padding:7px 9px;border-radius:7px;
+           background:rgba(127,127,127,.06);border:1px solid rgba(127,127,127,.2)">
+        <strong>🔬 What the engine calculated</strong>
+        <div style="margin-top:3px">${bits.join('')}</div>
+      </div>`;
+    })()}
     ${s.newsCheck && s.newsCheck.verdict === 'warn' && s.newsCheck.events && s.newsCheck.events.length ? `
       <div style="font-size:13px;margin-top:5px;padding:7px 9px;border-radius:7px;
            background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35)">
