@@ -1,12 +1,51 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-08-25T13:24:31.731Z",
+  "timestamp": "2026-08-25T14:10:10.217Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "SPX500",
+      "direction": "BUY",
+      "confidence": 59,
+      "strength": 53,
+      "verdict": "WEAK LONG — 59% conviction",
+      "timeHorizon": "30 min",
+      "entry": 7671.9,
+      "sl": 7641.2,
+      "tp1": 7705.3,
+      "tp3": 7788.6,
+      "slPips": 31,
+      "tp1Pips": 33,
+      "tp3Pips": 117,
+      "rrTP1": 1.09,
+      "rrTP3": 3.8,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 35,
+        "bear": 15,
+        "marginPct": 40
+      },
+      "reasoning": "Weighted consensus favors LONG with 59% conviction. Top drivers: Higher timeframe (4H) trend UP; MACD histogram positive (bullish momentum). HTF up. Structure downtrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
