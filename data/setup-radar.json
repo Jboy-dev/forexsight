@@ -1,32 +1,32 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-08-25T14:10:10.217Z",
+  "timestamp": "2026-08-25T15:00:18.493Z",
   "scanned": 15,
-  "setupsFound": 1,
+  "setupsFound": 3,
   "passedMainGate": 0,
-  "heldBackButValid": 1,
+  "heldBackButValid": 3,
   "minStrengthFilter": 30,
   "radar": [
     {
-      "pair": "SPX500",
+      "pair": "NAS100",
       "direction": "BUY",
-      "confidence": 59,
-      "strength": 53,
-      "verdict": "WEAK LONG — 59% conviction",
-      "timeHorizon": "30 min",
-      "entry": 7671.9,
-      "sl": 7641.2,
-      "tp1": 7705.3,
-      "tp3": 7788.6,
-      "slPips": 31,
-      "tp1Pips": 33,
-      "tp3Pips": 117,
-      "rrTP1": 1.09,
-      "rrTP3": 3.8,
+      "confidence": 61,
+      "strength": 55,
+      "verdict": "WEAK LONG — 61% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 29163.3,
+      "sl": 28988.4,
+      "tp1": 29398.3,
+      "tp3": 29985.7,
+      "slPips": 175,
+      "tp1Pips": 235,
+      "tp3Pips": 822,
+      "rrTP1": 1.34,
+      "rrTP3": 4.7,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 55% < 58%",
       "topFactors": [
         {
           "name": "Higher timeframe (4H) trend UP",
@@ -44,7 +44,88 @@
         "bear": 15,
         "marginPct": 40
       },
-      "reasoning": "Weighted consensus favors LONG with 59% conviction. Top drivers: Higher timeframe (4H) trend UP; MACD histogram positive (bullish momentum). HTF up. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 61% conviction. Top drivers: Higher timeframe (4H) trend UP; MACD histogram positive (bullish momentum). HTF up. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "XAU/USD",
+      "direction": "BUY",
+      "confidence": 63,
+      "strength": 54,
+      "verdict": "WEAK LONG — 63% conviction",
+      "timeHorizon": "30 min",
+      "entry": 4693.1,
+      "sl": 4655.56,
+      "tp1": 4733.48,
+      "tp3": 4834.42,
+      "slPips": 375,
+      "tp1Pips": 404,
+      "tp3Pips": 1413,
+      "rrTP1": 1.08,
+      "rrTP3": 3.76,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports BUY (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "News flow bullish for XAU vs USD",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 60,
+        "bear": 30,
+        "marginPct": 33
+      },
+      "reasoning": "Weighted consensus favors LONG with 63% conviction. Top drivers: Correlation basket supports BUY (100/100); Higher timeframe (4H) trend UP; News flow bullish for XAU vs USD. HTF up. Structure downtrend. Manage risk with the levels below."
+    },
+    {
+      "pair": "SPX500",
+      "direction": "BUY",
+      "confidence": 59,
+      "strength": 53,
+      "verdict": "WEAK LONG — 59% conviction",
+      "timeHorizon": "30 min",
+      "entry": 7665.5,
+      "sl": 7634.8,
+      "tp1": 7698.9,
+      "tp3": 7782.5,
+      "slPips": 31,
+      "tp1Pips": 33,
+      "tp3Pips": 117,
+      "rrTP1": 1.09,
+      "rrTP3": 3.82,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 55% < 58%",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 35,
+        "bear": 15,
+        "marginPct": 40
+      },
+      "reasoning": "Weighted consensus favors LONG with 59% conviction. Top drivers: Higher timeframe (4H) trend UP; MACD histogram positive (bullish momentum). HTF up. Structure range. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
