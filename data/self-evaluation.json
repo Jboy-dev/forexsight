@@ -1,14 +1,14 @@
 {
-  "ts": 1787719974985,
-  "isoTime": "2026-08-26T04:52:54.985Z",
+  "ts": 1787720830282,
+  "isoTime": "2026-08-26T05:07:10.282Z",
   "samples": 27,
-  "rawPublications": 317,
-  "inflationFactor": 11.74,
+  "rawPublications": 313,
+  "inflationFactor": 11.59,
   "overall": {
-    "avgR": -0.411,
+    "avgR": -0.403,
     "ci": [
-      -0.64,
-      -0.177
+      -0.633,
+      -0.16
     ]
   },
   "rules": {
@@ -23,21 +23,20 @@
       "belief": "A setup with more strategies agreeing should perform better than one with fewer.",
       "holds": true,
       "observed": [
-        "3 strategies: -0.294R (n=5)",
-        "4 strategies: -0.309R (n=6)"
+        "3 strategies: -0.287R (n=5)",
+        "4 strategies: -0.263R (n=8)"
       ],
       "note": "The record is consistent with this."
     },
     {
       "name": "Independent confirmation beats redundant confirmation",
       "belief": "A setup confirmed by two different KINDS of evidence should beat one confirmed by several restatements of the same kind.",
-      "holds": false,
+      "holds": true,
       "observed": [
-        "1 independent: -0.707R (n=11)",
-        "2 independent: -0.012R (n=6)",
-        "3 independent: -0.097R (n=6)"
+        "1 independent: -0.704R (n=11)",
+        "2 independent: -0.04R (n=8)"
       ],
-      "note": "The record runs against this. Treat the belief as unsupported, not as fact."
+      "note": "The record is consistent with this."
     },
     {
       "name": "Higher-timeframe alignment confirms",
@@ -45,7 +44,7 @@
       "holds": true,
       "observed": [
         "neutral: -0.627R (n=6)",
-        "aligned: -0.35R (n=21)"
+        "aligned: -0.339R (n=21)"
       ],
       "note": "The record is consistent with this."
     },
@@ -54,9 +53,9 @@
       "belief": "A higher ADX reading should mark a better environment to enter.",
       "holds": true,
       "observed": [
-        "ADX <20: -0.75R (n=6)",
+        "ADX <20: -0.722R (n=6)",
         "ADX 20-30: -0.662R (n=6)",
-        "ADX 30+: -0.175R (n=15)"
+        "ADX 30+: -0.172R (n=15)"
       ],
       "note": "The record is consistent with this."
     }
@@ -65,50 +64,38 @@
   "byFeature": {
     "strategyCount": [
       {
-        "value": "3 strategies",
-        "n": 5,
-        "avgR": -0.294,
-        "ci": [
-          -0.938,
-          0.486
-        ],
-        "recentN": 3,
-        "recentAvgR": -0.525,
-        "verdict": "not enough evidence"
-      },
-      {
         "value": "4 strategies",
-        "n": 6,
-        "avgR": -0.309,
+        "n": 8,
+        "avgR": -0.263,
         "ci": [
-          -0.714,
-          0.087
+          -0.616,
+          0.078
         ],
         "recentN": 2,
         "recentAvgR": -1,
+        "verdict": "not enough evidence"
+      },
+      {
+        "value": "3 strategies",
+        "n": 5,
+        "avgR": -0.287,
+        "ci": [
+          -0.938,
+          0.506
+        ],
+        "recentN": 3,
+        "recentAvgR": -0.525,
         "verdict": "not enough evidence"
       }
     ],
     "strategy": [
       {
-        "value": "ICT",
-        "n": 6,
-        "avgR": 0.002,
+        "value": "ORB",
+        "n": 7,
+        "avgR": -0.068,
         "ci": [
           -0.287,
-          0.25
-        ],
-        "recentN": 0,
-        "recentAvgR": null,
-        "verdict": "not enough evidence"
-      },
-      {
-        "value": "ORB",
-        "n": 8,
-        "avgR": -0.038,
-        "ci": [
-          -0.242,
-          0.137
+          0.129
         ],
         "recentN": 0,
         "recentAvgR": null,
@@ -117,37 +104,37 @@
       {
         "value": "VWAP",
         "n": 17,
-        "avgR": -0.271,
+        "avgR": -0.258,
         "ci": [
-          -0.57,
-          0.039
+          -0.564,
+          0.056
         ],
         "recentN": 6,
         "recentAvgR": -0.814,
         "verdict": "not enough evidence"
       },
       {
-        "value": "ICHIMOKU",
-        "n": 17,
-        "avgR": -0.28,
-        "ci": [
-          -0.577,
-          0.028
-        ],
-        "recentN": 5,
-        "recentAvgR": -1,
-        "verdict": "not enough evidence"
-      },
-      {
         "value": "TREND",
         "n": 19,
-        "avgR": -0.281,
+        "avgR": -0.269,
         "ci": [
-          -0.547,
-          0.002
+          -0.545,
+          0.014
         ],
         "recentN": 7,
         "recentAvgR": -0.796,
+        "verdict": "not enough evidence"
+      },
+      {
+        "value": "ICHIMOKU",
+        "n": 16,
+        "avgR": -0.306,
+        "ci": [
+          -0.605,
+          0.024
+        ],
+        "recentN": 5,
+        "recentAvgR": -1,
         "verdict": "not enough evidence"
       },
       {
@@ -155,8 +142,8 @@
         "n": 8,
         "avgR": -0.518,
         "ci": [
-          -0.883,
-          -0.11
+          -0.886,
+          -0.106
         ],
         "recentN": 5,
         "recentAvgR": -0.938,
@@ -165,10 +152,10 @@
       {
         "value": "MOMENTUM",
         "n": 8,
-        "avgR": -0.712,
+        "avgR": -0.691,
         "ci": [
           -0.961,
-          -0.368
+          -0.322
         ],
         "recentN": 6,
         "recentAvgR": -0.948,
@@ -179,35 +166,23 @@
     "independence": [
       {
         "value": "2 independent",
-        "n": 6,
-        "avgR": -0.012,
+        "n": 8,
+        "avgR": -0.04,
         "ci": [
-          -0.435,
-          0.31
+          -0.394,
+          0.261
         ],
         "recentN": 2,
         "recentAvgR": -0.443,
         "verdict": "not enough evidence"
       },
       {
-        "value": "3 independent",
-        "n": 6,
-        "avgR": -0.097,
-        "ci": [
-          -0.344,
-          0.094
-        ],
-        "recentN": 0,
-        "recentAvgR": null,
-        "verdict": "not enough evidence"
-      },
-      {
         "value": "1 independent",
         "n": 11,
-        "avgR": -0.707,
+        "avgR": -0.704,
         "ci": [
           -1,
-          -0.279
+          -0.271
         ],
         "recentN": 8,
         "recentAvgR": -0.961,
@@ -218,10 +193,10 @@
       {
         "value": "moving-average",
         "n": 21,
-        "avgR": -0.348,
+        "avgR": -0.338,
         "ci": [
-          -0.599,
-          -0.077
+          -0.601,
+          -0.06
         ],
         "recentN": 9,
         "recentAvgR": -0.842,
@@ -258,10 +233,10 @@
       {
         "value": "BUY",
         "n": 17,
-        "avgR": -0.298,
+        "avgR": -0.286,
         "ci": [
-          -0.598,
-          0.019
+          -0.588,
+          0.034
         ],
         "recentN": 7,
         "recentAvgR": -0.841,
@@ -270,10 +245,10 @@
       {
         "value": "SELL",
         "n": 10,
-        "avgR": -0.604,
+        "avgR": -0.602,
         "ci": [
           -0.881,
-          -0.297
+          -0.288
         ],
         "recentN": 7,
         "recentAvgR": -0.766,
@@ -282,12 +257,24 @@
     ],
     "session": [
       {
-        "value": "08-11 UTC",
-        "n": 8,
-        "avgR": -0.103,
+        "value": "12-15 UTC",
+        "n": 5,
+        "avgR": 0.002,
         "ci": [
-          -0.567,
-          0.374
+          -0.327,
+          0.301
+        ],
+        "recentN": 0,
+        "recentAvgR": null,
+        "verdict": "not enough evidence"
+      },
+      {
+        "value": "08-11 UTC",
+        "n": 6,
+        "avgR": -0.058,
+        "ci": [
+          -0.66,
+          0.545
         ],
         "recentN": 2,
         "recentAvgR": -1,
@@ -321,11 +308,11 @@
     "regime": [
       {
         "value": "MIXED",
-        "n": 13,
-        "avgR": -0.304,
+        "n": 12,
+        "avgR": -0.277,
         "ci": [
-          -0.592,
-          -0.026
+          -0.583,
+          0.014
         ],
         "recentN": 4,
         "recentAvgR": -1,
@@ -333,11 +320,11 @@
       },
       {
         "value": "RANGING",
-        "n": 14,
-        "avgR": -0.511,
+        "n": 13,
+        "avgR": -0.562,
         "ci": [
-          -0.827,
-          -0.133
+          -0.89,
+          -0.169
         ],
         "recentN": 10,
         "recentAvgR": -0.725,
@@ -348,10 +335,10 @@
       {
         "value": "aligned",
         "n": 21,
-        "avgR": -0.35,
+        "avgR": -0.339,
         "ci": [
-          -0.612,
-          -0.077
+          -0.597,
+          -0.067
         ],
         "recentN": 9,
         "recentAvgR": -0.842,
@@ -363,7 +350,7 @@
         "avgR": -0.627,
         "ci": [
           -1,
-          -0.185
+          -0.172
         ],
         "recentN": 5,
         "recentAvgR": -0.735,
@@ -374,10 +361,10 @@
       {
         "value": "ADX 30+",
         "n": 15,
-        "avgR": -0.175,
+        "avgR": -0.172,
         "ci": [
-          -0.493,
-          0.141
+          -0.479,
+          0.146
         ],
         "recentN": 5,
         "recentAvgR": -0.735,
@@ -389,7 +376,7 @@
         "avgR": -0.662,
         "ci": [
           -1,
-          -0.257
+          -0.291
         ],
         "recentN": 4,
         "recentAvgR": -0.721,
@@ -398,10 +385,10 @@
       {
         "value": "ADX <20",
         "n": 6,
-        "avgR": -0.75,
+        "avgR": -0.722,
         "ci": [
           -1,
-          -0.355
+          -0.27
         ],
         "recentN": 5,
         "recentAvgR": -0.938,
@@ -411,11 +398,11 @@
     "killzone": [
       {
         "value": "in killzone",
-        "n": 9,
-        "avgR": 0.062,
+        "n": 7,
+        "avgR": -0.102,
         "ci": [
-          -0.327,
-          0.438
+          -0.474,
+          0.234
         ],
         "recentN": 1,
         "recentAvgR": -1,
@@ -423,11 +410,11 @@
       },
       {
         "value": "outside killzone",
-        "n": 18,
-        "avgR": -0.648,
+        "n": 20,
+        "avgR": -0.508,
         "ci": [
-          -0.86,
-          -0.417
+          -0.764,
+          -0.227
         ],
         "recentN": 13,
         "recentAvgR": -0.788,
