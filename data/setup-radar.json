@@ -1,11 +1,11 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-08-31T19:37:54.776Z",
+  "timestamp": "2026-08-31T23:20:50.244Z",
   "scanned": 15,
-  "setupsFound": 1,
+  "setupsFound": 2,
   "passedMainGate": 0,
-  "heldBackButValid": 1,
+  "heldBackButValid": 2,
   "minStrengthFilter": 30,
   "radar": [
     {
@@ -15,18 +15,18 @@
       "strength": 81,
       "verdict": "MODERATE SHORT — 73% conviction",
       "timeHorizon": "30 min",
-      "entry": 7683.7,
-      "sl": 7714.5,
-      "tp1": 7649.1,
-      "tp3": 7562.6,
+      "entry": 7686.1,
+      "sl": 7716.9,
+      "tp1": 7649.7,
+      "tp3": 7558.8,
       "slPips": 31,
-      "tp1Pips": 35,
-      "tp3Pips": 121,
-      "rrTP1": 1.13,
-      "rrTP3": 3.94,
+      "tp1Pips": 36,
+      "tp3Pips": 127,
+      "rrTP1": 1.18,
+      "rrTP3": 4.14,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "chart score 38 < 48 · daily HTF opposed",
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
       "topFactors": [
         {
           "name": "Higher timeframe (4H) trend DOWN",
@@ -50,6 +50,44 @@
         "marginPct": 100
       },
       "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "NAS100",
+      "direction": "BUY",
+      "confidence": 58,
+      "strength": 51,
+      "verdict": "WEAK LONG — 58% conviction",
+      "timeHorizon": "30 min",
+      "entry": 29457,
+      "sl": 29280.2,
+      "tp1": 29646.9,
+      "tp3": 30121.8,
+      "slPips": 177,
+      "tp1Pips": 190,
+      "tp3Pips": 665,
+      "rrTP1": 1.07,
+      "rrTP3": 3.76,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "ADX 15 < 20 (choppy)",
+      "topFactors": [
+        {
+          "name": "Market structure — uptrend (HH+HL)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 30,
+        "bear": 15,
+        "marginPct": 33
+      },
+      "reasoning": "Weighted consensus favors LONG with 58% conviction. Top drivers: Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF flat. Structure uptrend. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
