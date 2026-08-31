@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-08-31T13:37:56.673Z",
+  "timestamp": "2026-08-31T19:37:54.776Z",
   "scanned": 15,
   "setupsFound": 1,
   "passedMainGate": 0,
@@ -11,22 +11,22 @@
     {
       "pair": "SPX500",
       "direction": "SELL",
-      "confidence": 59,
-      "strength": 56,
-      "verdict": "WEAK SHORT — 59% conviction",
-      "timeHorizon": "2-4 hours",
-      "entry": 7681.1,
-      "sl": 7711.8,
-      "tp1": 7640.9,
-      "tp3": 7540.4,
+      "confidence": 73,
+      "strength": 81,
+      "verdict": "MODERATE SHORT — 73% conviction",
+      "timeHorizon": "30 min",
+      "entry": 7683.7,
+      "sl": 7714.5,
+      "tp1": 7649.1,
+      "tp3": 7562.6,
       "slPips": 31,
-      "tp1Pips": 40,
-      "tp3Pips": 141,
-      "rrTP1": 1.31,
-      "rrTP3": 4.58,
+      "tp1Pips": 35,
+      "tp3Pips": 121,
+      "rrTP1": 1.13,
+      "rrTP3": 3.94,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "heldBackReason": "chart score 38 < 48 · daily HTF opposed",
       "topFactors": [
         {
           "name": "Higher timeframe (4H) trend DOWN",
@@ -34,22 +34,22 @@
           "note": ""
         },
         {
-          "name": "MACD histogram negative (bearish momentum)",
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
           "weight": 15,
           "note": ""
         },
         {
-          "name": "RSI 43.7 — bearish momentum zone",
-          "weight": 10,
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 15,
-        "bear": 45,
-        "marginPct": 50
+        "bull": 0,
+        "bear": 50,
+        "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 59% conviction. Top drivers: Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum); RSI 43.7 — bearish momentum zone. HTF down. Structure uptrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
