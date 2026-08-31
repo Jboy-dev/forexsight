@@ -1,12 +1,66 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-08-30T22:02:47.953Z",
+  "timestamp": "2026-08-31T00:32:16.714Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "XAU/USD",
+      "direction": "SELL",
+      "confidence": 79,
+      "strength": 77,
+      "verdict": "MODERATE SHORT — 79% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 4508.3,
+      "sl": 4544.37,
+      "tp1": 4457.68,
+      "tp3": 4331.14,
+      "slPips": 361,
+      "tp1Pips": 506,
+      "tp3Pips": 1772,
+      "rrTP1": 1.4,
+      "rrTP3": 4.91,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports SELL (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 15,
+        "bear": 90,
+        "marginPct": 71
+      },
+      "reasoning": "Weighted consensus favors SHORT with 79% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH). HTF down. Structure downtrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
