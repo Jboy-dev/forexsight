@@ -1,12 +1,66 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-09-02T11:30:25.409Z",
+  "timestamp": "2026-09-02T15:16:07.682Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "NAS100",
+      "direction": "SELL",
+      "confidence": 70,
+      "strength": 64,
+      "verdict": "MODERATE SHORT — 70% conviction",
+      "timeHorizon": "1-2 hours",
+      "entry": 29122.8,
+      "sl": 29297.5,
+      "tp1": 28904.3,
+      "tp3": 28358,
+      "slPips": 175,
+      "tp1Pips": 219,
+      "tp3Pips": 765,
+      "rrTP1": 1.25,
+      "rrTP3": 4.38,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 41.4 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 25,
+        "bear": 75,
+        "marginPct": 50
+      },
+      "reasoning": "Weighted consensus favors SHORT with 70% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF down. Structure downtrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
