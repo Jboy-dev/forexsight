@@ -1,10 +1,10 @@
 {
   "ok": true,
   "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-09-04T00:29:40.373Z",
+  "timestamp": "2026-09-04T04:54:44.815Z",
   "trustScore": 100,
   "trustLabel": "System Readiness",
-  "performanceScore": 83,
+  "performanceScore": 62,
   "readiness": {
     "score": 100,
     "activeGates": 11,
@@ -87,13 +87,13 @@
   "components": {
     "filteredLive": {
       "label": "Filtered-tier WR (what you actually trade)",
-      "score": 100,
-      "weight": 0.35
+      "score": null,
+      "note": "insufficient data"
     },
     "recentAll": {
       "label": "Recent 20-signal momentum",
-      "score": 100,
-      "weight": 0.2
+      "score": null,
+      "note": "insufficient data"
     },
     "calibration": {
       "label": "Confidence calibration",
@@ -102,7 +102,7 @@
     },
     "activeQuality": {
       "label": "Live setup quality",
-      "score": 37,
+      "score": 50,
       "weight": 0.2
     },
     "selectivity": {
@@ -113,23 +113,21 @@
   },
   "filteredTier": {
     "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 1,
-    "lifetimeWinRate": 100,
+    "resolvedSignals": 0,
+    "lifetimeWinRate": null,
     "recentWinRate": null
   },
   "allTier": {
     "note": "All resolved signals including lower tiers",
-    "totalResolved": 1,
-    "lifetimeWinRate": 100,
-    "recentWindowSize": 1,
-    "recentWinRate": 100
+    "totalResolved": 0,
+    "lifetimeWinRate": null,
+    "recentWindowSize": 0,
+    "recentWinRate": null
   },
   "activeQuality": {
-    "signalCount": 1,
-    "avgConfidence": 59,
-    "avgStrategies": 2,
-    "avgRR": 3.5,
-    "score": 37
+    "signalCount": 0,
+    "note": "No active signals — system holding cash (neutral)",
+    "score": 50
   },
   "selectivity": {
     "note": "candidate count unavailable — assuming baseline strict filter",
@@ -137,12 +135,7 @@
   },
   "calibration": null,
   "historicalBacktest": {
-    "note": "INFORMATIONAL ONLY — raw strategy without filters. Not in trust score.",
-    "totalYearsCovered": 90.1,
-    "totalSignals": 2493,
-    "wins": 679,
-    "losses": 1770,
-    "winRate": 28
+    "note": "not yet computed — running in background"
   },
   "interpretation": "VERY HIGH TRUST — filtered signals calibrated & outperforming"
 }
