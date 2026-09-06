@@ -1,1 +1,152 @@
-{"ts":1788727142019,"isoTime":"2026-09-06T20:39:02.019Z","count":0,"signals":[],"pipelineDiag":{"stage00_pairsScanned":15,"stage01_quickAnalyzeReturnedCandidates":1,"stage01_perPair":["BTC/USD_BUY"],"stage02a_beforeMultiSourceVeto":1,"stage02b_afterMultiSourceVeto":1,"stage02b_droppedByMultiSource":0,"stage02c_beforeSelfAudit":1,"stage02c_pairs":["BTC/USD_BUY"],"stage03_afterSelfAuditVeto":1,"stage03_activeVetoes":{"combos":[],"pairDirs":[]},"stage03d_afterHourlyVeto":1,"stage03e_afterBrainGate":0,"stage04_afterInvariantsCheck":0,"stage04_droppedByInvariants":0,"stage05_afterPriceMovedGuard":0,"stage05_droppedByPriceMoved":0,"stage99_final":0,"platinumGateDropped":[],"platinumFilterRanTimes":1},"brainGated":[{"pair":"BTC/USD","direction":"BUY","confidence":92,"comboKey":"BUY_MOMENTUM+SMC+TREND","pWin":28,"pLose":72,"edge":-44,"minEdgeRequired":10,"topFailures":["Reality cap (Bayesian): bucket 90-100 live WR 27% (n=158) — pWin adjusted from 43% to 28%","tag \"three-plus-strats\" live WR 38% over 64 signals (2× penalty applied)","90-100% confidence bucket actually wins 27% (158 samples)"],"topPasses":["4H trend matches signal direction (4H ADX 14)"]}],"brainGatedCount":1,"adaptiveGate":{"minEdgePts":10,"minPWinPct":55,"targetWRPct":70,"tighteningReason":null,"basedOnIntelLevel":50},"brainStats":{"totalSamples":12624284,"runs":3070,"lastUpdated":"2026-09-06T19:29:56.530Z","currentRegime":"NEUTRAL","calibrationAccuracy":null},"stale":true,"ageSeconds":3277,"scannerStatus":{"state":"weekend","message":"Market closed — crypto only (BTC/ETH scanned every 2 min)"}}
+{
+  "ts": 1788730568926,
+  "isoTime": "2026-09-06T21:36:08.926Z",
+  "count": 1,
+  "signals": [
+    {
+      "pair": "BTC/USD",
+      "direction": "BUY",
+      "confidence": 97,
+      "tier": "best",
+      "chartStudy": {
+        "score": 74,
+        "reasons": [
+          "Trend clean: 11/20 bars in direction (+15)",
+          "Pullback to EMA20 (+8)",
+          "Candle conviction: 49% body (+11)",
+          "Compression 22% (+10)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+0)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "BUY",
+        "strength": 64,
+        "alignment": "aligned",
+        "score": 79,
+        "adx4h": 14,
+        "reasons": [
+          "4H trend UP (price > EMA20 > EMA50, ADX 14)",
+          "✓ Signal direction matches 4H trend (+29.078515711040026)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "aligned",
+        "trend": "up",
+        "bias": 10,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "RANGING",
+        "adx": 0,
+        "atrRatio": 0.88,
+        "compression": 0.88
+      },
+      "entry": 79892.25781,
+      "sl": 79234.95061,
+      "tp1": 80681.02645,
+      "tp2": 81206.87221,
+      "tp3": 82192.83301,
+      "adx": 15,
+      "agreement": 100,
+      "indicators": 6.199999999999999,
+      "strategies": 4,
+      "namedStrategies": [
+        "MOMENTUM",
+        "TREND",
+        "MACD",
+        "VWAP"
+      ],
+      "comboKey": "BUY_MACD+MOMENTUM+TREND+VWAP",
+      "independentFamilies": 1,
+      "familyBreakdown": {
+        "moving-average": [
+          "MOMENTUM",
+          "TREND",
+          "MACD",
+          "VWAP"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 3,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": false,
+      "weakSignal": false,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.05,
+      "pipPotential": 2301,
+      "pipsToTp1": 789,
+      "pipsToTp2": 1315,
+      "pipsToTp3": 2301,
+      "pipsToSl": 657,
+      "atrV": 216.63504464285714,
+      "slDistAtr": 3.034,
+      "tp1DistAtr": 3.641,
+      "tp2DistAtr": 6.068,
+      "tp3DistAtr": 10.62,
+      "slMethod": "structure (beyond ATR floor)",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 79892.25781,
+        "afterTp2": 80681.02645,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-09-06T21:36:08.588Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "expectedR": 0.08,
+        "hitTp1Pct": 42,
+        "hitTp2Pct": 25,
+        "hitTp3Pct": 5,
+        "hitSlPct": 50,
+        "undecidedPct": 26,
+        "winProbability": 42,
+        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 0,
+      "brainNote": "only 1 episode(s) for this combination — below the 20 needed to quote a win chance",
+      "newsCheck": {
+        "verdict": "clear",
+        "note": null,
+        "events": [],
+        "windows": {
+          "BLOCK_MIN": 30,
+          "WARN_MIN": 120
+        }
+      },
+      "costProfile": {
+        "spreadPips": 20,
+        "riskPips": 657.3,
+        "spreadAsPctOfRisk": 3,
+        "tp1NetR": 1.14,
+        "grade": "moderate",
+        "note": "The spread costs 3.0% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+      },
+      "repeatOf": {
+        "count": 3,
+        "runningForHours": 15.2,
+        "stillOpen": 1,
+        "alreadyResolved": 2,
+        "alreadyLost": 2,
+        "note": "Same BTC/USD BUY has been signalled 3 time(s) over the last 15.2h and 1 is still open. This is that setup continuing, not a new one."
+      }
+    }
+  ],
+  "source": "offline-generator",
+  "correlationFiltered": 1,
+  "note": "Generated by tools/generate-signals.mjs (GitHub Actions) using the same strictAnalyze() the live endpoint uses. Produced independently of Cloudflare so signals stay current when Functions are unavailable.",
+  "errors": [
+    "XAU/USD: market closed for the weekend (last bar 49h old) — not a fault",
+    "USD/JPY: market closed for the weekend (last bar 50h old) — not a fault",
+    "EUR/USD: market closed for the weekend (last bar 49h old) — not a fault",
+    "AUD/USD: market closed for the weekend (last bar 49h old) — not a fault",
+    "GBP/USD: market closed for the weekend (last bar 49h old) — not a fault",
+    "NZD/USD: market closed for the weekend (last bar 49h old) — not a fault",
+    "USD/CAD: market closed for the weekend (last bar 49h old) — not a fault",
+    "USD/CHF: market closed for the weekend (last bar 50h old) — not a fault"
+  ]
+}
