@@ -83,6 +83,12 @@ jobs:
       - name: Backfill attribution
         run: node tools/backfill-attribution.mjs
 
+      # v485 — walk-forward backtest of the real engine, no lookahead, real
+      # managed ladder, episodes not publications. Kept current so the claim on
+      # the site is always a measurement rather than a memory.
+      - name: Backtest the engine
+        run: BT_STEP=3 node tools/backtest-engine.mjs
+
       - name: Self-evaluate
         run: node tools/self-evaluate.mjs
 

@@ -6427,6 +6427,22 @@ async function loadSignals(force = false) {
   // so the warning that matters most — "you have taken this one 16 times and it
   // keeps stopping out" — was absent from the feed where the decision is made.
   _v478WatchGrid();
+  // v485 — the backtest result, loaded once, so the card can state what this
+  // engine actually did over history rather than only what it hopes to do.
+  if (!window._v485Backtest) {
+    (async () => {
+      for (const u of ['https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/backtest.json',
+                       '/data/backtest.json']) {
+        try {
+          const f = window._v428OrigFetch || fetch;
+          const r = await f(u + '?b=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) continue;
+          const j = await r.json();
+          if (j && j.overall) { window._v485Backtest = j; _v478PatchCards(); return; }
+        } catch (_) {}
+      }
+    })();
+  }
   if (!_v478Repeats) {
     _v478LoadRepeats().then(() => {
       // Patch now and once more after the next paint, since the render that
@@ -9275,6 +9291,13 @@ function _v477ControlPanel(s) {
       const mc = s.monteCarloOutcome;
       const daily = s.dailyHtf;
       const bits = [];
+      if (window._v485Backtest && window._v485Backtest.overall) {
+        const b = window._v485Backtest;
+        bits.push(`<div class="muted">Walk-forward backtest of this engine over
+          ${b.episodes} independent episodes: <strong>${b.overall.avgR >= 0 ? '+' : ''}${b.overall.avgR}R</strong>
+          per trade, ${Math.round(b.overall.winRate*100)}% win rate, interval
+          [${b.overall.ci ? b.overall.ci.join(', ') : '—'}].</div>`);
+      }
       if (mc && typeof mc.expectedR === 'number') {
         const good = mc.expectedR > 0;
         bits.push(`<div>Simulated on this pair's volatility over 48 bars:
