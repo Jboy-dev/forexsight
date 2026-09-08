@@ -51,7 +51,20 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
     const dt = bars[i].t - bars[i - 1].t;
     if (median > 0 && dt > median * 3) {
       const d = new Date(bars[i - 1].t).getUTCDay();
-      const weekendish = (d === 5 || d === 6 || d === 0) && dt <= median * 60;
+      // v484 — a public holiday extends the weekend, and the market simply
+      // stays shut. Gold ran Fri 4 Sep 20:00 to Tue 8 Sep 04:00 — 80 hours,
+      // because US Labor Day closed COMEX on the Monday. The old ceiling of
+      // 60 bars covered an ordinary weekend and nothing longer, so every long
+      // weekend was reported as a hole in the data.
+      //
+      // This is the fourth distinct false alarm from this file: it has flagged
+      // a genuine USD/JPY selloff as corruption, called every weekend a dead
+      // feed, treated normal crypto volatility as a splice, and now a bank
+      // holiday. The pattern is always the same — the market did something
+      // ordinary that the check had not been told about. A gap that begins on
+      // a Friday is the market closing; allow up to four days of it.
+      const startsAtWeekend = (d === 5 || d === 6 || d === 0);
+      const weekendish = startsAtWeekend && dt <= median * 96;
       if (!weekendish) gaps++;
     }
   }
