@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-09-08T17:36:22.961Z",
+  "timestamp": "2026-09-08T20:14:40.524Z",
   "scanned": 15,
   "setupsFound": 2,
   "passedMainGate": 0,
@@ -9,62 +9,24 @@
   "minStrengthFilter": 30,
   "radar": [
     {
-      "pair": "SPX500",
-      "direction": "SELL",
-      "confidence": 73,
-      "strength": 81,
-      "verdict": "MODERATE SHORT — 73% conviction",
-      "timeHorizon": "30 min",
-      "entry": 7692.4,
-      "sl": 7723.2,
-      "tp1": 7660.6,
-      "tp3": 7580.9,
-      "slPips": 31,
-      "tp1Pips": 32,
-      "tp3Pips": 112,
-      "rrTP1": 1.04,
-      "rrTP3": 3.62,
-      "passedMainGate": false,
-      "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
-      "topFactors": [
-        {
-          "name": "Higher timeframe (4H) trend DOWN",
-          "weight": 20,
-          "note": ""
-        },
-        {
-          "name": "MACD histogram negative (bearish momentum)",
-          "weight": 15,
-          "note": ""
-        }
-      ],
-      "bullVsBear": {
-        "bull": 0,
-        "bear": 35,
-        "marginPct": 100
-      },
-      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
-    },
-    {
       "pair": "US30",
       "direction": "SELL",
-      "confidence": 70,
-      "strength": 79,
-      "verdict": "MODERATE SHORT — 70% conviction",
-      "timeHorizon": "1-2 hours",
-      "entry": 52874.3,
-      "sl": 53138.7,
-      "tp1": 52585.2,
-      "tp3": 51862.3,
+      "confidence": 75,
+      "strength": 83,
+      "verdict": "MODERATE SHORT — 75% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 52786.1,
+      "sl": 53050,
+      "tp1": 52499.7,
+      "tp3": 51783.8,
       "slPips": 264,
-      "tp1Pips": 289,
-      "tp3Pips": 1012,
-      "rrTP1": 1.09,
-      "rrTP3": 3.83,
+      "tp1Pips": 286,
+      "tp3Pips": 1002,
+      "rrTP1": 1.08,
+      "rrTP3": 3.8,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "chart score 43 < 48 · daily HTF opposed",
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
       "topFactors": [
         {
           "name": "Higher timeframe (4H) trend DOWN",
@@ -82,7 +44,7 @@
           "note": ""
         },
         {
-          "name": "RSI 38.2 — bearish momentum zone",
+          "name": "RSI 35.8 — bearish momentum zone",
           "weight": 10,
           "note": ""
         }
@@ -92,7 +54,50 @@
         "bear": 60,
         "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 70% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 75% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "SPX500",
+      "direction": "SELL",
+      "confidence": 73,
+      "strength": 81,
+      "verdict": "MODERATE SHORT — 73% conviction",
+      "timeHorizon": "30 min",
+      "entry": 7673.5,
+      "sl": 7704.2,
+      "tp1": 7640.7,
+      "tp3": 7558.6,
+      "slPips": 31,
+      "tp1Pips": 33,
+      "tp3Pips": 115,
+      "rrTP1": 1.07,
+      "rrTP3": 3.74,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 40.5 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 0,
+        "bear": 45,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum); RSI 40.5 — bearish momentum zone. HTF down. Structure range. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
