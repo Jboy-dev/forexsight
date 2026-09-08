@@ -23,6 +23,7 @@
 import { writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { strictAnalyze } from '../functions/api/check-signals.js';
 import { fetchHighImpact, assess as assessNews, WINDOWS as NEWS_WINDOWS } from './news-gate.mjs';
+import { evaluate as evaluateProven, PROVEN } from './proven-strategies.mjs';
 
 const PAIR_SYMBOLS = {
   'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X', 'USD/JPY': 'USDJPY=X',
@@ -495,6 +496,60 @@ async function applyNewsGate(list) {
   return { kept, feedOk: Array.isArray(events), eventCount: events ? events.length : 0 };
 }
 
+// ── v487 — SIGNALS FROM THE STRATEGIES THAT MEASURED POSITIVE ─────────────
+//
+// strictAnalyze's own strategy set is reliably negative (-0.241R backtested,
+// -0.29R live, both intervals excluding zero) and it is built entirely from
+// trend-following variants — the family that lost worst in the twelve-strategy
+// test. These are the four that held a positive interval on held-out data, run
+// alongside rather than instead of the existing engine, and tagged so their
+// provenance travels with them.
+//
+// Geometry is identical to every other signal here: ATR-based stop, the v442
+// managed ladder, the same news gate and cost accounting. Only the entry rule
+// differs, which is the whole point of the comparison.
+function buildProvenSignals(pair, bars) {
+  const hits = evaluateProven(bars);
+  if (!hits.length) return [];
+  const n = bars.length - 1;
+  // ATR(14), the same measure the backtest sized stops with.
+  let a = null, s = 0;
+  for (let i = 1; i < bars.length; i++) {
+    const tr = Math.max(bars[i].h - bars[i].l, Math.abs(bars[i].h - bars[i - 1].c), Math.abs(bars[i].l - bars[i - 1].c));
+    if (i <= 14) { s += tr; a = i === 14 ? s / 14 : null; }
+    else a = (a * 13 + tr) / 14;
+  }
+  if (!a || !(a > 0)) return [];
+  const entry = bars[n].c;
+  const slD = a * 1.75;
+  const out = [];
+  for (const h of hits) {
+    const buy = h.direction === 'BUY';
+    const r5 = (v) => Math.round(v * 1e5) / 1e5;
+    out.push({
+      pair, direction: h.direction,
+      entry: r5(entry),
+      sl: r5(buy ? entry - slD : entry + slD),
+      tp1: r5(buy ? entry + slD * 1.2 : entry - slD * 1.2),
+      tp2: r5(buy ? entry + slD * 2.0 : entry - slD * 2.0),
+      tp3: r5(buy ? entry + slD * 3.5 : entry - slD * 3.5),
+      // Marked clearly so nothing downstream mistakes these for engine output.
+      source: 'proven-strategy',
+      provenStrategy: h.strategy,
+      provenEvidence: h.evidence,
+      namedStrategies: [h.strategy],
+      comboKey: `${h.direction}_${h.strategy}`,
+      strategies: 1,
+      confidence: null,        // deliberately absent: measured evidence replaces it
+      tier: 'proven',
+      atrV: a,
+      generatedOffline: true,
+      barAgeMinutes: Math.round((Date.now() - bars[n].t) / 60000),
+    });
+  }
+  return out;
+}
+
 // Score before dedupe so every emitted signal carries whatever is known.
 {
   const brain = loadBrain();
@@ -505,6 +560,25 @@ async function applyNewsGate(list) {
 
 // Convert gold to spot BEFORE dedupe/validation so everything downstream —
 // R:R checks, pip floors, the mirror gatekeeper — sees the tradeable numbers.
+// Proven-strategy signals, added before the news gate so they face exactly the
+// same checks as everything else.
+{
+  const fs = await import('fs');
+  let added = 0;
+  for (const f of fs.readdirSync('data/ohlc').filter(x => x.endsWith('.json'))) {
+    const pair = f.replace('.json', '').replace('-', '/');
+    try {
+      const raw = JSON.parse(fs.readFileSync(`data/ohlc/${f}`, 'utf8'));
+      const bars = Array.isArray(raw) ? raw : (raw.bars || raw.ohlc || []);
+      if (bars.length < 250) continue;
+      const ageMin = (Date.now() - bars[bars.length - 1].t) / 60000;
+      if (ageMin > 240) continue;              // same staleness rule as the engine
+      for (const sig of buildProvenSignals(pair, bars)) { signals.push(sig); added++; }
+    } catch { /* skip this instrument */ }
+  }
+  if (added) console.log(`proven strategies: ${added} signal(s) added`);
+}
+
 // News gate first: a setup that should not be published at all does not need
 // costing, repeat-marking or scoring.
 {

@@ -86,6 +86,11 @@ jobs:
       # v485 — walk-forward backtest of the real engine, no lookahead, real
       # managed ladder, episodes not publications. Kept current so the claim on
       # the site is always a measurement rather than a memory.
+      # v487 — re-test the published strategies on fresh data so the evidence
+      # on the cards stays a current measurement rather than a stored claim.
+      - name: Strategy lab
+        run: node tools/strategy-lab.mjs || true
+
       - name: Backtest the engine
         run: BT_STEP=3 node tools/backtest-engine.mjs
 

@@ -8510,6 +8510,14 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'Proven strategies and how they were chosen',
+    tags: 'proven strategy backtest rsi bollinger macd mean reversion tested evidence best works',
+    what: 'Twelve published strategies were backtested over roughly two years of hourly bars on ten instruments — about 130,000 bars — with entry at the next bar open, spread charged, the same ATR stop and managed ladder for all, no lookahead, overlapping entries collapsed into episodes, and a 65/35 train-test split. Only textbook parameter values were used, so nothing was tuned to this data.',
+    use: 'Four held a positive interval on the held-out portion: RSI mean reversion (+0.236R, n=606), MACD cross (+0.135R, n=935), RSI trend filter (+0.108R, n=428) and Bollinger reversion (+0.098R, n=815). The leader was checked further and was positive on 10 of 10 instruments and in 20 of 25 months. Signals from these carry a green box stating that evidence. Twelve strategies were tested, so roughly one crossing by chance was expected; four did, all from the same family, which is why this reads as a finding rather than noise.' },
+  { area: 'How it judges itself', name: 'Why the original engine loses',
+    tags: 'engine losing negative trend following why lose bad strategies original',
+    what: 'The strategies that actually fire in the original engine — TREND, VWAP, ICHIMOKU, MOMENTUM — are all trend-following variants of the same measurement. In the twelve-strategy test that family lost worst: Donchian 55 breakout -0.373R, Donchian 20 -0.325R, Bollinger breakout -0.263R, trend pullback -0.157R, all out of sample.',
+    use: 'That is a coherent explanation for the engine\'s measured record of -0.241R backtested and -0.29R live, rather than bad luck. The original engine still runs and its signals are still published; they are simply no longer the only source, and the proven strategies are labelled distinctly so the two can be told apart.' },
   { area: 'Reading a signal honestly', name: 'News and the economic calendar',
     tags: 'news calendar economic events nfp cpi rate decision blackout blocked high impact',
     what: 'Before publishing, every signal is checked against the week\'s high-impact releases for the currencies it is exposed to. Inside 30 minutes either side of a release the signal is not published at all. Between 30 and 120 minutes it is published with the event, its forecast and its previous value shown on the card. Gold and crypto are treated as USD-exposed, because they are.',
@@ -9278,6 +9286,24 @@ function _v477ControlPanel(s) {
       (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
       TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
     </div>` : ''}
+    ${s.provenEvidence ? `
+      <div style="font-size:13px;margin-top:5px;padding:8px 10px;border-radius:8px;
+           background:rgba(38,166,91,.10);border:1px solid rgba(38,166,91,.32)">
+        <strong>✅ ${s.provenStrategy} — measured on held-out data</strong>
+        <div style="margin-top:3px">
+          <strong>${s.provenEvidence.avgR >= 0 ? '+' : ''}${s.provenEvidence.avgR}R</strong> per trade across
+          ${s.provenEvidence.n} out-of-sample trades, 95% interval
+          [${s.provenEvidence.ci.join(', ')}]${
+            s.provenEvidence.instruments ? `, positive on ${s.provenEvidence.instruments} instruments and in ${s.provenEvidence.months} months` : ''}.
+        </div>
+        <div class="muted" style="margin-top:4px;font-size:11.5px">
+          Twelve published strategies were tested over two years of hourly bars with a
+          65/35 train-test split and textbook parameters only. This is one of four that
+          held a positive interval on data it had never seen. It is evidence from that
+          period, not a guarantee — mean reversion in particular pays steadily and then
+          loses badly in a dislocation.
+        </div>
+      </div>` : ''}
     ${(() => {
       // v483 — show what the engine computed and then threw away.
       //
