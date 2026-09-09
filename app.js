@@ -6429,6 +6429,20 @@ async function loadSignals(force = false) {
   _v478WatchGrid();
   // v485 — the backtest result, loaded once, so the card can state what this
   // engine actually did over history rather than only what it hopes to do.
+  if (!window._v488Control) {
+    (async () => {
+      for (const u of ['https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/control-test.json',
+                       '/data/control-test.json']) {
+        try {
+          const f = window._v428OrigFetch || fetch;
+          const r = await f(u + '?b=' + Date.now(), { cache: 'no-store' });
+          if (!r.ok) continue;
+          const j = await r.json();
+          if (j && typeof j.passes === 'boolean') { window._v488Control = j; _v478PatchCards(); return; }
+        } catch (_) {}
+      }
+    })();
+  }
   if (!window._v485Backtest) {
     (async () => {
       for (const u of ['https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/backtest.json',
@@ -9286,7 +9300,7 @@ function _v477ControlPanel(s) {
       (${c.spreadPips} pips of a ${c.riskPips}-pip stop) — <strong>${c.grade}</strong> drag.
       TP1 nets <strong>${c.tp1NetR}R</strong> after costs, not the ${(c.nominalTp1R ?? 1.2).toFixed(2)}R on the label.
     </div>` : ''}
-    ${s.provenEvidence ? `
+    ${s.provenEvidence && (!window._v488Control || window._v488Control.passes) ? `
       <div style="font-size:13px;margin-top:5px;padding:8px 10px;border-radius:8px;
            background:rgba(38,166,91,.10);border:1px solid rgba(38,166,91,.32)">
         <strong>✅ ${s.provenStrategy} — measured on held-out data</strong>
@@ -9299,7 +9313,10 @@ function _v477ControlPanel(s) {
         <div class="muted" style="margin-top:4px;font-size:11.5px">
           Twelve published strategies were tested over two years of hourly bars with a
           65/35 train-test split and textbook parameters only. This is one of four that
-          held a positive interval on data it had never seen. It is evidence from that
+          held a positive interval on data it had never seen.${window._v488Control ? `
+          A control replacing the rule with random entries on the same bars scores
+          ${window._v488Control.randomEntries.avgR}R, so the number comes from the entry
+          rule and not the ladder.` : ''} It is evidence from that
           period, not a guarantee — mean reversion in particular pays steadily and then
           loses badly in a dislocation.
         </div>

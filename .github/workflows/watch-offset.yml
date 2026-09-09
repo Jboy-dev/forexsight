@@ -88,6 +88,13 @@ jobs:
       # the site is always a measurement rather than a memory.
       # v487 — re-test the published strategies on fresh data so the evidence
       # on the cards stays a current measurement rather than a stored claim.
+      # v488 — the control runs FIRST. It replaces the strategy with random
+      # entries on the same bars through the same simulator; if those score
+      # anything but about zero, the number is coming from the ladder and the
+      # strategy claim must not be shown.
+      - name: Control test (must fail to prove the edge)
+        run: node tools/control-test.mjs || true
+
       - name: Strategy lab
         run: node tools/strategy-lab.mjs || true
 
