@@ -804,6 +804,21 @@ function isBestSetup(s) {
   if (!s || s.direction === 'HOLD') return false;
   if (s.blockReason) return false; // historically losing pattern — never show
   if (s.cooldownMinutesLeft) return false; // recent same-direction signal cooling down
+  // v490 — A MEASURED STRATEGY DOES NOT HAVE TO PASS THE HEURISTIC TESTS.
+  //
+  // Everything below this line describes the ORIGINAL engine's signals:
+  // firedStrategies, bull/bear counts, adxNow, a confidence score. A
+  // proven-strategy signal has none of those fields, so it failed every check
+  // and was filtered out of "Best" — which is the default view. The strategies
+  // were built, backtested, control-tested and wired into the feed, and could
+  // not reach the screen at all.
+  //
+  // They qualify on their own terms instead. The criteria below are heuristics
+  // that measured inverted on this system's own record — higher confidence and
+  // more strategies did worse. A rule carrying an out-of-sample interval that
+  // clears zero and beats random entries on the same bars has stronger evidence
+  // than any of them, so it is admitted directly.
+  if (s.provenEvidence && s.control && s.control.passes) return true;
   // FAST PATH: any strategy-confirmed signal at grade B+ or above auto-
   // qualifies as Best. Each strategy has deeper rules than the generic
   // "Best" criteria, so passing one IS by definition a best setup.
@@ -927,6 +942,11 @@ function isDayTraderSetup(s) {
 // with a special "PRO" badge that distinguishes them from regular Best.
 function isProSetup(s) {
   if (!isBestSetup(s)) return false;
+  // v490 — PRO marks the strongest thing on offer. A control-verified strategy
+  // is the only category here with measured out-of-sample evidence behind it,
+  // so it qualifies without the killzone and strategy-count conditions, which
+  // describe the original engine and are themselves unproven.
+  if (s.provenEvidence && s.control && s.control.passes) return true;
   const alignedStrats = (s.firedStrategies || []).filter(f =>
     (s.direction === 'BUY' && f.bias === 'bullish') ||
     (s.direction === 'SELL' && f.bias === 'bearish')
@@ -7436,6 +7456,16 @@ function renderSignals() {
   // same reason — they passed real institutional gates that are stricter
   // than a flat % confluence number.
   const filtered = pool.filter(s =>
+    // v490 — a control-verified strategy is admitted on its evidence.
+    //
+    // Every other clause here belongs to the original engine: a confidence
+    // score, or one of its per-strategy passed flags. A proven-strategy signal
+    // has neither — confidence is deliberately null, because that score
+    // measured inverted — so `null >= minConf` was false, no flag was set, and
+    // it was dropped here before isBestSetup was even consulted. The strategies
+    // were backtested, control-tested, wired into the feed, and then filtered
+    // out of the view one line before anything could ask whether they were good.
+    (s.provenEvidence && s.control && s.control.passes) ||
     s.confidence >= state.minConf ||
     s.smcPassed || s.orbPassed ||
     s.ictPassed || s.trendPassed || s.squeezePassed || s.divergencePassed ||
