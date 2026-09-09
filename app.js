@@ -8524,6 +8524,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'The control test, and the strategy it removed',
+    tags: 'control test random entries proof not fake rsi trend filter removed failed guard',
+    what: 'Before any strategy claim is shown, the same bars are run through the same simulator with the entry rule replaced by random times and random directions. If random entries score anything other than about zero, the number is coming from the trade management rather than the rule, and no claim is displayed at all.',
+    use: 'This is not decoration. Extending it from one strategy to all four removed one: RSI trend filter scored +0.054R with an interval of [-0.004, 0.114], which includes zero, and its evidence had been on cards. Three still clear it — RSI mean reversion, Bollinger reversion and MACD cross — and each card now shows both the lab figure and how far the rule sits ahead of random entries. A strategy that stops clearing the control drops out on the next cycle without anyone having to notice.' },
   { area: 'How it judges itself', name: 'Proven strategies and how they were chosen',
     tags: 'proven strategy backtest rsi bollinger macd mean reversion tested evidence best works',
     what: 'Twelve published strategies were backtested over roughly two years of hourly bars on ten instruments — about 130,000 bars — with entry at the next bar open, spread charged, the same ATR stop and managed ladder for all, no lookahead, overlapping entries collapsed into episodes, and a 65/35 train-test split. Only textbook parameter values were used, so nothing was tuned to this data.',
@@ -9309,6 +9313,10 @@ function _v477ControlPanel(s) {
           ${s.provenEvidence.n} out-of-sample trades, 95% interval
           [${s.provenEvidence.ci.join(', ')}]${
             s.provenEvidence.instruments ? `, positive on ${s.provenEvidence.instruments} instruments and in ${s.provenEvidence.months} months` : ''}.
+          ${s.control ? `<div style="margin-top:3px">Control on the full two years:
+            <strong>${s.control.avgR >= 0 ? '+' : ''}${s.control.avgR}R</strong> over ${s.control.n} episodes,
+            <strong>${s.control.edgeOverRandom >= 0 ? '+' : ''}${s.control.edgeOverRandom}R</strong> ahead of random entries
+            on the same bars.</div>` : ''}
         </div>
         <div class="muted" style="margin-top:4px;font-size:11.5px">
           Twelve published strategies were tested over two years of hourly bars with a

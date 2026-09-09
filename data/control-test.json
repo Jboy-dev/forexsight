@@ -1,24 +1,57 @@
 {
-  "ts": 1788933054137,
-  "isoTime": "2026-09-09T05:50:54.137Z",
-  "strategy": {
-    "name": "RSI mean reversion",
-    "n": 1671,
-    "avgR": 0.176,
-    "ci": [
-      0.126,
-      0.224
-    ]
-  },
+  "ts": 1788943334050,
+  "isoTime": "2026-09-09T08:42:14.050Z",
   "randomEntries": {
-    "n": 2156,
-    "avgR": -0.011,
+    "n": 2207,
+    "avgR": -0.003,
     "ci": [
-      -0.057,
-      0.033
-    ]
+      -0.047,
+      0.041
+    ],
+    "behavesAsNull": true
   },
-  "edgeOverRandom": 0.187,
+  "perStrategy": {
+    "RSI mean reversion": {
+      "n": 1671,
+      "avgR": 0.176,
+      "ci": [
+        0.128,
+        0.223
+      ],
+      "edgeOverRandom": 0.179,
+      "passes": true
+    },
+    "RSI trend filter": {
+      "n": 1193,
+      "avgR": 0.054,
+      "ci": [
+        -0.004,
+        0.114
+      ],
+      "edgeOverRandom": 0.057,
+      "passes": false
+    },
+    "Bollinger reversion": {
+      "n": 2354,
+      "avgR": 0.113,
+      "ci": [
+        0.072,
+        0.157
+      ],
+      "edgeOverRandom": 0.115,
+      "passes": true
+    },
+    "MACD cross": {
+      "n": 2643,
+      "avgR": 0.105,
+      "ci": [
+        0.062,
+        0.146
+      ],
+      "edgeOverRandom": 0.108,
+      "passes": true
+    }
+  },
   "passes": true,
-  "verdict": "Random entries score -0.011R with an interval straddling zero, as they must. The rule adds 0.187R over them."
+  "verdict": "Random entries score -0.003R with the interval straddling zero, as they must. 3 of 4 strategies clear it."
 }

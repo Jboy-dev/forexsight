@@ -88,15 +88,24 @@ jobs:
       # the site is always a measurement rather than a memory.
       # v487 — re-test the published strategies on fresh data so the evidence
       # on the cards stays a current measurement rather than a stored claim.
+      # v489 — the corpus the control and lab read is gitignored (14MB, and
+      # re-fetchable), so CI had nothing to read and both steps exited early.
+      # The `|| true` on them turned that into silence, which meant the guard
+      # that is supposed to withdraw the strategy claim was never running at
+      # all. Fetch it first; the fetcher exits non-zero if too little arrives.
+      - name: Fetch backtest history
+        run: node tools/fetch-history.mjs
+
       # v488 — the control runs FIRST. It replaces the strategy with random
       # entries on the same bars through the same simulator; if those score
       # anything but about zero, the number is coming from the ladder and the
-      # strategy claim must not be shown.
+      # strategy claim must not be shown. No `|| true`: a control that fails
+      # quietly is the same as no control.
       - name: Control test (must fail to prove the edge)
-        run: node tools/control-test.mjs || true
+        run: node tools/control-test.mjs
 
       - name: Strategy lab
-        run: node tools/strategy-lab.mjs || true
+        run: node tools/strategy-lab.mjs
 
       - name: Backtest the engine
         run: BT_STEP=3 node tools/backtest-engine.mjs

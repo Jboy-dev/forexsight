@@ -15,7 +15,7 @@
 // fine. Comparing like with like — real bars either way — is the test that
 // actually discriminates, which is why it is the one kept.
 import { readFileSync, readdirSync, writeFileSync } from 'fs';
-import { rsiSeries } from './proven-strategies.mjs';
+import { rsiSeries, emaSeries, smaSeries, stdevSeries } from './proven-strategies.mjs';
 
 const MAX_HOLD = 48, ATR_STOP = 1.75, LADDER = [1.2, 2.0, 3.5], W = [1/3, 1/3, 1/3];
 const SPREAD = { 'EUR/USD':0.8,'GBP/USD':1.2,'AUD/USD':1.0,'NZD/USD':1.5,'USD/CAD':1.5,
@@ -75,46 +75,104 @@ for (const f of readdirSync('data/bt').filter(x => x.endsWith('.json'))) {
   const pair = f.replace('.json','').replace('-','/');
   const bars = JSON.parse(readFileSync(`data/bt/${f}`, 'utf8'));
   if (bars.length < 300) continue;
-  D.push({ pair, bars, rsi: rsiSeries(bars.map(b=>b.c), 14), atr: atrSeries(bars) });
+  const c = bars.map(b => b.c);
+  D.push({ pair, bars, c,
+    rsi: rsiSeries(c, 14), atr: atrSeries(bars),
+    ema200: emaSeries(c, 200), ema12: emaSeries(c, 12), ema26: emaSeries(c, 26),
+    sma20: smaSeries(c, 20), sd20: stdevSeries(c, 20) });
 }
 if (!D.length) { console.log('control test skipped — data/bt not present (run the fetch first)'); process.exit(0); }
 
-const strat = [], rand = [];
-for (const { pair, bars, rsi, atr } of D) {
-  let count = 0;
-  for (let i = 210; i < bars.length - MAX_HOLD - 2; i++) {
-    const r = rsi[i], p = rsi[i-1];
-    if (r == null || p == null) continue;
-    let d = null;
-    if (p < 30 && r >= 30) d = 'BUY'; else if (p > 70 && r <= 70) d = 'SELL'; else continue;
-    const a = atr[i]; if (!a) continue;
-    const o = outcome(bars, i, d, a, pair);
-    if (o) { strat.push({ pair, dir: d, ...o }); count++; }
-  }
-  for (let k = 0; k < count; k++) {
-    const i = 210 + Math.floor(Math.random() * (bars.length - MAX_HOLD - 215));
+// v489 — every strategy whose evidence is displayed gets its own control.
+// Previously only RSI mean reversion was tested while four claims were shown on
+// cards, so three of them rested on nothing more than the lab's own number.
+const RULES = {
+  'RSI mean reversion': (x, i) => {
+    const r = x.rsi[i], p = x.rsi[i-1];
+    if (r == null || p == null) return null;
+    if (p < 30 && r >= 30) return 'BUY';
+    if (p > 70 && r <= 70) return 'SELL';
+    return null;
+  },
+  'RSI trend filter': (x, i) => {
+    const r = x.rsi[i], p = x.rsi[i-1];
+    if (r == null || p == null || !x.ema200[i]) return null;
+    const up = x.c[i] > x.ema200[i];
+    if (up && p < 40 && r >= 40) return 'BUY';
+    if (!up && p > 60 && r <= 60) return 'SELL';
+    return null;
+  },
+  'Bollinger reversion': (x, i) => {
+    if (!x.sma20[i] || !x.sd20[i]) return null;
+    const up = x.sma20[i] + 2*x.sd20[i], dn = x.sma20[i] - 2*x.sd20[i];
+    if (x.c[i-1] < dn && x.c[i] >= dn) return 'BUY';
+    if (x.c[i-1] > up && x.c[i] <= up) return 'SELL';
+    return null;
+  },
+  'MACD cross': (x, i) => {
+    if (!x.ema12[i] || !x.ema26[i] || !x.ema12[i-1] || !x.ema26[i-1]) return null;
+    const m = x.ema12[i]-x.ema26[i], mp = x.ema12[i-1]-x.ema26[i-1];
+    if (m > 0 && mp <= 0) return 'BUY';
+    if (m < 0 && mp >= 0) return 'SELL';
+    return null;
+  },
+};
+
+// One shared pool of random entries: the null hypothesis does not depend on
+// which rule it is being compared against, and reusing it keeps the comparison
+// stable between strategies.
+const rand = [];
+for (const { pair, bars, atr } of D) {
+  for (let k = 0; k < 400; k++) {
+    const i = 210 + Math.floor(Math.random() * Math.max(1, bars.length - MAX_HOLD - 215));
     const a = atr[i]; if (!a) continue;
     const d = Math.random() < 0.5 ? 'BUY' : 'SELL';
     const o = outcome(bars, i, d, a, pair);
     if (o) rand.push({ pair, dir: d, ...o });
   }
 }
-const es = eps(strat), er = eps(rand);
+const er = eps(rand);
+const randomOk = !!(ci(er) && ci(er)[0] < 0 && ci(er)[1] > 0);
+
+const perStrategy = {};
+for (const [name, rule] of Object.entries(RULES)) {
+  const hits = [];
+  for (const { pair, bars, ...x } of D) {
+    for (let i = 210; i < bars.length - MAX_HOLD - 2; i++) {
+      let d = null;
+      try { d = rule(x, i); } catch { continue; }
+      if (!d) continue;
+      const a = x.atr[i]; if (!a) continue;
+      const o = outcome(bars, i, d, a, pair);
+      if (o) hits.push({ pair, dir: d, ...o });
+    }
+  }
+  const e = eps(hits);
+  const c = ci(e);
+  perStrategy[name] = {
+    n: e.length, avgR: +mean(e).toFixed(3), ci: c,
+    edgeOverRandom: +(mean(e) - mean(er)).toFixed(3),
+    // A strategy only keeps its claim if random entries behave AND it clears
+    // zero on its own AND it beats the random pool.
+    passes: !!(randomOk && c && c[0] > 0 && mean(e) - mean(er) > 0),
+  };
+}
+
 const out = {
   ts: Date.now(), isoTime: new Date().toISOString(),
-  strategy: { name: 'RSI mean reversion', n: es.length, avgR: +mean(es).toFixed(3), ci: ci(es) },
-  randomEntries: { n: er.length, avgR: +mean(er).toFixed(3), ci: ci(er) },
-  edgeOverRandom: +(mean(es) - mean(er)).toFixed(3),
-  // The claim only stands while random entries score about nothing AND the
-  // strategy clears them.
-  passes: !!(ci(er) && ci(er)[0] < 0 && ci(er)[1] > 0 && ci(es) && ci(es)[0] > 0),
+  randomEntries: { n: er.length, avgR: +mean(er).toFixed(3), ci: ci(er), behavesAsNull: randomOk },
+  perStrategy,
+  passes: randomOk && Object.values(perStrategy).some(s => s.passes),
 };
-out.verdict = out.passes
-  ? `Random entries score ${out.randomEntries.avgR}R with an interval straddling zero, as they must. `
-    + `The rule adds ${out.edgeOverRandom}R over them.`
-  : 'CONTROL FAILED — random entries did not score about zero, so the simulator, not the '
-    + 'strategy, is producing the number. The strategy claim must not be shown.';
+out.verdict = !randomOk
+  ? 'CONTROL FAILED — random entries did not score about zero, so the simulator is producing '
+    + 'the number rather than any strategy. No claim may be shown.'
+  : `Random entries score ${out.randomEntries.avgR}R with the interval straddling zero, as they must. `
+    + `${Object.values(perStrategy).filter(s => s.passes).length} of ${Object.keys(RULES).length} strategies clear it.`;
 writeFileSync('data/control-test.json', JSON.stringify(out, null, 2));
-console.log(`  strategy entries  n=${String(es.length).padStart(5)}  ${mean(es)>=0?'+':''}${mean(es).toFixed(3)}R  CI[${out.strategy.ci}]`);
-console.log(`  random entries    n=${String(er.length).padStart(5)}  ${mean(er)>=0?'+':''}${mean(er).toFixed(3)}R  CI[${out.randomEntries.ci}]`);
-console.log(`  ${out.passes ? 'PASS' : 'FAIL'} — ${out.verdict}`);
+
+console.log(`  random entries    n=${String(er.length).padStart(5)}  ${mean(er)>=0?'+':''}${mean(er).toFixed(3)}R  CI[${ci(er)}]  ${randomOk?'behaves as null':'DOES NOT BEHAVE AS NULL'}`);
+for (const [name, s] of Object.entries(perStrategy)) {
+  console.log(`  ${name.padEnd(22)} n=${String(s.n).padStart(5)}  ${s.avgR>=0?'+':''}${s.avgR}R  CI[${s.ci}]  vs random ${s.edgeOverRandom>=0?'+':''}${s.edgeOverRandom}  ${s.passes?'PASS':'FAIL'}`);
+}
+console.log(`\n  ${out.verdict}`);

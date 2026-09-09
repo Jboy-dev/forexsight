@@ -1,3 +1,4 @@
+import { readFileSync } from 'fs';
 // v487 — THE STRATEGIES THAT ACTUALLY EARNED A PLACE.
 //
 // The engine's own strategy set measures reliably negative: -0.241R in a
@@ -67,6 +68,27 @@ export function stdevSeries(a, p) {
   return o;
 }
 
+// v489 — A STRATEGY ONLY SHIPS IF IT CLEARS ITS OWN CONTROL.
+//
+// Four strategies were originally published here on the strength of the lab's
+// out-of-sample numbers alone. When the random-entry control was extended from
+// one strategy to all four, RSI trend filter failed it: +0.054R with an
+// interval of [-0.004, 0.114], which includes zero. Its evidence was on cards
+// regardless, which is precisely the kind of unearned claim this project keeps
+// having to remove.
+//
+// Rather than delete the rule and lose the record of why, the control result is
+// read at run time and any strategy that does not pass is skipped. If a passing
+// strategy later stops clearing random entries, it drops out on the next cycle
+// without anyone having to notice.
+function controlVerdicts() {
+  try {
+    const c = JSON.parse(readFileSync('data/control-test.json', 'utf8'));
+    if (!c || !c.randomEntries || c.randomEntries.behavesAsNull !== true) return null;
+    return c.perStrategy || null;
+  } catch { return null; }
+}
+
 // Measured out-of-sample performance, carried on every signal so the card can
 // state the evidence rather than assert quality.
 export const PROVEN = {
@@ -111,5 +133,18 @@ export function evaluate(bars) {
     if (m > 0 && mp <= 0) hits.push({ strategy: 'MACD cross', direction: 'BUY' });
     if (m < 0 && mp >= 0) hits.push({ strategy: 'MACD cross', direction: 'SELL' });
   }
-  return hits.map(h => ({ ...h, evidence: PROVEN[h.strategy] }));
+  // Filter to strategies that currently clear the control, and carry that
+  // verdict alongside the lab figure so the card states both.
+  const verdicts = controlVerdicts();
+  return hits
+    .filter(h => {
+      if (!verdicts) return false;            // no valid control -> publish nothing
+      const v = verdicts[h.strategy];
+      return !!(v && v.passes);
+    })
+    .map(h => ({
+      ...h,
+      evidence: PROVEN[h.strategy],
+      control: verdicts[h.strategy],
+    }));
 }
