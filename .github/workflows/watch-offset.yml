@@ -49,6 +49,15 @@ jobs:
       # computed from them. A stale, spliced or malformed bar produces a
       # confident wrong answer, which is worse than no answer.
       - name: Verify chart data
+
+      # v491 — the proven strategies previously lived only in the standby
+      # generator, which runs solely when Cloudflare fails. With Cloudflare
+      # healthy the mirror took its output and the backtested rules never ran
+      # at all. This merges them in unconditionally, appending to whatever the
+      # mirror obtained rather than replacing it.
+      - name: Merge proven-strategy signals
+        run: node tools/merge-proven.mjs
+
         run: node tools/verify-data.mjs
 
       # v475 — Ask an unrelated provider what the price is. verify-data proves
