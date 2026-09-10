@@ -1,3 +1,6 @@
+// v492 — the app is static-first and no longer calls these Functions, so
+// warming siblings only spends quota that the free tier does not have.
+globalThis.__V492_NO_WARM = true;
 // Server-side signal detector. Runs from a cron-trigger Worker every few
 // minutes. For each pair, fetches OHLC, computes a *simplified* analysis
 // (enough to decide Best/Extreme), and writes qualifying signals to KV so the
@@ -4876,24 +4879,24 @@ async function _checkSignalsInner(context) {
   // The two that must track the market tick-for-tick keep the fastest rates.
   if (context.waitUntil) {
     // Outcome tracking — must stay close to live so TP/SL hits are caught.
-    await warmIfStale(context, origin, 'shadow-tracker', 240);
-    await warmIfStale(context, origin, 'tp-monitor', 180);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'shadow-tracker', 240);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'tp-monitor', 180);
     // Chart reads — a fresh hourly bar cannot appear faster than this.
-    await warmIfStale(context, origin, 'chart-eye', 420);
-    await warmIfStale(context, origin, 'chart-pulse', 420);
-    await warmIfStale(context, origin, 'live-analysis?minConfidence=60', 420);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'chart-eye', 420);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'chart-pulse', 420);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'live-analysis?minConfidence=60', 420);
     // Learning + self-correction — these aggregate history, so they gain
     // nothing from sub-15-minute refreshes.
-    await warmIfStale(context, origin, 'learning-brain', 900,
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'learning-brain', 900,
       { headers: env.CRON_KEY ? { 'x-cron-key': env.CRON_KEY } : {} });
-    await warmIfStale(context, origin, 'self-trust', 1800);
-    await warmIfStale(context, origin, 'pattern-match', 1800);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'self-trust', 1800);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'pattern-match', 1800);
     // News and sentiment — headlines do not turn over in minutes.
-    await warmIfStale(context, origin, 'news', 1800);
-    await warmIfStale(context, origin, 'news-sentiment', 1800);
-    await warmIfStale(context, origin, 'pro-consensus', 1800);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'news', 1800);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'news-sentiment', 1800);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'pro-consensus', 1800);
     // The economic calendar is published a day ahead.
-    await warmIfStale(context, origin, 'calendar', 7200);
+    if (!globalThis.__V492_NO_WARM) await warmIfStale(context, origin, 'calendar', 7200);
   }
 
   // ─────────────────────────────────────────────────────────────────────

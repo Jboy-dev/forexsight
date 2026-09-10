@@ -6830,7 +6830,21 @@ async function _v451ApiAlive() {
       // probing through it would report the API healthy precisely when it is
       // not. Fall back to window.fetch only if the original was never stashed.
       const rawFetch = window._v428OrigFetch || window.fetch;
-      const r = await rawFetch('/api/ping?_p=' + Date.now(), { cache: 'no-store', signal: ctl.signal });
+      // v492b — the liveness probe was the last thing still spending quota.
+      //
+      // It exists to answer "are Functions up?" so the app can skip doomed
+      // calls. Since v492 the app makes no Function calls at all — every
+      // endpoint is served from static files or answered locally — so the
+      // question has no consequence, while the probe itself was billed on a
+      // timer for the life of every open tab.
+      //
+      // It now checks that the STATIC data is reachable, which is what the app
+      // actually depends on. The connection pill therefore reports on the path
+      // being used rather than on one that is no longer touched. Functions can
+      // still be probed deliberately with _forceFunction=1 when diagnosing.
+      const r = await rawFetch(
+        'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/_mirror-meta.json?_p=' + Date.now(),
+        { cache: 'no-store', signal: ctl.signal });
       clearTimeout(t);
       const ct = r.headers.get('content-type') || '';
       if (r.ok && ct.includes('json')) {
@@ -6881,6 +6895,150 @@ function _v451RenderConnectionPill() {
       + 'on your side and no data is lost.';
   }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// v492 — STATIC-FIRST. THE APP NO LONGER SPENDS CLOUDFLARE QUOTA.
+//
+// The recurring "limit reached" emails and the daily death of the Functions
+// were the same thing, and the arithmetic is not close. The app polls on
+// several timers — 3s, 5s, 30s, 90s, 120s, 180s, 300s, 900s — and every poll
+// that reaches a Function is a billed invocation:
+//
+//     one tab open all day   ~51,500 invocations
+//     free tier               100,000 per day
+//     tabs before exhaustion  1.9
+//
+// Two tabs, or one phone left on the home screen, exhausts the day's budget.
+// Cloudflare then emails that the limit is full and stops executing Functions,
+// which is exactly the failure that has been recurring for weeks.
+//
+// Everything the app actually needs is already published as a static file by
+// CI — signals, brain, shadow tracker, self-trust, conditions, radar, quality,
+// prices, repeats, control test, backtest. Static assets on Pages are unmetered.
+// So requests are served from those instead, and the Functions are simply not
+// called. The endpoints that have no static equivalent were already handled:
+// the app has returned an `_apiUnavailable` stub for them since v451 and
+// degrades without complaint.
+//
+// This is not a workaround for an outage. It is the correct architecture for
+// this app: the data is produced on a schedule by CI, so serving it from a file
+// is both cheaper and more reliable than recomputing it per request.
+const _V492_STATIC = {
+  'latest-signals': 'latest-signals', 'shadow-tracker': 'shadow-tracker',
+  'self-trust': 'self-trust', 'conditions-score': 'conditions-score',
+  'algo-read': 'algo-read', 'setup-radar': 'setup-radar',
+  'learning-brain': 'learning-brain', 'news': 'calendar-cache',
+  'calendar': 'calendar-cache',
+};
+const _V492_GH = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
+
+// Endpoints with no static equivalent. The app already copes with these being
+// absent, so they are answered locally rather than spending an invocation to
+// discover the same thing.
+function _v492Stub(name) {
+  return { ok: false, _apiUnavailable: true, _staticFirst: true, _endpoint: name,
+           signals: [], items: [], events: [], trades: [] };
+}
+
+// /api/prices is by far the heaviest caller — sixteen or more requests on a
+// single page load, one per instrument per timeframe — and it is only a proxy
+// in front of Yahoo. CI already publishes those exact hourly bars as static
+// files under data/ohlc, so the proxy is answered from them instead. The shape
+// returned matches what the callers expect.
+const _V492_SYMBOL_TO_PAIR = {
+  'EURUSD=X': 'EUR-USD', 'GBPUSD=X': 'GBP-USD', 'AUDUSD=X': 'AUD-USD',
+  'NZDUSD=X': 'NZD-USD', 'USDCAD=X': 'USD-CAD', 'USDCHF=X': 'USD-CHF',
+  'USDJPY=X': 'USD-JPY', 'GC=F': 'XAU-USD', 'BTC-USD': 'BTC-USD', 'ETH-USD': 'ETH-USD',
+};
+async function _v492Prices(url) {
+  try {
+    const q = new URL(url, location.origin).searchParams;
+    const sym = q.get('symbol') || '';
+    const slug = _V492_SYMBOL_TO_PAIR[sym] || _V492_SYMBOL_TO_PAIR[decodeURIComponent(sym)];
+    if (!slug) return null;
+    const f = window._v428OrigFetch || fetch;
+    for (const u of [`${_V492_GH}ohlc/${slug}.json`, `/data/ohlc/${slug}.json`]) {
+      try {
+        const r = await f(u + '?_s=' + Date.now(), { cache: 'no-store' });
+        if (!r.ok) continue;
+        const raw = await r.json();
+        const bars = Array.isArray(raw) ? raw : (raw.bars || raw.ohlc || []);
+        if (!bars.length) continue;
+        const last = bars[bars.length - 1];
+        return new Response(JSON.stringify({
+          ok: true, _staticFirst: true, symbol: sym,
+          price: last.c, close: last.c, ts: last.t,
+          bars, ohlc: bars, candles: bars,
+        }), { status: 200, headers: { 'content-type': 'application/json' } });
+      } catch (_) {}
+    }
+  } catch (_) {}
+  return null;
+}
+
+async function _v492Fetch(path, init) {
+  const m = String(path).match(/\/api\/([a-z-]+)/i);
+  if (!m) return null;
+  const name = m[1];
+  if (name === 'prices') {
+    const r = await _v492Prices(path);
+    if (r) return r;
+    return new Response(JSON.stringify(_v492Stub('prices')),
+      { status: 200, headers: { 'content-type': 'application/json' } });
+  }
+  const file = _V492_STATIC[name];
+  if (!file) {
+    return new Response(JSON.stringify(_v492Stub(name)),
+      { status: 200, headers: { 'content-type': 'application/json' } });
+  }
+  // Both copies, newest wins — the Pages copy only changes on redeploy while
+  // CI rewrites the GitHub one every cycle.
+  const urls = [`${_V492_GH}${file}.json`, `/data/${file}.json`];
+  const got = [];
+  await Promise.all(urls.map(async (u) => {
+    try {
+      const f = window._v428OrigFetch || fetch;
+      const r = await f(u + (u.includes('?') ? '&' : '?') + '_s=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
+      const t = await r.text();
+      const h = t.trim().charAt(0);
+      if (h !== '{' && h !== '[') return;
+      const j = JSON.parse(t);
+      if (j && typeof j === 'object') got.push(j);
+    } catch (_) {}
+  }));
+  if (!got.length) {
+    return new Response(JSON.stringify(_v492Stub(name)),
+      { status: 200, headers: { 'content-type': 'application/json' } });
+  }
+  got.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  const best = got[0];
+  best._staticFirst = true;
+  return new Response(JSON.stringify(best),
+    { status: 200, headers: { 'content-type': 'application/json' } });
+}
+
+// Install ahead of everything else that wraps fetch, so no /api/ request
+// escapes. window._v428OrigFetch stays the unwrapped escape hatch used by the
+// health probe and the static loaders themselves.
+(function _v492Install() {
+  try {
+    if (window._v492Installed) return;
+    window._v492Installed = true;
+    if (!window._v428OrigFetch) window._v428OrigFetch = window.fetch.bind(window);
+    const prev = window.fetch.bind(window);
+    window.fetch = async function (input, init) {
+      try {
+        const url = typeof input === 'string' ? input : (input && input.url) || '';
+        if (/\/api\//i.test(url) && !/_forceFunction=1/.test(url)) {
+          const r = await _v492Fetch(url, init);
+          if (r) return r;
+        }
+      } catch (_) { /* fall through to the network */ }
+      return prev(input, init);
+    };
+  } catch (_) {}
+})();
 
 async function _v427cFetchSignalsWithMirror() {
   // v451 — skip the doomed call entirely when Functions are known down.

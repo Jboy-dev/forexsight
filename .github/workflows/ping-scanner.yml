@@ -7,7 +7,13 @@ name: Preview scanner heartbeat
 
 on:
   schedule:
-    - cron: '*/30 * * * *'
+    # v492 — was every 30 minutes, firing check-signals and tp-monitor against
+    # two deployments. check-signals runs a full multi-instrument analysis, so
+    # this was among the most expensive things hitting the quota, and it existed
+    # only to keep Cloudflare warm. The app is static-first now and does not
+    # depend on those Functions, and CI generates the signals itself. Kept at
+    # twice a day purely as a health signal.
+    - cron: '15 6,18 * * *'
   workflow_dispatch:
 
 concurrency:
