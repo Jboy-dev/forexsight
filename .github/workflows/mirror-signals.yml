@@ -228,7 +228,30 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m "chore: mirror signals snapshot $(date -u +%H:%M)"
             # Retry push once — concurrent runs can race
-            git push || (git pull --rebase && git push)
+            # v493 — generated data must not lose a race.
+            #
+            # This was `git push || (git pull --rebase && git push)`. Both
+            # workflows write the same files under data/, so when one pushes
+            # while the other is mid-run the rebase stops on a conflict in
+            # every regenerated file and the whole job fails. That is what
+            # happened the moment both ran close together.
+            #
+            # These files are produced fresh each run, never hand-edited, so a
+            # conflict has an obvious correct answer: keep the version this run
+            # just generated. Retried a few times because another cycle can
+            # land between the fetch and the push.
+            pushed=0
+            for attempt in 1 2 3; do
+              if git push 2>/dev/null; then pushed=1; break; fi
+              git fetch origin main
+              if ! git rebase -X theirs origin/main; then
+                git checkout --theirs -- data/ 2>/dev/null || true
+                git add data/ 2>/dev/null || true
+                GIT_EDITOR=true git rebase --continue || git rebase --abort
+              fi
+            done
+            if [ "$pushed" = "1" ]; then echo "pushed"; else
+              echo "could not push after 3 attempts"; exit 1; fi
             echo "✔ pushed mirror snapshot"
           else
             echo "→ no changes to commit"
