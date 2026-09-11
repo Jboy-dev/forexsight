@@ -152,6 +152,7 @@ jobs:
       # Functions down it otherwise saw only prices since the tab opened,
       # which made winners that resolved overnight get written down as losses.
       - name: Publish OHLC bars for the client
+        run: node tools/publish-ohlc.mjs
 
       # v491 — the proven strategies previously lived only in the standby
       # generator, which runs solely when Cloudflare fails. With Cloudflare
@@ -160,8 +161,6 @@ jobs:
       # mirror obtained rather than replacing it.
       - name: Merge proven-strategy signals
         run: node tools/merge-proven.mjs
-
-        run: node tools/publish-ohlc.mjs
 
       # v448 — WATCH THE SETUPS, ALWAYS.
       #
