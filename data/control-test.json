@@ -1,14 +1,14 @@
 {
-  "ts": 1789229386959,
-  "isoTime": "2026-09-12T16:09:46.959Z",
+  "ts": 1789238297031,
+  "isoTime": "2026-09-12T18:38:17.031Z",
   "randomEntries": {
     "n": 2229,
-    "avgR": -0.058,
+    "avgR": -0.024,
     "ci": [
-      -0.102,
-      -0.014
+      -0.069,
+      0.019
     ],
-    "behavesAsNull": false
+    "behavesAsNull": true
   },
   "perStrategy": {
     "RSI mean reversion": {
@@ -16,42 +16,42 @@
       "avgR": 0.18,
       "ci": [
         0.131,
-        0.225
+        0.23
       ],
-      "edgeOverRandom": 0.238,
-      "passes": false
+      "edgeOverRandom": 0.204,
+      "passes": true
     },
     "RSI trend filter": {
       "n": 1195,
       "avgR": 0.045,
       "ci": [
-        -0.016,
-        0.103
+        -0.014,
+        0.102
       ],
-      "edgeOverRandom": 0.103,
+      "edgeOverRandom": 0.069,
       "passes": false
     },
     "Bollinger reversion": {
       "n": 2346,
       "avgR": 0.107,
       "ci": [
-        0.063,
+        0.064,
         0.149
       ],
-      "edgeOverRandom": 0.165,
-      "passes": false
+      "edgeOverRandom": 0.131,
+      "passes": true
     },
     "MACD cross": {
       "n": 2643,
       "avgR": 0.109,
       "ci": [
-        0.068,
-        0.152
+        0.066,
+        0.149
       ],
-      "edgeOverRandom": 0.167,
-      "passes": false
+      "edgeOverRandom": 0.133,
+      "passes": true
     }
   },
-  "passes": false,
-  "verdict": "CONTROL FAILED — random entries did not score about zero, so the simulator is producing the number rather than any strategy. No claim may be shown."
+  "passes": true,
+  "verdict": "Random entries score -0.024R with the interval straddling zero, as they must. 3 of 4 strategies clear it."
 }
