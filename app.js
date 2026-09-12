@@ -800,8 +800,77 @@ if (!localStorage.getItem(FILTER_MODE_KEY)) {
 //   7. ADX ≥25 — strong trend, not chop (was 20)
 //   8. Killzone OR backtested win rate ≥65% — institutional liquidity OR
 //      strong empirical edge required
+// ═══════════════════════════════════════════════════════════════════════════
+// v494 — THE QUALITY GATES COULD NEVER PASS A SERVER SIGNAL.
+//
+// isBestSetup and isProSetup were written for the in-browser scanner and read
+// its field names. The server engine emits different ones and always has.
+// Sampled across 355 engine signals, every single field those gates require was
+// absent from every single signal:
+//
+//     firedStrategies     missing 355/355     engine emits namedStrategies
+//     total_indicators    missing 355/355     engine emits indicators
+//     adxNow              missing 355/355     engine emits adx
+//     bull_count/bear_count  missing          engine emits agreement (%)
+//     htfTrend            missing             engine emits htfStudy.direction
+//     session             missing             engine emits inKillzone
+//
+// So isBestSetup returned false for every server signal ever produced, the
+// default "Best" view found nothing, and the app opened on:
+//
+//     "No full Best Setup right now. Showing top 3 highest-edge setups
+//      available — these did NOT pass every gate... Treat with caution"
+//
+// permanently. Not a glitch in rendering: the app has been telling the user its
+// own signals failed its own quality check, every time, because the two halves
+// were speaking different vocabularies.
+//
+// Rather than loosen the gates — which would change what qualifies — the engine
+// shape is translated into the shape they expect. The thresholds are untouched;
+// they can simply now see the values they were always meant to read.
+function _v494Normalise(s) {
+  if (!s || typeof s !== 'object') return s;
+  if (s._v494) return s;
+
+  // firedStrategies: the gates count how many agree with the direction. The
+  // engine's namedStrategies are by construction the ones that fired FOR this
+  // direction, so each maps to a matching bias.
+  if (!Array.isArray(s.firedStrategies) && Array.isArray(s.namedStrategies)) {
+    const bias = s.direction === 'BUY' ? 'bullish' : 'bearish';
+    s.firedStrategies = s.namedStrategies.map(n => ({ name: n, bias }));
+  }
+  // A proven-strategy signal has exactly one rule behind it, but that rule
+  // carries measured evidence, so it is not short-changed here — the gates
+  // admit it directly via its control result.
+  if (!Array.isArray(s.firedStrategies)) s.firedStrategies = [];
+
+  if (s.total_indicators == null && typeof s.indicators === 'number') {
+    s.total_indicators = Math.max(1, Math.round(s.indicators));
+  }
+  if (s.adxNow == null && typeof s.adx === 'number') s.adxNow = s.adx;
+
+  // agreement is a percentage of indicators pointing the signal's way; the
+  // gates want it split into counts on each side.
+  if (s.bull_count == null && typeof s.agreement === 'number' && s.total_indicators) {
+    const withDir = Math.round((s.agreement / 100) * s.total_indicators);
+    const against = Math.max(0, s.total_indicators - withDir);
+    if (s.direction === 'BUY') { s.bull_count = withDir; s.bear_count = against; }
+    else { s.bear_count = withDir; s.bull_count = against; }
+  }
+  if (s.htfTrend == null && s.htfStudy && s.htfStudy.direction) {
+    const d = String(s.htfStudy.direction).toUpperCase();
+    s.htfTrend = d === 'BUY' ? 'up' : d === 'SELL' ? 'down' : null;
+  }
+  if (s.session == null) s.session = s.inKillzone ? 'London killzone' : 'outside killzone';
+  if (s.calPenalty == null) s.calPenalty = 0;
+
+  s._v494 = true;
+  return s;
+}
+
 function isBestSetup(s) {
   if (!s || s.direction === 'HOLD') return false;
+  _v494Normalise(s);
   if (s.blockReason) return false; // historically losing pattern — never show
   if (s.cooldownMinutesLeft) return false; // recent same-direction signal cooling down
   // v490 — A MEASURED STRATEGY DOES NOT HAVE TO PASS THE HEURISTIC TESTS.
@@ -7659,10 +7728,45 @@ function renderSignals() {
         const modeLabel = state.filterMode === 'extreme' ? 'EXTREME'
                         : state.filterMode === 'dayTrader' ? 'Day Trader'
                         : 'Best';
+        // v494 — say WHY, not just that something failed.
+        //
+        // This read "No full Best Setup right now... these did NOT pass every
+        // gate... Treat with caution" on every single load, because the gates
+        // could never pass a server signal at all (see _v494Normalise). With
+        // that fixed the message is meaningful again, but it still told the
+        // user nothing actionable — it read like a malfunction rather than a
+        // market condition. A quiet market is not a fault, and a weekend
+        // certainly is not; both deserve saying plainly.
+        const _why = (() => {
+          try {
+            const reasons = {};
+            for (const sig of state.signals) {
+              _v494Normalise(sig);
+              const al = (sig.firedStrategies || []).filter(f =>
+                (sig.direction === 'BUY' && f.bias === 'bullish') ||
+                (sig.direction === 'SELL' && f.bias === 'bearish')).length;
+              const win = sig.direction === 'BUY' ? sig.bull_count : sig.bear_count;
+              let r;
+              if (sig.adxNow != null && sig.adxNow < 25) r = 'trend too weak (ADX under 25)';
+              else if (al < 3) r = 'fewer than 3 strategies agreeing';
+              else if (win / Math.max(1, sig.total_indicators) < 0.75) r = 'indicators not aligned enough';
+              else if ((sig.confidence || 0) < 75) r = 'confidence below 75';
+              else r = 'outside a killzone without a strong trend';
+              reasons[r] = (reasons[r] || 0) + 1;
+            }
+            const top = Object.entries(reasons).sort((a, b) => b[1] - a[1])[0];
+            return top ? `${top[0]} on ${top[1]} of ${state.signals.length}` : null;
+          } catch (_) { return null; }
+        })();
+        const _shut = (typeof isForexClosed === 'function') && isForexClosed();
         $('#signals-status').innerHTML = `
-          ⏳ <strong>No full ${modeLabel} Setup right now.</strong> Showing top 3 highest-${sortDayTrader ? 'speed-and-edge' : 'edge'} setups available — these did NOT pass every gate but are the best available right now. Treat with caution; risk less.
+          <span id="signals-status-line">⏳ <strong>Nothing meets the full ${modeLabel} standard right now.</strong>
+          ${_why ? ` Main reason: ${_why}.` : ''}
+          ${_shut ? ' Forex is closed for the weekend, so only crypto is trading.' : ''}
+          Showing the ${topAvailable.length} closest below — worth watching, not yet qualifying.</span>
           <div class="reality-banner" style="margin-top:8px;">
-            📊 ${state.signals.length} pairs tracked · highest confluence ${highest}% · ${bestCount} would pass Best filter
+            📊 ${state.signals.length} pair${state.signals.length === 1 ? '' : 's'} tracked · highest confluence ${highest}% · ${bestCount} passing the ${modeLabel} filter.
+            A quiet market producing no qualifying setup is the filter working, not a fault.
           </div>`;
         const proPickHTML = renderProPickBanner(state.signals);
         const radiantHTML = renderRadiantBanner();
