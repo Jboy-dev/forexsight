@@ -1,57 +1,57 @@
 {
-  "ts": 1789335366367,
-  "isoTime": "2026-09-13T21:36:06.367Z",
+  "ts": 1789342006196,
+  "isoTime": "2026-09-13T23:26:46.196Z",
   "randomEntries": {
-    "n": 2218,
-    "avgR": -0.052,
+    "n": 2214,
+    "avgR": 0.001,
     "ci": [
-      -0.096,
-      -0.01
+      -0.042,
+      0.046
     ],
-    "behavesAsNull": false
+    "behavesAsNull": true
   },
   "perStrategy": {
     "RSI mean reversion": {
-      "n": 1672,
-      "avgR": 0.181,
+      "n": 1661,
+      "avgR": 0.173,
       "ci": [
-        0.132,
-        0.226
+        0.123,
+        0.222
       ],
-      "edgeOverRandom": 0.232,
-      "passes": false
+      "edgeOverRandom": 0.172,
+      "passes": true
     },
     "RSI trend filter": {
-      "n": 1195,
-      "avgR": 0.044,
+      "n": 1190,
+      "avgR": 0.039,
       "ci": [
-        -0.014,
-        0.102
+        -0.021,
+        0.098
       ],
-      "edgeOverRandom": 0.095,
+      "edgeOverRandom": 0.038,
       "passes": false
     },
     "Bollinger reversion": {
-      "n": 2346,
-      "avgR": 0.107,
-      "ci": [
-        0.064,
-        0.15
-      ],
-      "edgeOverRandom": 0.159,
-      "passes": false
-    },
-    "MACD cross": {
-      "n": 2645,
+      "n": 2341,
       "avgR": 0.108,
       "ci": [
-        0.063,
-        0.148
+        0.067,
+        0.15
       ],
-      "edgeOverRandom": 0.159,
-      "passes": false
+      "edgeOverRandom": 0.107,
+      "passes": true
+    },
+    "MACD cross": {
+      "n": 2636,
+      "avgR": 0.108,
+      "ci": [
+        0.066,
+        0.152
+      ],
+      "edgeOverRandom": 0.107,
+      "passes": true
     }
   },
-  "passes": false,
-  "verdict": "CONTROL FAILED — random entries did not score about zero, so the simulator is producing the number rather than any strategy. No claim may be shown."
+  "passes": true,
+  "verdict": "Random entries score 0.001R with the interval straddling zero, as they must. 3 of 4 strategies clear it."
 }
