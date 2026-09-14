@@ -8816,6 +8816,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'The strategies that were withdrawn',
+    tags: 'proven withdrawn rsi bollinger macd removed episode average artefact mistake retracted',
+    what: 'Four strategies were published here as measured winners, with out-of-sample intervals on the cards. They were found by comparing EPISODE AVERAGES — overlapping same-direction signals collapsed into one observation. That correction is right for the live tracking, where the engine republishes one setup many times. Applied to backtest returns it hides clustered losses: when price keeps falling, RSI keeps re-crossing 30, each re-entry stops out, and up to fourteen real losses become a single -1R observation while a lone winner stays a full observation.',
+    use: 'Measured as a trader would actually take them over the same two years, every one is negative: RSI mean reversion -0.060R, Bollinger reversion -0.028R, MACD cross -0.014R, RSI trend filter -0.049R. Only the episode average was positive, and nobody can trade an episode average. All four are withdrawn and no longer publish signals. The control test now judges on the per-signal figure, which is the number a person can act on.' },
   { area: 'How it judges itself', name: 'The control test, and the strategy it removed',
     tags: 'control test random entries proof not fake rsi trend filter removed failed guard',
     what: 'Before any strategy claim is shown, the same bars are run through the same simulator with the entry rule replaced by random times and random directions. If random entries score anything other than about zero, the number is coming from the trade management rather than the rule, and no claim is displayed at all.',

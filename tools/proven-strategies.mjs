@@ -81,6 +81,34 @@ export function stdevSeries(a, p) {
 // read at run time and any strategy that does not pass is skipped. If a passing
 // strategy later stops clearing random entries, it drops out on the next cycle
 // without anyone having to notice.
+// v495 — WITHDRAWN. THE EDGE WAS AN ARTEFACT OF MY OWN MEASUREMENT.
+//
+// Everything below found these four by comparing EPISODE AVERAGES — overlapping
+// same-direction signals collapsed into one observation. That correction was
+// introduced to fix genuine pseudo-replication in the LIVE tracking, where the
+// engine republishes one setup many times. Applied to backtest returns it does
+// the opposite of honest: losses cluster, because when price keeps falling RSI
+// keeps re-crossing 30 and each re-entry stops out. Averaging turns up to
+// fourteen real losses into a single -1R observation while a lone winner stays
+// a full observation.
+//
+// Measured as a trader would actually take them, over the same two years:
+//
+//                          every signal            first of each cluster
+//   RSI mean reversion     -0.060 [-0.096,-0.023]  -0.112 [-0.168,-0.056]
+//   Bollinger reversion    -0.028 [-0.061, 0.005]  -0.044 [-0.092, 0.002]
+//   MACD cross             -0.014 [-0.049, 0.021]  -0.033 [-0.080, 0.012]
+//
+// Only the episode average was positive, and nobody can trade an episode
+// average. The control test did not catch this because it also compared
+// episode averages — it was checking the strategy against random entries
+// measured the same flawed way, so both sides carried the same distortion.
+//
+// The rules stay in the file because the analysis is worth keeping; they are
+// simply not published as signals any more. A strategy is republished here only
+// when it is positive on the per-signal measure, which none currently is.
+const V495_WITHDRAWN = true;
+
 function controlVerdicts() {
   try {
     const c = JSON.parse(readFileSync('data/control-test.json', 'utf8'));
@@ -135,6 +163,7 @@ export function evaluate(bars) {
   }
   // Filter to strategies that currently clear the control, and carry that
   // verdict alongside the lab figure so the card states both.
+  if (V495_WITHDRAWN) return [];      // nothing here has earned publication
   const verdicts = controlVerdicts();
   return hits
     .filter(h => {

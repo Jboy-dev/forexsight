@@ -132,7 +132,8 @@ for (const { pair, bars, atr } of D) {
   }
 }
 const er = eps(rand);
-const randomOk = !!(ci(er) && ci(er)[0] < 0 && ci(er)[1] > 0);
+const erSignals = rand.map(x => x.r);       // per-signal, the tradeable measure
+const randomOk = !!(ci(erSignals) && ci(erSignals)[0] < 0 && ci(erSignals)[1] > 0);
 
 const perStrategy = {};
 for (const [name, rule] of Object.entries(RULES)) {
@@ -147,20 +148,36 @@ for (const [name, rule] of Object.entries(RULES)) {
       if (o) hits.push({ pair, dir: d, ...o });
     }
   }
+  // v495 — JUDGE ON WHAT A TRADER WOULD ACTUALLY TAKE.
+  //
+  // This compared episode averages on both sides, so the strategy and the
+  // random pool carried the same distortion and it cancelled out — which is
+  // exactly why the control passed a strategy that loses money. Collapsing
+  // overlapping signals hides clustered losses: when price keeps falling, RSI
+  // keeps re-crossing 30, each re-entry stops out, and fourteen real losses
+  // become one -1R observation.
+  //
+  // The per-signal figure is the one a person can act on, so it is now the one
+  // that decides. The episode figure is kept alongside purely to show the size
+  // of the gap that fooled this test.
+  const perSignal = hits.map(h => h.r);
   const e = eps(hits);
-  const c = ci(e);
+  const c = ci(perSignal);
+  const cEp = ci(e);
   perStrategy[name] = {
-    n: e.length, avgR: +mean(e).toFixed(3), ci: c,
-    edgeOverRandom: +(mean(e) - mean(er)).toFixed(3),
-    // A strategy only keeps its claim if random entries behave AND it clears
-    // zero on its own AND it beats the random pool.
-    passes: !!(randomOk && c && c[0] > 0 && mean(e) - mean(er) > 0),
+    n: perSignal.length, avgR: +mean(perSignal).toFixed(3), ci: c,
+    episodeAvgR: +mean(e).toFixed(3), episodeCi: cEp, episodes: e.length,
+    edgeOverRandom: +(mean(perSignal) - mean(erSignals)).toFixed(3),
+    // Positive on the tradeable measure, clearing zero, and ahead of random.
+    passes: !!(randomOk && c && c[0] > 0 && mean(perSignal) - mean(erSignals) > 0),
   };
 }
 
 const out = {
   ts: Date.now(), isoTime: new Date().toISOString(),
-  randomEntries: { n: er.length, avgR: +mean(er).toFixed(3), ci: ci(er), behavesAsNull: randomOk },
+  randomEntries: { n: erSignals.length, avgR: +mean(erSignals).toFixed(3), ci: ci(erSignals),
+                   episodeAvgR: +mean(er).toFixed(3), behavesAsNull: randomOk },
+  measuredOn: 'every signal, not episode averages — collapsing overlapping signals hides clustered losses',
   perStrategy,
   passes: randomOk && Object.values(perStrategy).some(s => s.passes),
 };
@@ -171,8 +188,8 @@ out.verdict = !randomOk
     + `${Object.values(perStrategy).filter(s => s.passes).length} of ${Object.keys(RULES).length} strategies clear it.`;
 writeFileSync('data/control-test.json', JSON.stringify(out, null, 2));
 
-console.log(`  random entries    n=${String(er.length).padStart(5)}  ${mean(er)>=0?'+':''}${mean(er).toFixed(3)}R  CI[${ci(er)}]  ${randomOk?'behaves as null':'DOES NOT BEHAVE AS NULL'}`);
+console.log(`  random entries    n=${String(erSignals.length).padStart(5)}  ${mean(erSignals)>=0?'+':''}${mean(erSignals).toFixed(3)}R  CI[${ci(erSignals)}]  ${randomOk?'behaves as null':'DOES NOT BEHAVE AS NULL'}`);
 for (const [name, s] of Object.entries(perStrategy)) {
-  console.log(`  ${name.padEnd(22)} n=${String(s.n).padStart(5)}  ${s.avgR>=0?'+':''}${s.avgR}R  CI[${s.ci}]  vs random ${s.edgeOverRandom>=0?'+':''}${s.edgeOverRandom}  ${s.passes?'PASS':'FAIL'}`);
+  console.log(`  ${name.padEnd(22)} n=${String(s.n).padStart(5)}  per-signal ${s.avgR>=0?'+':''}${s.avgR}R CI[${s.ci}]  (episode avg ${s.episodeAvgR>=0?'+':''}${s.episodeAvgR}R)  ${s.passes?'PASS':'FAIL'}`);
 }
 console.log(`\n  ${out.verdict}`);
