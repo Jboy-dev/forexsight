@@ -118,6 +118,14 @@ jobs:
       - name: Backtest the engine
         run: BT_STEP=3 node tools/backtest-engine.mjs
 
+
+      # v498 — mine every resolved signal for a pattern that separates winners
+      # from losers, with a shuffled-outcome control so the search cannot
+      # mistake noise for a discovery. Runs every cycle; capable of concluding
+      # that nothing was found, which on this book is the usual answer.
+      - name: Learn from losses
+        run: node tools/learn-from-losses.mjs
+
       - name: Self-evaluate
         run: node tools/self-evaluate.mjs
 

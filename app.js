@@ -8816,6 +8816,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'What the losing trades actually show',
+    tags: 'losses learn from losses pattern why losing improve winners loss analysis',
+    what: 'Every resolved signal is mined for a feature that separates winners from losers — pair, direction, strategy, strategy count, ADX band, confidence band, regime, killzone, session, higher-timeframe alignment, independence. The same analysis is then run on SHUFFLED outcomes, which destroys any real relationship while keeping the shape of the data, to measure how many "significant" slices the method invents from noise.',
+    use: 'On the current book: 12 slices clear zero, against a chance baseline of 7.3 (and shuffled runs reaching 16). That is barely above noise, and 11 of the 12 are NEGATIVE — the system loses broadly rather than in a subset that could be removed. The single positive, NZD/USD at n=32, is exactly the count chance produces, so it is listed as a candidate to watch, not a rule to trade. Also worth knowing: 167 of 202 losses were full stop-outs that never reached TP1, so trade management is not what is losing the money — the entries are.' },
   { area: 'How it judges itself', name: 'The strategies that were withdrawn',
     tags: 'proven withdrawn rsi bollinger macd removed episode average artefact mistake retracted',
     what: 'Four strategies were published here as measured winners, with out-of-sample intervals on the cards. They were found by comparing EPISODE AVERAGES — overlapping same-direction signals collapsed into one observation. That correction is right for the live tracking, where the engine republishes one setup many times. Applied to backtest returns it hides clustered losses: when price keeps falling, RSI keeps re-crossing 30, each re-entry stops out, and up to fourteen real losses become a single -1R observation while a lone winner stays a full observation.',
