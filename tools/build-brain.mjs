@@ -97,6 +97,33 @@ const byStrategy = {};
   for (const [k, v] of Object.entries(bag)) byStrategy[k] = slice(v);
 }
 
+// v496 — REPORT ALL THREE MEASURES, NOT THE ONE THAT SUITS.
+//
+// v495 established that collapsing republications into episodes can move a
+// result enormously, and in whichever direction the clustering happens to run.
+// On the two-year backtest it hid clustered LOSSES and turned -0.060R into
+// +0.176R. On this live record it does the reverse — winners get republished
+// most, so collapsing under-weights them:
+//
+//     every published setup   -0.092R
+//     episode average         -0.309R
+//     first of each episode   +0.092R
+//
+// Three numbers, one book, spanning 0.4R. Picking one and calling it "the
+// record" would be a choice dressed as a measurement, and the episode figure
+// was being reported alone. The per-signal number answers the question a user
+// actually has — "if I took every signal shown, what would I have got?" — so it
+// leads, with the others beside it.
+const perSignal = slice(resolved);
+const firstOfEpisode = slice(
+  Object.values(resolved.reduce((acc, x) => {
+    const e = episodes.find(ep => ep.pair === x.pair && ep.direction === x.direction);
+    const k = `${x.pair}|${x.direction}|${e ? e.firedAt : x.firedAt}`;
+    if (!acc[k] || String(x.firedAt) < String(acc[k].firedAt)) acc[k] = x;
+    return acc;
+  }, {}))
+);
+
 const all = slice(episodes);
 // Recent regime: what the last 30 resolved setups looked like. Descriptive
 // only — it labels conditions, it does not predict them.
@@ -141,6 +168,17 @@ const brain = {
   // Episodes are the honest unit. rawPublications is shown alongside so the
   // difference between "how often it fired" and "how much it learned" is
   // visible rather than silently conflated.
+  // The headline figure is per-signal: what taking every published setup would
+  // have returned. episodeAverage and firstOfEpisode are shown so the spread
+  // between the three is visible rather than hidden behind a single choice.
+  headline: perSignal,
+  measures: {
+    everySignal: perSignal,
+    episodeAverage: all,
+    firstOfEpisode,
+    note: 'These disagree because republications cluster. Whichever way the '
+        + 'clustering runs, collapsing changes the answer — so all three are published.',
+  },
   totalSamples: episodes.length,
   rawPublications: resolved.length,
   inflationFactor: +(resolved.length / Math.max(1, episodes.length)).toFixed(2),
@@ -173,7 +211,9 @@ writeFileSync('data/learning-brain.json', JSON.stringify(brain, null, 2));
 
 console.log(`brain built from ${episodes.length} independent episodes `
   + `(${resolved.length} raw publications, ${(resolved.length / Math.max(1, episodes.length)).toFixed(2)}x inflation)`);
-console.log(`  overall ${all.avgR >= 0 ? '+' : ''}${all.avgR}R  win rate ${(all.winRate * 100).toFixed(1)}%  CI[${all.ci}]`);
+console.log(`  every signal    ${perSignal.avgR >= 0 ? '+' : ''}${perSignal.avgR}R  n=${perSignal.samples}  CI[${perSignal.ci}]   <- headline`);
+console.log(`  episode average ${all.avgR >= 0 ? '+' : ''}${all.avgR}R  n=${all.samples}  CI[${all.ci}]`);
+console.log(`  first of each   ${firstOfEpisode.avgR >= 0 ? '+' : ''}${firstOfEpisode.avgR}R  n=${firstOfEpisode.samples}  CI[${firstOfEpisode.ci}]`);
 console.log(`  combos ${Object.keys(byCombo).length}, pairs ${Object.keys(byPair).length}, strategies ${Object.keys(byStrategy).length}`);
 console.log(`  usable combos (>=${MIN_SAMPLES} samples): ${Object.values(byCombo).filter(v => v.usable).length}`);
 console.log(`  ${brain.verdict}`);

@@ -9242,7 +9242,7 @@ function _v463RenderEval() {
     <div class="wl-row" style="margin:10px 0">
       <div><div class="muted" style="font-size:12px">Setups measured</div>
            <div style="font-size:20px;font-weight:700">${d.samples}</div></div>
-      <div><div class="muted" style="font-size:12px">Average per setup</div>
+      <div><div class="muted" style="font-size:12px">Average per signal taken</div>
            <div style="font-size:20px;font-weight:700;color:${ov.avgR >= 0 ? 'var(--good,#26a65b)' : 'var(--bad,#e5484d)'}">
              ${ov.avgR != null ? sign(ov.avgR) + 'R' : '—'}</div></div>
       <div><div class="muted" style="font-size:12px">Findings acted on</div>
@@ -9753,7 +9753,12 @@ function _v469RenderBrain() {
   const d = _v469Brain;
   if (!d) return `<div class="card" id="v469-brain"><h3>🧠 What it has learned</h3><p class="muted">Loading…</p></div>`;
   const sgn = v => (v >= 0 ? '+' : '') + Number(v).toFixed(3);
-  const ov = d.overall || {};
+  // v496 — the headline is the per-signal figure: what taking every published
+  // setup would have returned. The brain also publishes the episode average and
+  // the first-of-episode figure, which can differ by 0.4R on the same book
+  // depending only on how republications are counted, so all three are shown.
+  const ov = d.headline || d.overall || {};
+  const ms = d.measures || null;
 
   const rows = [];
   for (const [group, label] of [['byPair','Instrument'],['byStrategy','Strategy'],['byCombo','Combination']]) {
@@ -9817,6 +9822,20 @@ function _v469RenderBrain() {
       ${d.minSamplesForUse} independent moves. Below that the card says
       "not scored" rather than showing a number the evidence cannot support.
     </p>` : ''}
+
+    ${ms ? `
+      <div style="padding:9px 11px;border-radius:9px;margin:8px 0;
+           background:rgba(127,127,127,.07);border:1px solid rgba(127,127,127,.2)">
+        <strong>Three ways of counting the same book</strong>
+        <div class="muted" style="font-size:12px;margin-top:4px">
+          Taking every signal shown: <strong>${ms.everySignal.avgR >= 0 ? '+' : ''}${ms.everySignal.avgR}R</strong> over ${ms.everySignal.samples}.
+          Collapsing republications into one: <strong>${ms.episodeAverage.avgR >= 0 ? '+' : ''}${ms.episodeAverage.avgR}R</strong> over ${ms.episodeAverage.samples}.
+          Only the first of each: <strong>${ms.firstOfEpisode.avgR >= 0 ? '+' : ''}${ms.firstOfEpisode.avgR}R</strong> over ${ms.firstOfEpisode.samples}.
+          <br>They disagree because republications cluster. The first is the headline
+          because it answers what you would actually have got. A strategy claim was
+          withdrawn in v495 for resting on the second.
+        </div>
+      </div>` : ''}
 
     ${Array.isArray(d.evidenceNeeded) && d.evidenceNeeded.length ? `
       <h4 style="margin:14px 0 4px">When would we actually know?</h4>

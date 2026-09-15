@@ -154,6 +154,13 @@ jobs:
       - name: Publish OHLC bars for the client
         run: node tools/publish-ohlc.mjs
 
+      # v496 — an answer of "zero signals" from Cloudflare was being treated as
+      # a successful mirror and published as the feed, while the same engine
+      # locally produced five or six from the same candles. Regenerate when the
+      # payload comes back empty.
+      - name: Ensure the feed is not empty
+        run: node tools/ensure-signals.mjs
+
       # v491 — the proven strategies previously lived only in the standby
       # generator, which runs solely when Cloudflare fails. With Cloudflare
       # healthy the mirror took its output and the backtested rules never ran
