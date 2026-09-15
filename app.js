@@ -9182,21 +9182,14 @@ function initReferenceSearch() {
 // ---------------------------------------------------------------------------
 let _v463Eval = null;
 async function _v463LoadEval() {
-  const urls = [
+  const j = await _v497Freshest([
     'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/self-evaluation.json',
     '/data/self-evaluation.json',
-  ];
-  for (const u of urls) {
-    try {
-      const f = window._v428OrigFetch || fetch;
-      const r = await f(u, { cache: 'no-store' });
-      if (!r.ok) continue;
-      const j = await r.json();
-      if (j && typeof j.samples === 'number') { _v463Eval = j; return j; }
-    } catch (_) { /* try next */ }
-  }
+  ], (j) => typeof j.samples === 'number');
+  if (j) { _v463Eval = j; return j; }
   return null;
 }
+
 
 function _v463RenderEval() {
   const d = _v463Eval;
@@ -9311,21 +9304,14 @@ function _v463RenderEval() {
 // fault instead of quietly becoming a bad trade.
 let _v465Dq = null;
 async function _v465LoadDq() {
-  const urls = [
+  const j = await _v497Freshest([
     'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/data-quality.json',
     '/data/data-quality.json',
-  ];
-  for (const u of urls) {
-    try {
-      const f = window._v428OrigFetch || fetch;
-      const r = await f(u, { cache: 'no-store' });
-      if (!r.ok) continue;
-      const j = await r.json();
-      if (j && Array.isArray(j.instruments)) { _v465Dq = j; return j; }
-    } catch (_) {}
-  }
+  ], (j) => Array.isArray(j.instruments));
+  if (j) { _v465Dq = j; return j; }
   return null;
 }
+
 
 function _v465RenderDq() {
   const d = _v465Dq;
@@ -9366,23 +9352,46 @@ function _v465RenderDq() {
 // invocations, touches no KV and cannot expire. This renders what it knows,
 // including the distinction that matters most: how many times the engine fired
 // versus how many independent moves it has actually observed.
-let _v469Brain = null;
-async function _v469LoadBrain() {
-  const urls = [
-    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/learning-brain.json',
-    '/data/learning-brain.json',
-  ];
-  for (const u of urls) {
+// v497 — EVERY STATIC LOADER TAKES THE FRESHEST COPY, NOT THE FIRST ANSWER.
+//
+// v479 fixed this for the signals feed and nowhere else. The brain, the
+// self-evaluation, the chart-integrity report, the repeats summary, the control
+// test and the backtest all tried GitHub then Pages and returned whichever
+// replied first. The two are written at different moments — CI rewrites the
+// GitHub copy every cycle while Pages only changes on redeploy — and GitHub's
+// CDN caches for minutes, so "first" and "newest" are routinely different.
+//
+// Caught live: the browser was handed a GitHub copy 2.5 minutes older than the
+// Pages one and rendered the panel from it, so a freshly published field was
+// simply missing and the panel silently fell back to its old shape.
+//
+// Both are fetched in parallel and the newer `ts` wins.
+async function _v497Freshest(files, validate) {
+  const got = [];
+  await Promise.all(files.map(async (u) => {
     try {
       const f = window._v428OrigFetch || fetch;
-      const r = await f(u, { cache: 'no-store' });
-      if (!r.ok) continue;
+      const r = await f(u + (u.includes('?') ? '&' : '?') + '_f=' + Date.now(), { cache: 'no-store' });
+      if (!r.ok) return;
       const j = await r.json();
-      if (j && typeof j.totalSamples === 'number') { _v469Brain = j; return j; }
+      if (j && (!validate || validate(j))) got.push(j);
     } catch (_) {}
-  }
+  }));
+  if (!got.length) return null;
+  got.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  return got[0];
+}
+
+let _v469Brain = null;
+async function _v469LoadBrain() {
+  const j = await _v497Freshest([
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/learning-brain.json',
+    '/data/learning-brain.json',
+  ], (j) => typeof j.totalSamples === 'number');
+  if (j) { _v469Brain = j; return j; }
   return null;
 }
+
 
 // v471b — THE HONEST RECORD, ON EVERY PATH.
 //
@@ -9453,21 +9462,14 @@ function _v477CostProfile(s) {
 // direction.
 let _v478Repeats = null;
 async function _v478LoadRepeats() {
-  const urls = [
+  const j = await _v497Freshest([
     'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/repeats.json',
     '/data/repeats.json',
-  ];
-  for (const u of urls) {
-    try {
-      const f = window._v428OrigFetch || fetch;
-      const r = await f(u + '?b=' + Date.now(), { cache: 'no-store' });
-      if (!r.ok) continue;
-      const j = await r.json();
-      if (j && Array.isArray(j.repeats)) { _v478Repeats = j; return j; }
-    } catch (_) {}
-  }
+  ], (j) => Array.isArray(j.repeats));
+  if (j) { _v478Repeats = j; return j; }
   return null;
 }
+
 function _v478RepeatFor(s) {
   if (s.repeatOf) return s.repeatOf;
   if (!_v478Repeats) return null;
