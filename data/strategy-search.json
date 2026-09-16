@@ -1,0 +1,87 @@
+{
+  "ts": 1789560599233,
+  "isoTime": "2026-09-16T12:09:59.233Z",
+  "holdingDays": 126,
+  "method": "non-overlapping windows (step = holding period), entry next open, cost charged, measured against a random-direction null AND a buy-and-hold null",
+  "results": {
+    "momentum 12m": {
+      "n": 425,
+      "avgR": 0.693,
+      "ci": [
+        -0.367,
+        1.753
+      ],
+      "pairsPositive": 4,
+      "pairsTested": 10,
+      "beatsRandomDraws": 90,
+      "outsideChance": false,
+      "edgeOverBuyAndHold": -1.035
+    },
+    "momentum 3m": {
+      "n": 425,
+      "avgR": 1.814,
+      "ci": [
+        0.802,
+        2.908
+      ],
+      "pairsPositive": 9,
+      "pairsTested": 10,
+      "beatsRandomDraws": 100,
+      "outsideChance": true,
+      "edgeOverBuyAndHold": 0.086
+    },
+    "reversal 12m": {
+      "n": 425,
+      "avgR": -0.733,
+      "ci": [
+        -1.9,
+        0.338
+      ],
+      "pairsPositive": 6,
+      "pairsTested": 10,
+      "beatsRandomDraws": 9,
+      "outsideChance": false,
+      "edgeOverBuyAndHold": -2.461
+    },
+    "always long": {
+      "n": 425,
+      "avgR": 1.728,
+      "ci": [
+        0.683,
+        2.841
+      ],
+      "pairsPositive": 5,
+      "pairsTested": 10,
+      "beatsRandomDraws": 100,
+      "outsideChance": true,
+      "edgeOverBuyAndHold": 0
+    },
+    "random": {
+      "n": 425,
+      "avgR": -0.138,
+      "ci": [
+        -1.182,
+        1.004
+      ],
+      "pairsPositive": 4,
+      "pairsTested": 10,
+      "beatsRandomDraws": 38,
+      "outsideChance": false,
+      "edgeOverBuyAndHold": -1.866
+    }
+  },
+  "nullDistribution": {
+    "draws": 300,
+    "mean": 0.016,
+    "p95": 0.871,
+    "note": "A single random draw ranged from -0.405 to +0.699 between runs, so the null is a distribution and the bar is its 95th percentile."
+  },
+  "verdict": "Nothing tested shows TIMING skill. Momentum at 3 months clears the random null, but beats simply holding by only 0.086 — what is outside chance is being LONG, not the timing, because gold and Bitcoin rose enormously over the sample. Knowing in advance which assets will rise is not a strategy this or any backtest can supply.",
+  "familiesExhausted": [
+    "mean reversion",
+    "trend following",
+    "breakout",
+    "oscillator",
+    "time-series momentum"
+  ]
+}

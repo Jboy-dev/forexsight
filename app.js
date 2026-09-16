@@ -8816,6 +8816,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'What strategy actually works?',
+    tags: 'what works best strategy which strategy use profitable answer search momentum',
+    what: 'Five families have now been tested on the deepest daily history available — mean reversion, trend following, breakout, oscillator crossovers and time-series momentum — across roughly 57,000 daily bars and up to 30 years per instrument. None shows timing skill.',
+    use: 'Momentum over 3 months does clear a proper random null, but it beats simply holding the asset by 0.086 — so what is outside chance is being LONG, not the timing. Gold and Bitcoin rose enormously over the sample and anything long most of the time captured that. Two methodology notes worth knowing, because both produced false positives before being caught: overlapping windows made momentum look like +2.74R when non-overlapping windows put it at +0.69R with the interval spanning zero; and a single random draw ranged from -0.405 to +0.699 between runs, so the null is now a distribution of 300 draws and the bar is its 95th percentile.' },
   { area: 'How it judges itself', name: 'Tested across decades, not one regime',
     tags: 'deep history 50 years decades daily backtest long term all strategies tested',
     what: 'Eight published strategies were re-tested on the deepest daily history that exists per instrument — about 57,000 daily bars covering USD/JPY back to 1996, gold to 2000, the FX majors to 2003-2006, BTC to 2014 and ETH to 2017. That spans the 2008 crisis, the 2015 franc unpeg, the 2020 collapse and the 2022 rate shock, rather than the single regime the earlier two-year test saw.',
