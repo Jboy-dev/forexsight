@@ -1,42 +1,31 @@
 {
-  "ts": 1789559881834,
-  "isoTime": "2026-09-16T11:58:01.834Z",
+  "ts": 1789570160140,
+  "isoTime": "2026-09-16T14:49:20.140Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 341,
-  "won": 137,
-  "lost": 190,
-  "slicesClearingZero": 10,
+  "signalsAnalysed": 340,
+  "won": 138,
+  "lost": 188,
+  "slicesClearingZero": 11,
   "chanceBaseline": {
-    "mean": 7.8,
-    "sd": 2.7,
+    "mean": 8.2,
+    "sd": 3,
     "range": [
-      2,
-      15
+      4,
+      14
     ],
     "shuffles": 30
   },
-  "threshold": 10.4,
+  "threshold": 11.2,
   "beatsChance": false,
   "findings": [
     {
       "feature": "pair",
       "value": "ETH/USD",
-      "n": 41,
-      "avgR": -0.563,
+      "n": 40,
+      "avgR": -0.552,
       "ci": [
-        -0.787,
-        -0.318
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "regime",
-      "value": "MIXED",
-      "n": 81,
-      "avgR": -0.357,
-      "ci": [
-        -0.566,
-        -0.147
+        -0.78,
+        -0.295
       ],
       "direction": "negative"
     },
@@ -46,8 +35,8 @@
       "n": 59,
       "avgR": -0.342,
       "ci": [
-        -0.545,
-        -0.134
+        -0.53,
+        -0.143
       ],
       "direction": "negative"
     },
@@ -57,8 +46,19 @@
       "n": 108,
       "avgR": -0.341,
       "ci": [
-        -0.499,
-        -0.173
+        -0.503,
+        -0.17
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "regime",
+      "value": "MIXED",
+      "n": 81,
+      "avgR": -0.34,
+      "ci": [
+        -0.536,
+        -0.137
       ],
       "direction": "negative"
     },
@@ -69,7 +69,7 @@
       "avgR": -0.318,
       "ci": [
         -0.465,
-        -0.161
+        -0.162
       ],
       "direction": "negative"
     },
@@ -77,10 +77,21 @@
       "feature": "htfAlignment",
       "value": "neutral",
       "n": 93,
-      "avgR": -0.272,
+      "avgR": -0.291,
       "ci": [
-        -0.447,
-        -0.082
+        -0.46,
+        -0.114
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "confidenceBand",
+      "value": "conf 70-85",
+      "n": 83,
+      "avgR": -0.252,
+      "ci": [
+        -0.44,
+        -0.042
       ],
       "direction": "negative"
     },
@@ -88,32 +99,32 @@
       "feature": "strategy",
       "value": "TREND",
       "n": 152,
-      "avgR": -0.256,
+      "avgR": -0.249,
       "ci": [
-        -0.398,
-        -0.112
+        -0.391,
+        -0.105
       ],
       "direction": "negative"
     },
     {
-      "feature": "confidenceBand",
-      "value": "conf 70-85",
-      "n": 85,
-      "avgR": -0.231,
+      "feature": "strategy",
+      "value": "ICHIMOKU",
+      "n": 117,
+      "avgR": -0.175,
       "ci": [
-        -0.425,
-        -0.014
+        -0.339,
+        -0.012
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 20-30",
-      "n": 164,
-      "avgR": -0.171,
+      "n": 163,
+      "avgR": -0.166,
       "ci": [
-        -0.31,
-        -0.028
+        -0.309,
+        -0.015
       ],
       "direction": "negative"
     },
@@ -123,8 +134,8 @@
       "n": 32,
       "avgR": 0.546,
       "ci": [
-        0.181,
-        0.899
+        0.176,
+        0.904
       ],
       "direction": "positive"
     }
@@ -136,18 +147,18 @@
       "n": 32,
       "avgR": 0.546,
       "ci": [
-        0.181,
-        0.899
+        0.176,
+        0.904
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 190,
-    "fullStopOuts": 160,
+    "total": 188,
+    "fullStopOuts": 158,
     "partial": 30,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "10 slices cleared zero, but shuffled outcomes produce 7.8 on average (up to 15). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "11 slices cleared zero, but shuffled outcomes produce 8.2 on average (up to 14). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
