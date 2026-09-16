@@ -1,64 +1,31 @@
 {
-  "ts": 1789552702748,
-  "isoTime": "2026-09-16T09:58:22.748Z",
+  "ts": 1789559881834,
+  "isoTime": "2026-09-16T11:58:01.834Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 342,
-  "won": 138,
+  "signalsAnalysed": 341,
+  "won": 137,
   "lost": 190,
-  "slicesClearingZero": 11,
+  "slicesClearingZero": 10,
   "chanceBaseline": {
-    "mean": 5.8,
-    "sd": 2.6,
+    "mean": 7.8,
+    "sd": 2.7,
     "range": [
-      1,
-      13
+      2,
+      15
     ],
     "shuffles": 30
   },
-  "threshold": 8.3,
-  "beatsChance": true,
+  "threshold": 10.4,
+  "beatsChance": false,
   "findings": [
     {
       "feature": "pair",
       "value": "ETH/USD",
-      "n": 42,
-      "avgR": -0.573,
+      "n": 41,
+      "avgR": -0.563,
       "ci": [
         -0.787,
-        -0.337
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategyCount",
-      "value": "4 strategies",
-      "n": 61,
-      "avgR": -0.387,
-      "ci": [
-        -0.568,
-        -0.189
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "MOMENTUM",
-      "n": 109,
-      "avgR": -0.347,
-      "ci": [
-        -0.503,
-        -0.176
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "independence",
-      "value": "3 independent",
-      "n": 26,
-      "avgR": -0.328,
-      "ci": [
-        -0.64,
-        -0.008
+        -0.318
       ],
       "direction": "negative"
     },
@@ -66,76 +33,98 @@
       "feature": "regime",
       "value": "MIXED",
       "n": 81,
-      "avgR": -0.317,
+      "avgR": -0.357,
       "ci": [
-        -0.519,
-        -0.103
+        -0.566,
+        -0.147
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategyCount",
+      "value": "4 strategies",
+      "n": 59,
+      "avgR": -0.342,
+      "ci": [
+        -0.545,
+        -0.134
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "MOMENTUM",
+      "n": 108,
+      "avgR": -0.341,
+      "ci": [
+        -0.499,
+        -0.173
       ],
       "direction": "negative"
     },
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 118,
-      "avgR": -0.302,
+      "n": 116,
+      "avgR": -0.318,
       "ci": [
-        -0.453,
-        -0.141
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "confidenceBand",
-      "value": "conf 70-85",
-      "n": 88,
-      "avgR": -0.273,
-      "ci": [
-        -0.472,
-        -0.08
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "TREND",
-      "n": 153,
-      "avgR": -0.27,
-      "ci": [
-        -0.415,
-        -0.134
+        -0.465,
+        -0.161
       ],
       "direction": "negative"
     },
     {
       "feature": "htfAlignment",
       "value": "neutral",
-      "n": 95,
-      "avgR": -0.219,
+      "n": 93,
+      "avgR": -0.272,
       "ci": [
-        -0.409,
-        -0.019
+        -0.447,
+        -0.082
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "TREND",
+      "n": 152,
+      "avgR": -0.256,
+      "ci": [
+        -0.398,
+        -0.112
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "confidenceBand",
+      "value": "conf 70-85",
+      "n": 85,
+      "avgR": -0.231,
+      "ci": [
+        -0.425,
+        -0.014
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 20-30",
-      "n": 165,
-      "avgR": -0.165,
+      "n": 164,
+      "avgR": -0.171,
       "ci": [
         -0.31,
-        -0.012
+        -0.028
       ],
       "direction": "negative"
     },
     {
       "feature": "pair",
       "value": "NZD/USD",
-      "n": 30,
-      "avgR": 0.602,
+      "n": 32,
+      "avgR": 0.546,
       "ci": [
-        0.217,
-        0.969
+        0.181,
+        0.899
       ],
       "direction": "positive"
     }
@@ -144,11 +133,11 @@
     {
       "feature": "pair",
       "value": "NZD/USD",
-      "n": 30,
-      "avgR": 0.602,
+      "n": 32,
+      "avgR": 0.546,
       "ci": [
-        0.217,
-        0.969
+        0.181,
+        0.899
       ],
       "direction": "positive"
     }
@@ -160,5 +149,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "11 slices clear zero against a chance baseline of 5.8, including 1 positive — worth investigating, not yet worth trading."
+  "verdict": "10 slices cleared zero, but shuffled outcomes produce 7.8 on average (up to 15). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
