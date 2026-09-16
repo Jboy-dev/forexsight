@@ -1,42 +1,53 @@
 {
-  "ts": 1789584324635,
-  "isoTime": "2026-09-16T18:45:24.635Z",
+  "ts": 1789587615335,
+  "isoTime": "2026-09-16T19:40:15.335Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 349,
-  "won": 144,
-  "lost": 191,
-  "slicesClearingZero": 10,
+  "signalsAnalysed": 354,
+  "won": 152,
+  "lost": 188,
+  "slicesClearingZero": 9,
   "chanceBaseline": {
-    "mean": 3.9,
-    "sd": 2.8,
+    "mean": 1.7,
+    "sd": 1.5,
     "range": [
-      1,
-      12
+      0,
+      6
     ],
     "shuffles": 30
   },
-  "threshold": 6.7,
+  "threshold": 3.3,
   "beatsChance": true,
   "findings": [
     {
       "feature": "pair",
       "value": "ETH/USD",
-      "n": 39,
-      "avgR": -0.54,
+      "n": 38,
+      "avgR": -0.528,
       "ci": [
-        -0.77,
-        -0.279
+        -0.759,
+        -0.264
       ],
       "direction": "negative"
     },
     {
-      "feature": "direction",
-      "value": "BUY",
-      "n": 116,
-      "avgR": -0.337,
+      "feature": "pair",
+      "value": "USD/JPY",
+      "n": 32,
+      "avgR": -0.352,
       "ci": [
-        -0.484,
-        -0.181
+        -0.662,
+        -0.029
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "htfAlignment",
+      "value": "neutral",
+      "n": 97,
+      "avgR": -0.335,
+      "ci": [
+        -0.488,
+        -0.163
       ],
       "direction": "negative"
     },
@@ -46,85 +57,63 @@
       "n": 28,
       "avgR": -0.335,
       "ci": [
-        -0.63,
-        -0.022
+        -0.624,
+        -0.004
       ],
       "direction": "negative"
     },
     {
-      "feature": "htfAlignment",
-      "value": "neutral",
-      "n": 99,
-      "avgR": -0.334,
+      "feature": "direction",
+      "value": "BUY",
+      "n": 115,
+      "avgR": -0.327,
       "ci": [
-        -0.51,
-        -0.168
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "regime",
-      "value": "MIXED",
-      "n": 88,
-      "avgR": -0.319,
-      "ci": [
-        -0.513,
-        -0.116
+        -0.474,
+        -0.166
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "MOMENTUM",
-      "n": 109,
-      "avgR": -0.288,
+      "n": 106,
+      "avgR": -0.24,
       "ci": [
-        -0.451,
-        -0.106
+        -0.426,
+        -0.051
       ],
       "direction": "negative"
     },
     {
-      "feature": "killzone",
-      "value": "in killzone",
-      "n": 61,
-      "avgR": -0.255,
+      "feature": "direction",
+      "value": "SELL",
+      "n": 239,
+      "avgR": 0.143,
       "ci": [
-        -0.482,
-        -0.023
+        0.003,
+        0.291
       ],
-      "direction": "negative"
+      "direction": "positive"
     },
     {
-      "feature": "strategy",
-      "value": "MACD",
-      "n": 72,
-      "avgR": -0.212,
+      "feature": "pair",
+      "value": "GBP/USD",
+      "n": 37,
+      "avgR": 0.417,
       "ci": [
-        -0.411,
-        -0.006
+        0.007,
+        0.826
       ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "TREND",
-      "n": 153,
-      "avgR": -0.19,
-      "ci": [
-        -0.333,
-        -0.036
-      ],
-      "direction": "negative"
+      "direction": "positive"
     },
     {
       "feature": "pair",
       "value": "NZD/USD",
-      "n": 32,
-      "avgR": 0.647,
+      "n": 35,
+      "avgR": 0.78,
       "ci": [
-        0.283,
-        1.025
+        0.419,
+        1.13
       ],
       "direction": "positive"
     }
@@ -133,21 +122,43 @@
     {
       "feature": "pair",
       "value": "NZD/USD",
-      "n": 32,
-      "avgR": 0.647,
+      "n": 35,
+      "avgR": 0.78,
       "ci": [
-        0.283,
-        1.025
+        0.419,
+        1.13
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "pair",
+      "value": "GBP/USD",
+      "n": 37,
+      "avgR": 0.417,
+      "ci": [
+        0.007,
+        0.826
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "direction",
+      "value": "SELL",
+      "n": 239,
+      "avgR": 0.143,
+      "ci": [
+        0.003,
+        0.291
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 191,
-    "fullStopOuts": 161,
+    "total": 188,
+    "fullStopOuts": 158,
     "partial": 30,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "10 slices clear zero against a chance baseline of 3.9, including 1 positive — worth investigating, not yet worth trading."
+  "verdict": "9 slices clear zero against a chance baseline of 1.7, including 3 positive — worth investigating, not yet worth trading."
 }
