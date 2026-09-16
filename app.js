@@ -8816,6 +8816,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'How it judges itself', name: 'Tested across decades, not one regime',
+    tags: 'deep history 50 years decades daily backtest long term all strategies tested',
+    what: 'Eight published strategies were re-tested on the deepest daily history that exists per instrument — about 57,000 daily bars covering USD/JPY back to 1996, gold to 2000, the FX majors to 2003-2006, BTC to 2014 and ETH to 2017. That spans the 2008 crisis, the 2015 franc unpeg, the 2020 collapse and the 2022 rate shock, rather than the single regime the earlier two-year test saw.',
+    use: 'Not one strategy is positive out of sample. Every interval that clears zero clears it on the negative side: trend pullback -0.107R and RSI mean reversion -0.112R. RSI mean reversion is the strategy this app briefly published as proven — on two years of hourly bars it appeared to return +0.236R; across twenty-five years of daily bars it is significantly negative and positive on only 1 of 10 instruments. Fifty years was asked for and does not exist: floating exchange rates began in 1971, free daily data starts in the mid-1990s, and crypto is younger still.' },
   { area: 'How it judges itself', name: 'What the losing trades actually show',
     tags: 'losses learn from losses pattern why losing improve winners loss analysis',
     what: 'Every resolved signal is mined for a feature that separates winners from losers — pair, direction, strategy, strategy count, ADX band, confidence band, regime, killzone, session, higher-timeframe alignment, independence. The same analysis is then run on SHUFFLED outcomes, which destroys any real relationship while keeping the shape of the data, to measure how many "significant" slices the method invents from noise.',

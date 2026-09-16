@@ -112,6 +112,13 @@ jobs:
       - name: Control test (must fail to prove the edge)
         run: node tools/control-test.mjs
 
+
+      # v499 — re-test across the deepest daily history available per instrument,
+      # not just the recent window. The claim withdrawn in v495 looked strong on
+      # two years of hourly bars and is significantly negative over 25 years.
+      - name: Deep history lab
+        run: node tools/fetch-deep-history.mjs && node tools/deep-history-lab.mjs
+
       - name: Strategy lab
         run: node tools/strategy-lab.mjs
 
