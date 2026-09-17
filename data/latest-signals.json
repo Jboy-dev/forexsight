@@ -1,23 +1,159 @@
 {
-  "ts": 1789663186684,
-  "isoTime": "2026-09-17T16:39:46.684Z",
-  "count": 6,
+  "ts": 1789671802019,
+  "isoTime": "2026-09-17T19:03:22.019Z",
+  "count": 5,
   "signals": [
+    {
+      "pair": "AUD/USD",
+      "direction": "SELL",
+      "confidence": 83,
+      "tier": "best",
+      "chartStudy": {
+        "score": 74,
+        "reasons": [
+          "Trend clean: 8/20 bars in direction (+11)",
+          "Pullback to EMA20 (+8)",
+          "Candle conviction: 39% body (+9)",
+          "Compression 18% (+10)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+6)",
+          "Momentum (RSI) (+10)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "SELL",
+        "strength": 84,
+        "alignment": "aligned",
+        "score": 99,
+        "adx4h": 34,
+        "reasons": [
+          "4H trend DOWN (price < EMA20 < EMA50, ADX 34)",
+          "✓ Signal direction matches 4H trend (+48.95974956780378)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "neutral",
+        "trend": "neutral",
+        "bias": 0,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "RANGING",
+        "adx": 0,
+        "atrRatio": 0.71,
+        "compression": 0.73
+      },
+      "entry": 0.71124,
+      "sl": 0.71302,
+      "tp1": 0.7091,
+      "tp2": 0.70767,
+      "tp3": 0.70499,
+      "adx": 17,
+      "agreement": 86,
+      "indicators": 7,
+      "strategies": 5,
+      "namedStrategies": [
+        "MOMENTUM",
+        "SMC",
+        "ORB",
+        "TREND"
+      ],
+      "comboKey": "SELL_MOMENTUM+ORB+SMC+TREND",
+      "independentFamilies": 3,
+      "familyBreakdown": {
+        "moving-average": [
+          "MOMENTUM",
+          "TREND"
+        ],
+        "structure": [
+          "SMC"
+        ],
+        "candle-pattern": [
+          "ORB"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 1,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": false,
+      "weakSignal": false,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 0.78,
+      "pipPotential": 62,
+      "pipsToTp1": 21,
+      "pipsToTp2": 36,
+      "pipsToTp3": 62,
+      "pipsToSl": 18,
+      "atrV": 0.0006511339119502477,
+      "slDistAtr": 2.742,
+      "tp1DistAtr": 3.29,
+      "tp2DistAtr": 5.483,
+      "tp3DistAtr": 9.596,
+      "slMethod": "structure (beyond ATR floor)",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 0.71124,
+        "afterTp2": 0.7091,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-09-17T19:03:21.485Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "expectedR": 0.03,
+        "hitTp1Pct": 43,
+        "hitTp2Pct": 25,
+        "hitTp3Pct": 7,
+        "hitSlPct": 52,
+        "undecidedPct": 18,
+        "winProbability": 43,
+        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 1,
+      "brainNote": "no resolved history for this setup yet",
+      "newsCheck": {
+        "verdict": "clear",
+        "note": null,
+        "events": [],
+        "windows": {
+          "BLOCK_MIN": 30,
+          "WARN_MIN": 120
+        }
+      },
+      "costProfile": {
+        "spreadPips": 1,
+        "riskPips": 17.8,
+        "spreadAsPctOfRisk": 5.6,
+        "tp1NetR": 1.09,
+        "grade": "moderate",
+        "note": "The spread costs 5.6% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+      },
+      "repeatOf": {
+        "count": 8,
+        "runningForHours": 23.4,
+        "stillOpen": 5,
+        "alreadyResolved": 3,
+        "alreadyLost": 3,
+        "note": "Same AUD/USD SELL has been signalled 8 time(s) over the last 23.4h and 5 is still open. This is that setup continuing, not a new one."
+      }
+    },
     {
       "pair": "EUR/USD",
       "direction": "SELL",
-      "confidence": 86,
+      "confidence": 77,
       "tier": "best",
       "chartStudy": {
-        "score": 71,
+        "score": 81,
         "reasons": [
           "Trend clean: 10/20 bars in direction (+14)",
           "Pullback to EMA20 (+15)",
-          "Candle conviction: 55% body (+12)",
-          "Compression 35% (+7)",
+          "Candle conviction: 41% body (+9)",
+          "Compression 21% (+10)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
           "Rejection wicks (+3)",
-          "Momentum (RSI) (+0)"
+          "Momentum (RSI) (+10)"
         ]
       },
       "htfStudy": {
@@ -38,40 +174,32 @@
         "daysAnalysed": 20
       },
       "regime": {
-        "label": "BREAKOUT",
+        "label": "RANGING",
         "adx": 0,
-        "atrRatio": 1.38,
-        "compression": 1.38
+        "atrRatio": 0.84,
+        "compression": 0.84
       },
-      "entry": 1.14824,
-      "sl": 1.15032,
-      "tp1": 1.14573,
-      "tp2": 1.14406,
-      "tp3": 1.14093,
-      "adx": 29,
-      "agreement": 89,
-      "indicators": 8.9,
-      "strategies": 5,
+      "entry": 1.14784,
+      "sl": 1.15031,
+      "tp1": 1.14487,
+      "tp2": 1.1429,
+      "tp3": 1.13919,
+      "adx": 23,
+      "agreement": 80,
+      "indicators": 5,
+      "strategies": 3,
       "namedStrategies": [
         "MOMENTUM",
-        "ORB",
         "TREND",
-        "ICHIMOKU",
-        "TURTLE_SOUP"
+        "ICHIMOKU"
       ],
-      "comboKey": "SELL_ICHIMOKU+MOMENTUM+ORB+TREND+TURTLE_SOUP",
-      "independentFamilies": 3,
+      "comboKey": "SELL_ICHIMOKU+MOMENTUM+TREND",
+      "independentFamilies": 1,
       "familyBreakdown": {
         "moving-average": [
           "MOMENTUM",
           "TREND",
           "ICHIMOKU"
-        ],
-        "candle-pattern": [
-          "ORB"
-        ],
-        "structure": [
-          "TURTLE_SOUP"
         ]
       },
       "dominantFamily": "moving-average",
@@ -83,37 +211,37 @@
       "bigMove": false,
       "bigMoveHunt": false,
       "atrExpansion": 0.84,
-      "pipPotential": 73,
-      "pipsToTp1": 25,
-      "pipsToTp2": 42,
-      "pipsToTp3": 73,
-      "pipsToSl": 21,
-      "atrV": 0.0009508473532540458,
-      "slDistAtr": 2.194,
-      "tp1DistAtr": 2.633,
-      "tp2DistAtr": 4.389,
-      "tp3DistAtr": 7.68,
+      "pipPotential": 87,
+      "pipsToTp1": 30,
+      "pipsToTp2": 49,
+      "pipsToTp3": 87,
+      "pipsToSl": 25,
+      "atrV": 0.0009135178157261439,
+      "slDistAtr": 2.707,
+      "tp1DistAtr": 3.248,
+      "tp2DistAtr": 5.413,
+      "tp3DistAtr": 9.473,
       "slMethod": "structure (beyond ATR floor)",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 1.14824,
-        "afterTp2": 1.14573,
+        "afterTp1": 1.14784,
+        "afterTp2": 1.14487,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-09-17T16:39:46.103Z",
+      "detectedAt": "2026-09-17T19:03:21.462Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.11,
-        "hitTp1Pct": 47,
-        "hitTp2Pct": 31,
-        "hitTp3Pct": 12,
-        "hitSlPct": 53,
-        "undecidedPct": 7,
-        "winProbability": 47,
+        "expectedR": 0.1,
+        "hitTp1Pct": 46,
+        "hitTp2Pct": 28,
+        "hitTp3Pct": 8,
+        "hitSlPct": 51,
+        "undecidedPct": 18,
+        "winProbability": 46,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
-      "barAgeMinutes": 1,
+      "barAgeMinutes": 0,
       "brainNote": "no resolved history for this setup yet",
       "newsCheck": {
         "verdict": "clear",
@@ -126,132 +254,127 @@
       },
       "costProfile": {
         "spreadPips": 0.8,
-        "riskPips": 20.8,
-        "spreadAsPctOfRisk": 3.8,
-        "tp1NetR": 1.12,
+        "riskPips": 24.7,
+        "spreadAsPctOfRisk": 3.2,
+        "tp1NetR": 1.13,
         "grade": "moderate",
-        "note": "The spread costs 3.8% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+        "note": "The spread costs 3.2% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 6,
-        "runningForHours": 21,
-        "stillOpen": 6,
+        "count": 7,
+        "runningForHours": 23.4,
+        "stillOpen": 7,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same EUR/USD SELL has been signalled 6 time(s) over the last 21h and 6 is still open. This is that setup continuing, not a new one."
+        "note": "Same EUR/USD SELL has been signalled 7 time(s) over the last 23.4h and 7 is still open. This is that setup continuing, not a new one."
       }
     },
     {
-      "pair": "NZD/USD",
-      "direction": "SELL",
-      "confidence": 85,
+      "pair": "USD/CAD",
+      "direction": "BUY",
+      "confidence": 83,
       "tier": "best",
       "chartStudy": {
-        "score": 71,
+        "score": 82,
         "reasons": [
-          "Trend clean: 10/20 bars in direction (+14)",
-          "Pullback to EMA20 (+4)",
-          "Candle conviction: 45% body (+10)",
-          "Compression 26% (+10)",
+          "Trend clean: 11/20 bars in direction (+15)",
+          "Pullback to EMA20 (+15)",
+          "Candle conviction: 27% body (+6)",
+          "Compression 29% (+10)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+3)",
+          "Rejection wicks (+6)",
           "Momentum (RSI) (+10)"
         ]
       },
       "htfStudy": {
-        "direction": "SELL",
-        "strength": 91,
+        "direction": "BUY",
+        "strength": 100,
         "alignment": "aligned",
-        "score": 100,
-        "adx4h": 41,
+        "score": 90,
+        "adx4h": 60,
         "reasons": [
-          "4H trend DOWN (price < EMA20 < EMA50, ADX 41)",
-          "✓ Signal direction matches 4H trend (+50)"
+          "4H trend UP (price > EMA20 > EMA50, ADX 60)",
+          "✓ Signal direction matches 4H trend (+50)",
+          "⚠ 4H RSI overbought (74)"
         ]
       },
       "dailyHtf": {
         "aligned": "aligned",
-        "trend": "down",
+        "trend": "up",
         "bias": 10,
         "daysAnalysed": 20
       },
       "regime": {
         "label": "MIXED",
         "adx": 0,
-        "atrRatio": 1.03,
-        "compression": 1.04
+        "atrRatio": 1.14,
+        "compression": 1.14
       },
-      "entry": 0.57356,
-      "sl": 0.57539,
-      "tp1": 0.57136,
-      "tp2": 0.56989,
-      "tp3": 0.56714,
-      "adx": 18,
-      "agreement": 88,
-      "indicators": 8,
-      "strategies": 5,
+      "entry": 1.39916,
+      "sl": 1.39653,
+      "tp1": 1.40232,
+      "tp2": 1.40442,
+      "tp3": 1.40837,
+      "adx": 43,
+      "agreement": 86,
+      "indicators": 7,
+      "strategies": 4,
       "namedStrategies": [
         "MOMENTUM",
-        "SMC",
-        "ORB",
-        "ICT",
-        "TREND"
+        "TREND",
+        "VWAP",
+        "ICHIMOKU"
       ],
-      "comboKey": "SELL_ICT+MOMENTUM+ORB+SMC+TREND",
-      "independentFamilies": 3,
+      "comboKey": "BUY_ICHIMOKU+MOMENTUM+TREND+VWAP",
+      "independentFamilies": 1,
       "familyBreakdown": {
         "moving-average": [
           "MOMENTUM",
-          "TREND"
-        ],
-        "structure": [
-          "SMC",
-          "ICT"
-        ],
-        "candle-pattern": [
-          "ORB"
+          "TREND",
+          "VWAP",
+          "ICHIMOKU"
         ]
       },
       "dominantFamily": "moving-average",
-      "redundantCount": 2,
+      "redundantCount": 3,
       "isEliteBrainPattern": false,
       "eliteBrainWR": null,
       "inKillzone": false,
       "weakSignal": false,
       "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 0.72,
-      "pipPotential": 64,
-      "pipsToTp1": 22,
-      "pipsToTp2": 37,
-      "pipsToTp3": 64,
-      "pipsToSl": 18,
-      "atrV": 0.0007401704788208008,
-      "slDistAtr": 2.479,
-      "tp1DistAtr": 2.974,
-      "tp2DistAtr": 4.957,
-      "tp3DistAtr": 8.675,
+      "atrExpansion": 1.01,
+      "pipPotential": 92,
+      "pipsToTp1": 32,
+      "pipsToTp2": 53,
+      "pipsToTp3": 92,
+      "pipsToSl": 26,
+      "atrV": 0.0014892816543579102,
+      "slDistAtr": 1.767,
+      "tp1DistAtr": 2.121,
+      "tp2DistAtr": 3.535,
+      "tp3DistAtr": 6.186,
       "slMethod": "structure (beyond ATR floor)",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 0.57356,
-        "afterTp2": 0.57136,
+        "afterTp1": 1.39916,
+        "afterTp2": 1.40232,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-09-17T16:39:46.373Z",
+      "detectedAt": "2026-09-17T19:03:21.576Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.06,
-        "hitTp1Pct": 44,
-        "hitTp2Pct": 29,
-        "hitTp3Pct": 10,
-        "hitSlPct": 54,
-        "undecidedPct": 11,
-        "winProbability": 44,
+        "expectedR": 0.13,
+        "hitTp1Pct": 47,
+        "hitTp2Pct": 33,
+        "hitTp3Pct": 14,
+        "hitSlPct": 53,
+        "undecidedPct": 2,
+        "winProbability": 47,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
-      "barAgeMinutes": 2,
+      "barAgeMinutes": 0,
       "brainNote": "no resolved history for this setup yet",
       "newsCheck": {
         "verdict": "clear",
@@ -264,397 +387,19 @@
       },
       "costProfile": {
         "spreadPips": 1.5,
-        "riskPips": 18.3,
-        "spreadAsPctOfRisk": 8.2,
-        "tp1NetR": 1.04,
-        "grade": "high",
-        "note": "The spread costs 8.2% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+        "riskPips": 26.3,
+        "spreadAsPctOfRisk": 5.7,
+        "tp1NetR": 1.08,
+        "grade": "moderate",
+        "note": "The spread costs 5.7% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
         "count": 2,
-        "runningForHours": 16.4,
-        "stillOpen": 0,
-        "alreadyResolved": 2,
-        "alreadyLost": 2,
-        "note": "Same NZD/USD SELL was signalled 2 time(s) in the last 16.4h, of which 2 stopped out."
-      }
-    },
-    {
-      "pair": "BTC/USD",
-      "direction": "SELL",
-      "confidence": 47,
-      "tier": "best",
-      "chartStudy": {
-        "score": 65,
-        "reasons": [
-          "Trend clean: 8/20 bars in direction (+11)",
-          "Pullback to EMA20 (+15)",
-          "Candle conviction: 26% body (+6)",
-          "Compression 38% (+7)",
-          "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+6)",
-          "Momentum (RSI) (+0)"
-        ]
-      },
-      "htfStudy": {
-        "direction": "NEUTRAL",
-        "strength": 22,
-        "alignment": "neutral",
-        "score": 50,
-        "adx4h": 28,
-        "reasons": [
-          "4H ranging (ADX 28)"
-        ]
-      },
-      "dailyHtf": {
-        "aligned": "aligned",
-        "trend": "down",
-        "bias": 10,
-        "daysAnalysed": 20
-      },
-      "regime": {
-        "label": "BREAKOUT",
-        "adx": 0,
-        "atrRatio": 1.53,
-        "compression": 1.53
-      },
-      "entry": 76676.42188,
-      "sl": 77399.76953,
-      "tp1": 75808.40469,
-      "tp2": 75229.72656,
-      "tp3": 74144.70508,
-      "adx": 14,
-      "agreement": 50,
-      "indicators": 2,
-      "strategies": 0,
-      "namedStrategies": [],
-      "comboKey": "SELL_",
-      "independentFamilies": 0,
-      "familyBreakdown": {},
-      "dominantFamily": null,
-      "redundantCount": 0,
-      "isEliteBrainPattern": false,
-      "eliteBrainWR": null,
-      "inKillzone": false,
-      "weakSignal": true,
-      "bigMove": false,
-      "bigMoveHunt": false,
-      "atrExpansion": 0.9,
-      "pipPotential": 2532,
-      "pipsToTp1": 868,
-      "pipsToTp2": 1447,
-      "pipsToTp3": 2532,
-      "pipsToSl": 723,
-      "atrV": 413.34151785714283,
-      "slDistAtr": 1.75,
-      "tp1DistAtr": 2.1,
-      "tp2DistAtr": 3.5,
-      "tp3DistAtr": 6.125,
-      "slMethod": "atr-floor",
-      "slSavedPips": 0,
-      "trailStops": {
-        "afterTp1": 76676.42188,
-        "afterTp2": 75808.40469,
-        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
-      },
-      "detectedAt": "2026-09-17T16:39:46.153Z",
-      "monteCarloOutcome": {
-        "runs": 1000,
-        "expectedR": 0.12,
-        "hitTp1Pct": 46,
-        "hitTp2Pct": 33,
-        "hitTp3Pct": 16,
-        "hitSlPct": 54,
-        "undecidedPct": 0,
-        "winProbability": 46,
-        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
-      },
-      "generatedOffline": true,
-      "barAgeMinutes": 0,
-      "brainNote": "only 17 episode(s) for this combination — below the 20 needed to quote a win chance",
-      "newsCheck": {
-        "verdict": "clear",
-        "note": null,
-        "events": [],
-        "windows": {
-          "BLOCK_MIN": 30,
-          "WARN_MIN": 120
-        }
-      },
-      "costProfile": {
-        "spreadPips": 20,
-        "riskPips": 723.3,
-        "spreadAsPctOfRisk": 2.8,
-        "tp1NetR": 1.14,
-        "grade": "low",
-        "note": "The spread costs 2.8% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
-      },
-      "repeatOf": {
-        "count": 5,
-        "runningForHours": 21,
+        "runningForHours": 21.1,
         "stillOpen": 2,
-        "alreadyResolved": 3,
-        "alreadyLost": 3,
-        "note": "Same BTC/USD SELL has been signalled 5 time(s) over the last 21h and 2 is still open. This is that setup continuing, not a new one."
-      }
-    },
-    {
-      "pair": "USD/JPY",
-      "direction": "BUY",
-      "confidence": 83,
-      "tier": "best",
-      "chartStudy": {
-        "score": 79,
-        "reasons": [
-          "Trend clean: 9/20 bars in direction (+13)",
-          "Pullback to EMA20 (+15)",
-          "Candle conviction: 52% body (+11)",
-          "Compression 31% (+7)",
-          "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+3)",
-          "Momentum (RSI) (+10)"
-        ]
-      },
-      "htfStudy": {
-        "direction": "BUY",
-        "strength": 76,
-        "alignment": "aligned",
-        "score": 91,
-        "adx4h": 26,
-        "reasons": [
-          "4H trend UP (price > EMA20 > EMA50, ADX 26)",
-          "✓ Signal direction matches 4H trend (+41.10011694359156)"
-        ]
-      },
-      "dailyHtf": {
-        "aligned": "neutral",
-        "trend": "neutral",
-        "bias": 0,
-        "daysAnalysed": 20
-      },
-      "regime": {
-        "label": "MIXED",
-        "adx": 0,
-        "atrRatio": 1.26,
-        "compression": 1.26
-      },
-      "entry": 155.85,
-      "sl": 155.228,
-      "tp1": 156.597,
-      "tp2": 157.094,
-      "tp3": 158.027,
-      "adx": 17,
-      "agreement": 86,
-      "indicators": 7,
-      "strategies": 4,
-      "namedStrategies": [
-        "MOMENTUM",
-        "SMC",
-        "TREND",
-        "VWAP"
-      ],
-      "comboKey": "BUY_MOMENTUM+SMC+TREND+VWAP",
-      "independentFamilies": 2,
-      "familyBreakdown": {
-        "moving-average": [
-          "MOMENTUM",
-          "TREND",
-          "VWAP"
-        ],
-        "structure": [
-          "SMC"
-        ]
-      },
-      "dominantFamily": "moving-average",
-      "redundantCount": 2,
-      "isEliteBrainPattern": false,
-      "eliteBrainWR": null,
-      "inKillzone": false,
-      "weakSignal": false,
-      "bigMove": false,
-      "bigMoveHunt": false,
-      "atrExpansion": 0.93,
-      "pipPotential": 218,
-      "pipsToTp1": 75,
-      "pipsToTp2": 124,
-      "pipsToTp3": 218,
-      "pipsToSl": 62,
-      "atrV": 0.2523585728236607,
-      "slDistAtr": 2.465,
-      "tp1DistAtr": 2.958,
-      "tp2DistAtr": 4.93,
-      "tp3DistAtr": 8.628,
-      "slMethod": "structure (beyond ATR floor)",
-      "slSavedPips": 0,
-      "trailStops": {
-        "afterTp1": 155.85,
-        "afterTp2": 156.597,
-        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
-      },
-      "detectedAt": "2026-09-17T16:39:46.187Z",
-      "monteCarloOutcome": {
-        "runs": 1000,
-        "expectedR": 0.09,
-        "hitTp1Pct": 45,
-        "hitTp2Pct": 30,
-        "hitTp3Pct": 11,
-        "hitSlPct": 53,
-        "undecidedPct": 11,
-        "winProbability": 45,
-        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
-      },
-      "generatedOffline": true,
-      "barAgeMinutes": 0,
-      "brainNote": "no resolved history for this setup yet",
-      "newsCheck": {
-        "verdict": "clear",
-        "note": null,
-        "events": [],
-        "windows": {
-          "BLOCK_MIN": 30,
-          "WARN_MIN": 120
-        }
-      },
-      "costProfile": {
-        "spreadPips": 0.9,
-        "riskPips": 62.2,
-        "spreadAsPctOfRisk": 1.4,
-        "tp1NetR": 1.17,
-        "grade": "low",
-        "note": "The spread costs 1.4% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
-      },
-      "repeatOf": {
-        "count": 1,
-        "runningForHours": 21,
-        "stillOpen": 1,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same USD/JPY BUY has been signalled 1 time(s) over the last 21h and 1 is still open. This is that setup continuing, not a new one."
-      }
-    },
-    {
-      "pair": "ETH/USD",
-      "direction": "BUY",
-      "confidence": 86,
-      "tier": "best",
-      "chartStudy": {
-        "score": 55,
-        "reasons": [
-          "Trend clean: 14/20 bars in direction (+20)",
-          "Pullback to EMA20 (+8)",
-          "Candle conviction: 26% body (+6)",
-          "Compression 39% (+7)",
-          "HTF alignment (EMA50 vs EMA200) (+-5)",
-          "Rejection wicks (+9)",
-          "Momentum (RSI) (+10)"
-        ]
-      },
-      "htfStudy": {
-        "direction": "NEUTRAL",
-        "strength": 34,
-        "alignment": "neutral",
-        "score": 50,
-        "adx4h": 16,
-        "reasons": [
-          "4H ranging (ADX 16)"
-        ]
-      },
-      "dailyHtf": {
-        "aligned": "neutral",
-        "trend": "neutral",
-        "bias": 0,
-        "daysAnalysed": 20
-      },
-      "regime": {
-        "label": "BREAKOUT",
-        "adx": 0,
-        "atrRatio": 1.57,
-        "compression": 1.57
-      },
-      "entry": 2467.98999,
-      "sl": 2406.29024,
-      "tp1": 2542.02969,
-      "tp2": 2591.38949,
-      "tp3": 2683.93911,
-      "adx": 28,
-      "agreement": 89,
-      "indicators": 9.1,
-      "strategies": 5,
-      "namedStrategies": [
-        "MOMENTUM",
-        "BOLLINGER",
-        "MACD",
-        "VWAP",
-        "ICHIMOKU"
-      ],
-      "comboKey": "BUY_BOLLINGER+ICHIMOKU+MACD+MOMENTUM+VWAP",
-      "independentFamilies": 1,
-      "familyBreakdown": {
-        "moving-average": [
-          "MOMENTUM",
-          "BOLLINGER",
-          "MACD",
-          "VWAP",
-          "ICHIMOKU"
-        ]
-      },
-      "dominantFamily": "moving-average",
-      "redundantCount": 4,
-      "isEliteBrainPattern": false,
-      "eliteBrainWR": null,
-      "inKillzone": false,
-      "weakSignal": false,
-      "bigMove": false,
-      "bigMoveHunt": false,
-      "atrExpansion": 0.91,
-      "pipPotential": 2159,
-      "pipsToTp1": 740,
-      "pipsToTp2": 1234,
-      "pipsToTp3": 2159,
-      "pipsToSl": 617,
-      "atrV": 18.468593052455358,
-      "slDistAtr": 3.341,
-      "tp1DistAtr": 4.009,
-      "tp2DistAtr": 6.682,
-      "tp3DistAtr": 11.693,
-      "slMethod": "capped",
-      "slSavedPips": 0,
-      "trailStops": {
-        "afterTp1": 2467.98999,
-        "afterTp2": 2542.02969,
-        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
-      },
-      "detectedAt": "2026-09-17T16:39:46.132Z",
-      "monteCarloOutcome": {
-        "runs": 1000,
-        "expectedR": 0.08,
-        "hitTp1Pct": 41,
-        "hitTp2Pct": 22,
-        "hitTp3Pct": 5,
-        "hitSlPct": 48,
-        "undecidedPct": 32,
-        "winProbability": 41,
-        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
-      },
-      "generatedOffline": true,
-      "barAgeMinutes": 0,
-      "brainNote": "no resolved history for this setup yet",
-      "newsCheck": {
-        "verdict": "clear",
-        "note": null,
-        "events": [],
-        "windows": {
-          "BLOCK_MIN": 30,
-          "WARN_MIN": 120
-        }
-      },
-      "costProfile": {
-        "spreadPips": 15,
-        "riskPips": 617,
-        "spreadAsPctOfRisk": 2.4,
-        "tp1NetR": 1.15,
-        "grade": "low",
-        "note": "The spread costs 2.4% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+        "note": "Same USD/CAD BUY has been signalled 2 time(s) over the last 21.1h and 2 is still open. This is that setup continuing, not a new one."
       }
     },
     {
@@ -665,23 +410,23 @@
       "chartStudy": {
         "score": 52,
         "reasons": [
-          "Trend clean: 14/20 bars in direction (+20)",
-          "Pullback to EMA20 (+0)",
-          "Candle conviction: 61% body (+14)",
-          "Compression 29% (+10)",
+          "Trend clean: 12/20 bars in direction (+17)",
+          "Pullback to EMA20 (+15)",
+          "Candle conviction: 54% body (+12)",
+          "Compression 21% (+10)",
           "HTF alignment (EMA50 vs EMA200) (+-5)",
           "Rejection wicks (+3)",
-          "Momentum (RSI) (+10)"
+          "Momentum (RSI) (+0)"
         ]
       },
       "htfStudy": {
         "direction": "NEUTRAL",
-        "strength": 25,
+        "strength": 26,
         "alignment": "neutral",
         "score": 50,
-        "adx4h": 25,
+        "adx4h": 24,
         "reasons": [
-          "4H ranging (ADX 25)"
+          "4H ranging (ADX 24)"
         ]
       },
       "dailyHtf": {
@@ -691,74 +436,68 @@
         "daysAnalysed": 20
       },
       "regime": {
-        "label": "MIXED",
+        "label": "RANGING",
         "adx": 0,
-        "atrRatio": 1.15,
-        "compression": 1.15
+        "atrRatio": 0.84,
+        "compression": 0.84
       },
-      "entry": 4409.8,
-      "sl": 4374.52,
-      "tp1": 4452.13,
-      "tp2": 4480.36,
-      "tp3": 4533.27,
-      "adx": 27,
+      "entry": 4390,
+      "sl": 4354.88,
+      "tp1": 4432.14,
+      "tp2": 4460.24,
+      "tp3": 4512.92,
+      "adx": 30,
       "agreement": 100,
-      "indicators": 6,
-      "strategies": 4,
+      "indicators": 3.8,
+      "strategies": 2,
       "namedStrategies": [
-        "ICT",
-        "MACD",
         "VWAP",
         "ICHIMOKU"
       ],
-      "comboKey": "BUY_ICHIMOKU+ICT+MACD+VWAP",
-      "independentFamilies": 2,
+      "comboKey": "BUY_ICHIMOKU+VWAP",
+      "independentFamilies": 1,
       "familyBreakdown": {
-        "structure": [
-          "ICT"
-        ],
         "moving-average": [
-          "MACD",
           "VWAP",
           "ICHIMOKU"
         ]
       },
       "dominantFamily": "moving-average",
-      "redundantCount": 2,
+      "redundantCount": 1,
       "isEliteBrainPattern": false,
       "eliteBrainWR": null,
       "inKillzone": false,
       "weakSignal": false,
       "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 0.8,
-      "pipPotential": 1235,
-      "pipsToTp1": 423,
-      "pipsToTp2": 706,
-      "pipsToTp3": 1235,
-      "pipsToSl": 353,
-      "atrV": 21.800013950892858,
-      "slDistAtr": 1.618,
-      "tp1DistAtr": 1.942,
-      "tp2DistAtr": 3.237,
-      "tp3DistAtr": 5.664,
+      "atrExpansion": 0.79,
+      "pipPotential": 1229,
+      "pipsToTp1": 421,
+      "pipsToTp2": 702,
+      "pipsToTp3": 1229,
+      "pipsToSl": 351,
+      "atrV": 20.857247488839285,
+      "slDistAtr": 1.684,
+      "tp1DistAtr": 2.021,
+      "tp2DistAtr": 3.368,
+      "tp3DistAtr": 5.893,
       "slMethod": "capped",
-      "slSavedPips": 29,
+      "slSavedPips": 14,
       "trailStops": {
-        "afterTp1": 4409.8,
-        "afterTp2": 4452.13,
+        "afterTp1": 4390,
+        "afterTp2": 4432.14,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-09-17T16:39:46.214Z",
+      "detectedAt": "2026-09-17T19:03:21.565Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.14,
-        "hitTp1Pct": 46,
-        "hitTp2Pct": 34,
-        "hitTp3Pct": 17,
-        "hitSlPct": 54,
+        "expectedR": 0.1,
+        "hitTp1Pct": 45,
+        "hitTp2Pct": 32,
+        "hitTp3Pct": 16,
+        "hitSlPct": 55,
         "undecidedPct": 1,
-        "winProbability": 46,
+        "winProbability": 45,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
@@ -777,19 +516,144 @@
       "spotNote": "Spot reference unavailable this run. These are COMEX futures prices; a spot XAU/USD chart typically sits about 1.4% lower.",
       "costProfile": {
         "spreadPips": 25,
-        "riskPips": 352.8,
+        "riskPips": 351.2,
         "spreadAsPctOfRisk": 7.1,
         "tp1NetR": 1.05,
         "grade": "high",
         "note": "The spread costs 7.1% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
+        "count": 2,
+        "runningForHours": 4,
+        "stillOpen": 2,
+        "alreadyResolved": 0,
+        "alreadyLost": 0,
+        "note": "Same XAU/USD BUY has been signalled 2 time(s) over the last 4h and 2 is still open. This is that setup continuing, not a new one."
+      }
+    },
+    {
+      "pair": "ETH/USD",
+      "direction": "BUY",
+      "confidence": 97,
+      "tier": "best",
+      "chartStudy": {
+        "score": 49,
+        "reasons": [
+          "Trend clean: 14/20 bars in direction (+20)",
+          "Pullback to EMA20 (+15)",
+          "Candle conviction: 28% body (+6)",
+          "Compression 29% (+10)",
+          "HTF alignment (EMA50 vs EMA200) (+-5)",
+          "Rejection wicks (+3)",
+          "Momentum (RSI) (+0)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "NEUTRAL",
+        "strength": 34,
+        "alignment": "neutral",
+        "score": 50,
+        "adx4h": 16,
+        "reasons": [
+          "4H ranging (ADX 16)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "opposed",
+        "trend": "down",
+        "bias": -8,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "MIXED",
+        "adx": 0,
+        "atrRatio": 1.15,
+        "compression": 1.15
+      },
+      "entry": 2449.76001,
+      "sl": 2388.51601,
+      "tp1": 2523.25281,
+      "tp2": 2572.24801,
+      "tp3": 2664.11401,
+      "adx": 30,
+      "agreement": 100,
+      "indicators": 3,
+      "strategies": 1,
+      "namedStrategies": [
+        "ICHIMOKU"
+      ],
+      "comboKey": "BUY_ICHIMOKU",
+      "independentFamilies": 1,
+      "familyBreakdown": {
+        "moving-average": [
+          "ICHIMOKU"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 0,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": false,
+      "weakSignal": false,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 0.94,
+      "pipPotential": 2144,
+      "pipsToTp1": 735,
+      "pipsToTp2": 1225,
+      "pipsToTp3": 2144,
+      "pipsToSl": 612,
+      "atrV": 18.55859375,
+      "slDistAtr": 3.3,
+      "tp1DistAtr": 3.96,
+      "tp2DistAtr": 6.6,
+      "tp3DistAtr": 11.55,
+      "slMethod": "capped",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 2449.76001,
+        "afterTp2": 2523.25281,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-09-17T19:03:21.543Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "expectedR": 0.09,
+        "hitTp1Pct": 42,
+        "hitTp2Pct": 23,
+        "hitTp3Pct": 5,
+        "hitSlPct": 48,
+        "undecidedPct": 31,
+        "winProbability": 42,
+        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 0,
+      "brainNote": "no resolved history for this setup yet",
+      "newsCheck": {
+        "verdict": "clear",
+        "note": null,
+        "events": [],
+        "windows": {
+          "BLOCK_MIN": 30,
+          "WARN_MIN": 120
+        }
+      },
+      "costProfile": {
+        "spreadPips": 15,
+        "riskPips": 612.4,
+        "spreadAsPctOfRisk": 2.4,
+        "tp1NetR": 1.15,
+        "grade": "low",
+        "note": "The spread costs 2.4% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+      },
+      "repeatOf": {
         "count": 1,
-        "runningForHours": 1.6,
+        "runningForHours": 2.4,
         "stillOpen": 1,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same XAU/USD BUY has been signalled 1 time(s) over the last 1.6h and 1 is still open. This is that setup continuing, not a new one."
+        "note": "Same ETH/USD BUY has been signalled 1 time(s) over the last 2.4h and 1 is still open. This is that setup continuing, not a new one."
       }
     }
   ],
