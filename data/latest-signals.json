@@ -1,20 +1,20 @@
 {
-  "ts": 1789853115215,
-  "isoTime": "2026-09-19T21:25:15.215Z",
+  "ts": 1789860221699,
+  "isoTime": "2026-09-19T23:23:41.699Z",
   "count": 1,
   "signals": [
     {
-      "pair": "ETH/USD",
+      "pair": "BTC/USD",
       "direction": "BUY",
-      "confidence": 80,
+      "confidence": 86,
       "tier": "best",
       "chartStudy": {
-        "score": 70,
+        "score": 65,
         "reasons": [
-          "Trend clean: 9/20 bars in direction (+13)",
-          "Pullback to EMA20 (+15)",
-          "Candle conviction: 39% body (+9)",
-          "Compression 24% (+10)",
+          "Trend clean: 11/20 bars in direction (+15)",
+          "Pullback to EMA20 (+8)",
+          "Candle conviction: 42% body (+9)",
+          "Compression 26% (+10)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
           "Rejection wicks (+3)",
           "Momentum (RSI) (+0)"
@@ -22,14 +22,14 @@
       },
       "htfStudy": {
         "direction": "BUY",
-        "strength": 87,
+        "strength": 90,
         "alignment": "aligned",
         "score": 90,
-        "adx4h": 37,
+        "adx4h": 40,
         "reasons": [
-          "4H trend UP (price > EMA20 > EMA50, ADX 37)",
+          "4H trend UP (price > EMA20 > EMA50, ADX 40)",
           "✓ Signal direction matches 4H trend (+50)",
-          "⚠ 4H RSI overbought (71)"
+          "⚠ 4H RSI overbought (73)"
         ]
       },
       "dailyHtf": {
@@ -41,70 +41,74 @@
       "regime": {
         "label": "MIXED",
         "adx": 0,
-        "atrRatio": 0.94,
-        "compression": 0.94
+        "atrRatio": 1.04,
+        "compression": 1.04
       },
-      "entry": 2635.37988,
-      "sl": 2599.45693,
-      "tp1": 2678.48743,
-      "tp2": 2707.22579,
-      "tp3": 2761.11021,
-      "adx": 54,
-      "agreement": 83,
-      "indicators": 6,
-      "strategies": 3,
+      "entry": 81232.46875,
+      "sl": 80760.8457,
+      "tp1": 81798.41641,
+      "tp2": 82175.71484,
+      "tp3": 82883.14941,
+      "adx": 47,
+      "agreement": 89,
+      "indicators": 9,
+      "strategies": 6,
       "namedStrategies": [
-        "ORB",
+        "SMC",
         "TREND",
-        "VWAP"
+        "FIB",
+        "SR",
+        "TURTLE_SOUP"
       ],
-      "comboKey": "BUY_ORB+TREND+VWAP",
+      "comboKey": "BUY_FIB+SMC+SR+TREND+TURTLE_SOUP",
       "independentFamilies": 2,
       "familyBreakdown": {
-        "candle-pattern": [
-          "ORB"
+        "structure": [
+          "SMC",
+          "FIB",
+          "SR",
+          "TURTLE_SOUP"
         ],
         "moving-average": [
-          "TREND",
-          "VWAP"
+          "TREND"
         ]
       },
-      "dominantFamily": "moving-average",
-      "redundantCount": 1,
+      "dominantFamily": "structure",
+      "redundantCount": 3,
       "isEliteBrainPattern": false,
       "eliteBrainWR": null,
       "inKillzone": false,
       "weakSignal": false,
       "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 0.79,
-      "pipPotential": 1257,
-      "pipsToTp1": 431,
-      "pipsToTp2": 718,
-      "pipsToTp3": 1257,
-      "pipsToSl": 359,
-      "atrV": 14.012119838169642,
-      "slDistAtr": 2.564,
-      "tp1DistAtr": 3.076,
-      "tp2DistAtr": 5.127,
-      "tp3DistAtr": 8.973,
-      "slMethod": "structure (beyond ATR floor)",
+      "atrExpansion": 0.83,
+      "pipPotential": 1651,
+      "pipsToTp1": 566,
+      "pipsToTp2": 943,
+      "pipsToTp3": 1651,
+      "pipsToSl": 472,
+      "atrV": 269.49888392857144,
+      "slDistAtr": 1.75,
+      "tp1DistAtr": 2.1,
+      "tp2DistAtr": 3.5,
+      "tp3DistAtr": 6.125,
+      "slMethod": "atr-floor",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 2635.37988,
-        "afterTp2": 2678.48743,
+        "afterTp1": 81232.46875,
+        "afterTp2": 81798.41641,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-09-19T21:25:15.058Z",
+      "detectedAt": "2026-09-19T23:23:41.573Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.05,
-        "hitTp1Pct": 45,
-        "hitTp2Pct": 27,
-        "hitTp3Pct": 7,
-        "hitSlPct": 52,
-        "undecidedPct": 12,
-        "winProbability": 45,
+        "expectedR": 0.03,
+        "hitTp1Pct": 43,
+        "hitTp2Pct": 30,
+        "hitTp3Pct": 14,
+        "hitSlPct": 57,
+        "undecidedPct": 1,
+        "winProbability": 43,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
@@ -120,34 +124,34 @@
         }
       },
       "costProfile": {
-        "spreadPips": 15,
-        "riskPips": 359.2,
+        "spreadPips": 20,
+        "riskPips": 471.6,
         "spreadAsPctOfRisk": 4.2,
         "tp1NetR": 1.11,
         "grade": "moderate",
         "note": "The spread costs 4.2% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
-        "count": 4,
-        "runningForHours": 23.6,
-        "stillOpen": 4,
+        "count": 1,
+        "runningForHours": 4.6,
+        "stillOpen": 1,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same ETH/USD BUY has been signalled 4 time(s) over the last 23.6h and 4 is still open. This is that setup continuing, not a new one."
+        "note": "Same BTC/USD BUY has been signalled 1 time(s) over the last 4.6h and 1 is still open. This is that setup continuing, not a new one."
       }
     }
   ],
   "source": "offline-generator",
-  "correlationFiltered": 0,
+  "correlationFiltered": 1,
   "note": "Generated by tools/generate-signals.mjs (GitHub Actions) using the same strictAnalyze() the live endpoint uses. Produced independently of Cloudflare so signals stay current when Functions are unavailable.",
   "errors": [
-    "EUR/USD: market closed for the weekend (last bar 24h old) — not a fault",
-    "USD/CHF: market closed for the weekend (last bar 25h old) — not a fault",
-    "AUD/USD: market closed for the weekend (last bar 24h old) — not a fault",
-    "NZD/USD: market closed for the weekend (last bar 24h old) — not a fault",
-    "USD/JPY: market closed for the weekend (last bar 24h old) — not a fault",
-    "XAU/USD: market closed for the weekend (last bar 25h old) — not a fault",
+    "EUR/USD: market closed for the weekend (last bar 26h old) — not a fault",
     "USD/CAD: market closed for the weekend (last bar 24h old) — not a fault",
-    "GBP/USD: market closed for the weekend (last bar 24h old) — not a fault"
+    "AUD/USD: market closed for the weekend (last bar 24h old) — not a fault",
+    "USD/CHF: market closed for the weekend (last bar 27h old) — not a fault",
+    "GBP/USD: market closed for the weekend (last bar 24h old) — not a fault",
+    "USD/JPY: market closed for the weekend (last bar 24h old) — not a fault",
+    "XAU/USD: market closed for the weekend (last bar 27h old) — not a fault",
+    "NZD/USD: market closed for the weekend (last bar 24h old) — not a fault"
   ]
 }
