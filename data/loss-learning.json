@@ -1,97 +1,86 @@
 {
-  "ts": 1789867775707,
-  "isoTime": "2026-09-20T01:29:35.707Z",
+  "ts": 1789886937472,
+  "isoTime": "2026-09-20T06:48:57.472Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 349,
-  "won": 147,
-  "lost": 199,
-  "slicesClearingZero": 9,
+  "signalsAnalysed": 361,
+  "won": 150,
+  "lost": 208,
+  "slicesClearingZero": 8,
   "chanceBaseline": {
-    "mean": 1.7,
-    "sd": 1.7,
+    "mean": 2.3,
+    "sd": 2.2,
     "range": [
       0,
-      6
+      7
     ],
     "shuffles": 30
   },
-  "threshold": 3.4,
+  "threshold": 4.5,
   "beatsChance": true,
   "findings": [
+    {
+      "feature": "pair",
+      "value": "USD/JPY",
+      "n": 28,
+      "avgR": -0.507,
+      "ci": [
+        -0.814,
+        -0.165
+      ],
+      "direction": "negative"
+    },
     {
       "feature": "pair",
       "value": "XAU/USD",
       "n": 59,
       "avgR": -0.486,
       "ci": [
-        -0.706,
-        -0.237
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "pair",
-      "value": "USD/JPY",
-      "n": 29,
-      "avgR": -0.453,
-      "ci": [
-        -0.75,
-        -0.082
+        -0.708,
+        -0.243
       ],
       "direction": "negative"
     },
     {
       "feature": "pair",
       "value": "ETH/USD",
-      "n": 34,
-      "avgR": -0.421,
+      "n": 39,
+      "avgR": -0.46,
       "ci": [
-        -0.766,
-        -0.028
+        -0.764,
+        -0.129
       ],
       "direction": "negative"
     },
     {
       "feature": "htfAlignment",
       "value": "neutral",
-      "n": 79,
-      "avgR": -0.38,
+      "n": 82,
+      "avgR": -0.323,
       "ci": [
-        -0.596,
-        -0.146
+        -0.546,
+        -0.092
       ],
       "direction": "negative"
     },
     {
-      "feature": "strategy",
-      "value": "VWAP",
-      "n": 201,
-      "avgR": 0.162,
-      "ci": [
-        0.001,
-        0.319
-      ],
-      "direction": "positive"
-    },
-    {
       "feature": "session",
       "value": "16-19 UTC",
-      "n": 72,
-      "avgR": 0.339,
+      "n": 74,
+      "avgR": 0.322,
       "ci": [
-        0.032,
-        0.625
+        0.031,
+        0.619
       ],
       "direction": "positive"
     },
     {
       "feature": "pair",
       "value": "USD/CAD",
-      "n": 27,
-      "avgR": 0.636,
+      "n": 28,
+      "avgR": 0.599,
       "ci": [
-        0.17,
-        1.101
+        0.14,
+        1.033
       ],
       "direction": "positive"
     },
@@ -101,8 +90,8 @@
       "n": 38,
       "avgR": 0.648,
       "ci": [
-        0.242,
-        1.058
+        0.248,
+        1.033
       ],
       "direction": "positive"
     },
@@ -112,8 +101,8 @@
       "n": 32,
       "avgR": 1.022,
       "ci": [
-        0.655,
-        1.379
+        0.677,
+        1.36
       ],
       "direction": "positive"
     }
@@ -125,8 +114,8 @@
       "n": 32,
       "avgR": 1.022,
       "ci": [
-        0.655,
-        1.379
+        0.677,
+        1.36
       ],
       "direction": "positive"
     },
@@ -136,51 +125,40 @@
       "n": 38,
       "avgR": 0.648,
       "ci": [
-        0.242,
-        1.058
+        0.248,
+        1.033
       ],
       "direction": "positive"
     },
     {
       "feature": "pair",
       "value": "USD/CAD",
-      "n": 27,
-      "avgR": 0.636,
+      "n": 28,
+      "avgR": 0.599,
       "ci": [
-        0.17,
-        1.101
+        0.14,
+        1.033
       ],
       "direction": "positive"
     },
     {
       "feature": "session",
       "value": "16-19 UTC",
-      "n": 72,
-      "avgR": 0.339,
+      "n": 74,
+      "avgR": 0.322,
       "ci": [
-        0.032,
-        0.625
-      ],
-      "direction": "positive"
-    },
-    {
-      "feature": "strategy",
-      "value": "VWAP",
-      "n": 201,
-      "avgR": 0.162,
-      "ci": [
-        0.001,
-        0.319
+        0.031,
+        0.619
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 199,
-    "fullStopOuts": 170,
-    "partial": 29,
+    "total": 208,
+    "fullStopOuts": 177,
+    "partial": 31,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "9 slices clear zero against a chance baseline of 1.7, including 5 positive — worth investigating, not yet worth trading."
+  "verdict": "8 slices clear zero against a chance baseline of 2.3, including 4 positive — worth investigating, not yet worth trading."
 }
