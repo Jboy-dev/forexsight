@@ -1,53 +1,64 @@
 {
-  "ts": 1789973754949,
-  "isoTime": "2026-09-21T06:55:54.949Z",
+  "ts": 1789998366463,
+  "isoTime": "2026-09-21T13:46:06.463Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 377,
-  "won": 160,
-  "lost": 213,
-  "slicesClearingZero": 6,
+  "signalsAnalysed": 374,
+  "won": 161,
+  "lost": 209,
+  "slicesClearingZero": 7,
   "chanceBaseline": {
-    "mean": 2,
-    "sd": 1.8,
+    "mean": 2.7,
+    "sd": 2,
     "range": [
       0,
-      6
+      9
     ],
     "shuffles": 30
   },
-  "threshold": 3.8,
+  "threshold": 4.7,
   "beatsChance": true,
   "findings": [
     {
       "feature": "pair",
       "value": "USD/JPY",
-      "n": 27,
-      "avgR": -0.541,
+      "n": 26,
+      "avgR": -0.577,
       "ci": [
-        -0.847,
-        -0.164
+        -0.876,
+        -0.201
       ],
       "direction": "negative"
     },
     {
       "feature": "pair",
       "value": "XAU/USD",
-      "n": 61,
-      "avgR": -0.478,
+      "n": 60,
+      "avgR": -0.47,
       "ci": [
-        -0.686,
+        -0.68,
         -0.235
       ],
       "direction": "negative"
     },
     {
+      "feature": "strategy",
+      "value": "VWAP",
+      "n": 206,
+      "avgR": 0.184,
+      "ci": [
+        0.021,
+        0.339
+      ],
+      "direction": "positive"
+    },
+    {
       "feature": "session",
       "value": "16-19 UTC",
-      "n": 81,
-      "avgR": 0.285,
+      "n": 82,
+      "avgR": 0.309,
       "ci": [
-        0.024,
-        0.556
+        0.058,
+        0.577
       ],
       "direction": "positive"
     },
@@ -57,19 +68,8 @@
       "n": 30,
       "avgR": 0.534,
       "ci": [
-        0.107,
-        0.975
-      ],
-      "direction": "positive"
-    },
-    {
-      "feature": "pair",
-      "value": "GBP/USD",
-      "n": 39,
-      "avgR": 0.719,
-      "ci": [
-        0.332,
-        1.094
+        0.091,
+        0.954
       ],
       "direction": "positive"
     },
@@ -79,8 +79,19 @@
       "n": 37,
       "avgR": 0.731,
       "ci": [
-        0.392,
-        1.069
+        0.402,
+        1.049
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "pair",
+      "value": "GBP/USD",
+      "n": 38,
+      "avgR": 0.765,
+      "ci": [
+        0.399,
+        1.137
       ],
       "direction": "positive"
     }
@@ -88,23 +99,23 @@
   "positiveFindings": [
     {
       "feature": "pair",
-      "value": "GBP/USD",
-      "n": 39,
-      "avgR": 0.719,
+      "value": "USD/CAD",
+      "n": 30,
+      "avgR": 0.534,
       "ci": [
-        0.332,
-        1.094
+        0.091,
+        0.954
       ],
       "direction": "positive"
     },
     {
       "feature": "pair",
-      "value": "USD/CAD",
-      "n": 30,
-      "avgR": 0.534,
+      "value": "GBP/USD",
+      "n": 38,
+      "avgR": 0.765,
       "ci": [
-        0.107,
-        0.975
+        0.399,
+        1.137
       ],
       "direction": "positive"
     },
@@ -114,29 +125,40 @@
       "n": 37,
       "avgR": 0.731,
       "ci": [
-        0.392,
-        1.069
+        0.402,
+        1.049
       ],
       "direction": "positive"
     },
     {
       "feature": "session",
       "value": "16-19 UTC",
-      "n": 81,
-      "avgR": 0.285,
+      "n": 82,
+      "avgR": 0.309,
       "ci": [
-        0.024,
-        0.556
+        0.058,
+        0.577
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "strategy",
+      "value": "VWAP",
+      "n": 206,
+      "avgR": 0.184,
+      "ci": [
+        0.021,
+        0.339
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 213,
-    "fullStopOuts": 164,
+    "total": 209,
+    "fullStopOuts": 160,
     "partial": 49,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "6 slices clear zero against a chance baseline of 2.0, including 4 positive — worth investigating, not yet worth trading."
+  "verdict": "7 slices clear zero against a chance baseline of 2.7, including 5 positive — worth investigating, not yet worth trading."
 }
