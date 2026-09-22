@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-09-22T16:48:40.511Z",
+  "timestamp": "2026-09-22T20:03:12.935Z",
   "scanned": 15,
   "setupsFound": 1,
   "passedMainGate": 0,
@@ -9,47 +9,57 @@
   "minStrengthFilter": 30,
   "radar": [
     {
-      "pair": "US30",
-      "direction": "SELL",
-      "confidence": 63,
-      "strength": 54,
-      "verdict": "WEAK SHORT — 63% conviction",
+      "pair": "XAU/USD",
+      "direction": "BUY",
+      "confidence": 81,
+      "strength": 78,
+      "verdict": "STRONG LONG — 81% conviction",
       "timeHorizon": "30 min",
-      "entry": 51840.6,
-      "sl": 52099.8,
-      "tp1": 51552.2,
-      "tp3": 50831.3,
-      "slPips": 259,
-      "tp1Pips": 288,
-      "tp3Pips": 1009,
-      "rrTP1": 1.11,
-      "rrTP3": 3.89,
+      "entry": 4406.8,
+      "sl": 4371.55,
+      "tp1": 4441.93,
+      "tp3": 4529.74,
+      "slPips": 353,
+      "tp1Pips": 351,
+      "tp3Pips": 1229,
+      "rrTP1": 1,
+      "rrTP3": 3.49,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 53% < 58%",
       "topFactors": [
         {
-          "name": "Correlation basket supports SELL (100/100)",
+          "name": "Correlation basket supports BUY (68/100)",
           "weight": 25,
           "note": ""
         },
         {
-          "name": "Higher timeframe (4H) trend DOWN",
+          "name": "Higher timeframe (4H) trend UP",
           "weight": 20,
           "note": ""
         },
         {
-          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "name": "Market structure — uptrend (HH+HL)",
           "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 62.1 — bullish momentum zone",
+          "weight": 10,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 30,
-        "bear": 60,
-        "marginPct": 33
+        "bull": 85,
+        "bear": 15,
+        "marginPct": 70
       },
-      "reasoning": "Weighted consensus favors SHORT with 63% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack). HTF down. Structure uptrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 81% conviction. Top drivers: Correlation basket supports BUY (68/100); Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL). HTF up. Structure uptrend. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
