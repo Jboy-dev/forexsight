@@ -124,6 +124,14 @@ jobs:
       # v501 — re-check the breakeven-stop rule on fresh data rather than trusting
       # a remembered answer. A sibling project measured the same rule as harmful;
       # it does not transfer, and this is what proves that continues to hold.
+
+      # v503 — record what the candidate rule would have done, forward, and
+      # resolve it when the holding period elapses. Promotion requires the
+      # FORWARD record to clear zero on its own, independently of the backtest
+      # that suggested it. Nothing is traded on it in the meantime.
+      - name: Track candidate strategy
+        run: node tools/candidate-tracker.mjs
+
       - name: Ladder rule test
         run: node tools/ladder-rule-test.mjs
 

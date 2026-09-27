@@ -1,0 +1,57 @@
+{
+  "candidate": "vol-filtered 3m momentum",
+  "holdDays": 21,
+  "entries": [
+    {
+      "pair": "USD/CAD",
+      "date": "2026-09-16",
+      "firedAtBar": 1789560374000,
+      "direction": "SELL",
+      "entryRef": 1.393880009651184,
+      "atr": 0.006811855285992557,
+      "volPercentile": 0.687,
+      "status": "open",
+      "resultR": null
+    },
+    {
+      "pair": "USD/JPY",
+      "date": "2026-09-16",
+      "firedAtBar": 1789560375000,
+      "direction": "SELL",
+      "entryRef": 155.03799438476562,
+      "atr": 1.5339059716361312,
+      "volPercentile": 0.921,
+      "status": "open",
+      "resultR": null
+    }
+  ],
+  "updatedAt": "2026-09-27T08:38:18.652Z",
+  "forwardRecord": {
+    "resolved": 0,
+    "open": 2,
+    "won": 0,
+    "avgR": null,
+    "ci": null,
+    "promoted": false
+  },
+  "backtestEvidence": {
+    "allInstruments": {
+      "avgR": 0.3312,
+      "vsAlwaysLong": 0.1113,
+      "ci": [
+        -0.1523,
+        0.3738
+      ]
+    },
+    "fxOnly": {
+      "avgR": 0.1274,
+      "vsAlwaysLong": 0.1615,
+      "ci": [
+        -0.077,
+        0.4207
+      ]
+    },
+    "note": "Both intervals include zero. FX-only matters because always-long FX was NEGATIVE over the same window, so this is not the gold/Bitcoin drift that explained away earlier candidates. Suggestive, not established."
+  },
+  "verdict": "Not promoted. 0 resolved of 2 recorded; needs 60+ with an interval clearing zero. Nothing is traded on this yet."
+}

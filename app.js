@@ -9786,7 +9786,11 @@ function _v477ControlPanel(s) {
 }
 
 function _v471RealityBanner() {
-  const b = window._v469Brain;
+  // v503b — module-scoped, not window. This is why the banner kept reporting
+  // "too few independent moves to measure yet" even with 342 signals judged:
+  // window._v469Brain was never assigned by anything, so the figure was always
+  // absent and the honest fallback text ran every time.
+  const b = _v469Brain;
   const n = b && typeof b.totalSamples === 'number' ? b.totalSamples : null;
   const avg = b && b.overall && typeof b.overall.avgR === 'number' ? b.overall.avgR : null;
   const fig = (n != null && avg != null)
@@ -9817,14 +9821,103 @@ function _v471AttachBanner() {
     // measure yet" regardless of what the record actually says. A statement
     // about performance should not depend on which tab you visited first.
     // Fetch it here too, then redraw once with real figures.
-    if (!window._v469Brain && typeof _v469LoadBrain === 'function') {
-      _v469LoadBrain().then(() => {
+    if (!_v469Brain && typeof _v469LoadBrain === 'function') {
+      _v503LoadCandidates().then(() => {
+    const el = document.getElementById('v503-progress');
+    if (el) el.outerHTML = _v503RenderProgress();
+  }).catch(() => {});
+  _v469LoadBrain().then(() => {
         const h = document.getElementById('signals-status');
         const e = h && h.querySelector('.reality-banner');
         if (e) e.outerHTML = _v471RealityBanner();
       }).catch(() => {});
     }
   } catch (_) {}
+}
+
+// v503 — THE CANDIDATE QUEUE, AND THE RUNNING SIGNAL RECORD.
+//
+// Two things the user asked to see: whether the system is getting better, and
+// what happened to every signal. Both need the same discipline — a record built
+// forward that cannot be fitted after the fact.
+//
+// The candidate is the volatility filter: 3-month momentum taken only when ATR
+// is in the top third of its trailing year. On deep history it returned +0.3312
+// against +0.2199 for simply holding, and on FX alone +0.1274 against a NEGATIVE
+// -0.0342 — which is why it is interesting, since every earlier candidate
+// dissolved into gold and Bitcoin drift. Both intervals still include zero, so
+// it is queued rather than traded, and promotion needs 60+ forward signals whose
+// own interval clears zero.
+let _v503Cand = null;
+async function _v503LoadCandidates() {
+  const j = await _v497Freshest([
+    'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/candidates.json',
+    '/data/candidates.json',
+  ], (j) => j && j.forwardRecord);
+  if (j) { _v503Cand = j; return j; }
+  return null;
+}
+
+function _v503RenderProgress() {
+  // v503b — read the module-scoped brain, not window._v469Brain.
+  //
+  // _v469LoadBrain assigns the module variable; nothing ever set a window
+  // property of that name, so this half of the panel silently rendered nothing
+  // while the candidate half worked. Third time a module-versus-window scope
+  // slip has cost a panel on this project — checking the rendered output rather
+  // than the syntax is what catches it every time.
+  const c = _v503Cand, b = _v469Brain;
+  if (!c && !b) return '';
+  const sgn = v => (v >= 0 ? '+' : '') + Number(v).toFixed(3);
+  const fr = c ? c.forwardRecord : null;
+  const h = b && b.headline ? b.headline : null;
+  return `<div class="card" id="v503-progress">
+    <h3>📈 Is it getting better?</h3>
+    <p class="muted" style="margin-top:-4px">
+      Two records, both built forward so neither can be fitted after the fact:
+      every signal the live engine published, and every signal a queued candidate
+      rule would have produced.
+    </p>
+
+    ${h ? `<div class="wl-row" style="margin:10px 0">
+      <div><div class="muted" style="font-size:12px">Signals judged</div>
+           <div style="font-size:20px;font-weight:700">${h.samples}</div></div>
+      <div><div class="muted" style="font-size:12px">Win rate</div>
+           <div style="font-size:20px;font-weight:700">${h.winRate != null ? Math.round(h.winRate*100)+'%' : '—'}</div></div>
+      <div><div class="muted" style="font-size:12px">Average per signal</div>
+           <div style="font-size:20px;font-weight:700;color:${h.avgR>=0?'var(--good,#26a65b)':'var(--bad,#e5484d)'}">
+             ${sgn(h.avgR)}R</div></div>
+    </div>
+    <div class="muted" style="font-size:12px">
+      Interval ${h.ci ? `[${sgn(h.ci[0])}, ${sgn(h.ci[1])}]` : '—'}.
+      ${h.ci && h.ci[0] > 0 ? 'This clears zero.' : h.ci && h.ci[1] < 0 ? 'This is reliably negative.' : 'This still includes zero — not established either way.'}
+    </div>` : ''}
+
+    ${fr ? `<div style="margin-top:12px;padding:10px 12px;border-radius:10px;
+         background:${fr.promoted?'rgba(38,166,91,.10)':'rgba(245,158,11,.09)'};
+         border:1px solid ${fr.promoted?'rgba(38,166,91,.3)':'rgba(245,158,11,.28)'}">
+      <strong>${fr.promoted ? '✅ Candidate promoted' : '🧪 Candidate under test'} — ${c.candidate}</strong>
+      <div class="muted" style="margin-top:4px;font-size:12px">
+        Forward record: <strong>${fr.resolved}</strong> resolved${fr.open ? `, ${fr.open} still running` : ''}${
+          fr.resolved ? `, ${fr.won} won, averaging <strong>${sgn(fr.avgR)}R</strong>${fr.ci ? ` with interval [${sgn(fr.ci[0])}, ${sgn(fr.ci[1])}]` : ''}` : ' — none finished yet'}.
+        <br>${c.verdict || ''}
+      </div>
+      ${c.backtestEvidence ? `<div class="muted" style="margin-top:5px;font-size:11.5px">
+        What suggested it: ${sgn(c.backtestEvidence.allInstruments.avgR)}R across all instruments
+        against ${sgn(c.backtestEvidence.allInstruments.avgR - c.backtestEvidence.allInstruments.vsAlwaysLong)}R
+        for simply holding, and ${sgn(c.backtestEvidence.fxOnly.avgR)}R on FX alone where holding
+        returned ${sgn(c.backtestEvidence.fxOnly.avgR - c.backtestEvidence.fxOnly.vsAlwaysLong)}R.
+        ${c.backtestEvidence.note}
+      </div>` : ''}
+    </div>` : ''}
+
+    <p class="muted" style="margin-top:10px;font-size:12px">
+      A candidate is only promoted when its own forward record clears zero over
+      60 or more resolved signals — independently of the backtest that suggested
+      it. A strategy was published as proven in v487 on backtest evidence alone
+      and withdrawn eight days later; this queue exists so that cannot recur.
+    </p>
+  </div>`;
 }
 
 function _v469RenderBrain() {
@@ -10085,7 +10178,7 @@ function renderPerformance() {
 
   // v247 — Prepend the self-evolving Learning guide so users see "what
   // every part of the website does" first, then their personal perf stats.
-  $('#performance-view').innerHTML = _v469RenderBrain() + _v463RenderEval() + _v465RenderDq() + renderReferenceSearch() + renderLearningGuide() + html;
+  $('#performance-view').innerHTML = _v503RenderProgress() + _v469RenderBrain() + _v463RenderEval() + _v465RenderDq() + renderReferenceSearch() + renderLearningGuide() + html;
   // v463 — fetch in the background, then swap just the panel in place so
   // the rest of the view never blanks while the measurement loads.
   _v463LoadEval().then(() => {
