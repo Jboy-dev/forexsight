@@ -7080,7 +7080,14 @@ async function _v492Fetch(path, init) {
     return new Response(JSON.stringify(_v492Stub(name)),
       { status: 200, headers: { 'content-type': 'application/json' } });
   }
-  got.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // Same rule as the mirror chain: a payload with signals beats an empty one,
+  // and only then does the newer timestamp decide.
+  got.sort((a, b) => {
+    const an = Array.isArray(a.signals) && a.signals.length > 0;
+    const bn = Array.isArray(b.signals) && b.signals.length > 0;
+    if (an !== bn) return an ? -1 : 1;
+    return (b.ts || 0) - (a.ts || 0);
+  });
   const best = got[0];
   best._staticFirst = true;
   return new Response(JSON.stringify(best),
@@ -7157,7 +7164,19 @@ async function _v427cFetchSignalsWithMirror() {
       }
     } catch {}
   }));
-  fetched.sort((a, b) => (b.ts || 0) - (a.ts || 0));
+  // v501 — freshest wins, but an EMPTY feed does not beat a populated one.
+  //
+  // Sorting on timestamp alone has an edge case that bit immediately: a deploy
+  // during a closed market published a payload with zero signals, which was
+  // newer than the GitHub copy holding one, so the newest-wins rule chose the
+  // empty one and the app showed nothing while a usable signal existed. Age
+  // only decides between payloads that actually contain something; a feed with
+  // signals always beats a feed without, and only then does the newer win.
+  fetched.sort((a, b) => {
+    const an = (a.signals || []).length > 0, bn = (b.signals || []).length > 0;
+    if (an !== bn) return an ? -1 : 1;
+    return (b.ts || 0) - (a.ts || 0);
+  });
   for (const d of fetched) {
     try {
       d.signals.forEach(_v428dNormaliseSignal);
@@ -8816,6 +8835,10 @@ const LEARNING_DATA = {
 //      remembers to update.
 // ═══════════════════════════════════════════════════════════════════════
 const LEARNING_REFERENCE = [
+  { area: 'Risk and reward', name: 'Is moving the stop to breakeven a good idea?',
+    tags: 'breakeven stop move after tp1 protect winners trade management ladder rule tested',
+    what: 'Tested directly on about 57,000 daily bars across 10 instruments, comparing 7,691 identical entries under both rules with the bars re-walked in full. Breakeven after TP1 returned +0.0394R per trade; leaving the original stop returned +0.0293R. The paired difference is +0.0102R with t=2.20, positive on 8 of 10 instruments, +78R in total.',
+    use: 'Keep it, but know the margin is slim. Worth recording why it works here: this ladder puts TP1 at 1.2R, ABOVE the stop, so reaching it banks 0.4R of secured profit before the stop is moved. A ladder whose first target sits inside the stop gives up upside without securing enough to pay for it, and in that situation the same rule loses money — which is exactly what happened on a sibling project, where it cost 556R. The rule is not universally good or bad; it depends on where TP1 sits. Note also that stored MFE cannot answer this question, because MFE is the peak reached under the ORIGINAL stop.' },
   { area: 'How it judges itself', name: 'What strategy actually works?',
     tags: 'what works best strategy which strategy use profitable answer search momentum',
     what: 'Five families have now been tested on the deepest daily history available — mean reversion, trend following, breakout, oscillator crossovers and time-series momentum — across roughly 57,000 daily bars and up to 30 years per instrument. None shows timing skill.',

@@ -120,6 +120,13 @@ jobs:
       # v500 — the strategy search, with a 300-draw random null and a
       # buy-and-hold benchmark. Records which families have been exhausted so
       # they are not rediscovered later as findings.
+
+      # v501 — re-check the breakeven-stop rule on fresh data rather than trusting
+      # a remembered answer. A sibling project measured the same rule as harmful;
+      # it does not transfer, and this is what proves that continues to hold.
+      - name: Ladder rule test
+        run: node tools/ladder-rule-test.mjs
+
       - name: Strategy search
         run: node tools/strategy-search.mjs
 
