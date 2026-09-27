@@ -10119,3 +10119,45 @@ body.light-theme .v442-why { color: #475569; }
   font-variant-numeric: tabular-nums;
 }
 .fx-bad { color: #ffb340; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   v502 — STOP THE PAGE JUMPING WHEN DATA ARRIVES.
+   
+   The "glitching up and down on refresh" was reported three times and my
+   earlier measurements missed it, because it is intermittent: it depends on
+   WHEN each header card's data lands. Caught it eventually — the page height
+   dropped 130px and the first signal card moved up 136px in a single frame,
+   with the card count unchanged, so something above the cards had collapsed.
+
+   The cause is structural rather than one bad element: not one of the thirteen
+   cards above the signal grid reserved any vertical space. Each renders short,
+   then grows or shrinks when its fetch resolves, and everything below it slides.
+   With eight such cards resolving independently, the content under them moves
+   several times on every load.
+
+   Reserving the loaded height means the arriving data fills space that was
+   already allocated, so nothing below ever moves. Heights below are the
+   measured rendered heights, not guesses. contain:layout stops a change inside
+   a card from forcing the whole document to re-flow.
+   ═══════════════════════════════════════════════════════════════════════════ */
+.scanner-status-pill { min-height: 42px; contain: layout; }
+.algo-read-card,
+.setup-radar-card,
+.trust-badge-card,
+.conditions-card,
+.brain-status-card,
+.track-record-card    { min-height: 70px; contain: layout; }
+.signals-status-row   { min-height: 56px; contain: layout; }
+.weekend-banner       { min-height: 91px; contain: layout; }
+.pro-banner,
+.elite-banner,
+.stand-aside-banner   { min-height: 64px; contain: layout; }
+.cheat-codes-container{ min-height: 48px; contain: layout; }
+
+/* The status line changes length as counts and warnings are appended; without a
+   reserved block it re-wraps between one and three lines and drags the grid. */
+#signals-status       { min-height: 76px; }
+
+/* Signal cards themselves are patched after render (cost panel, repeat warning,
+   evidence box), which previously grew each card and moved its neighbours. */
+.card[data-pair]      { contain: layout; }

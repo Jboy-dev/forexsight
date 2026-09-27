@@ -9542,11 +9542,45 @@ function _v478WatchGrid() {
     const grid = document.getElementById('signals-grid')
               || document.querySelector('.signals-grid, #signals');
     if (!grid || typeof MutationObserver !== 'function') return;
+    // v502 — THE OBSERVER WAS WATCHING ITSELF.
+    //
+    // This observed the grid for changes and called _v478PatchCards when it saw
+    // any. Patching the cards inserts and replaces .v477-control elements, which
+    // IS a change to the grid, which retriggered the observer, which patched
+    // again. Measured on the live page: .v477-control removed and re-added at
+    // 60ms, 182ms, 303ms, 425ms, 547ms — roughly eight DOM rebuilds a second,
+    // indefinitely, for as long as the tab stayed open.
+    //
+    // That is the instability that has been reported repeatedly and that my
+    // earlier checks kept missing: page HEIGHT stayed constant, because each
+    // replacement was the same size, so cumulative-layout-shift and height
+    // sampling both read clean while the document was being torn down and
+    // rebuilt continuously underneath.
+    //
+    // The observer now ignores mutations it caused itself: it disconnects while
+    // patching and reconnects afterwards, and a re-entrancy flag stops a nested
+    // call. It also stops after the cards have been patched once per render,
+    // rather than watching forever.
+    let patching = false;
     let queued = false;
     _v478Observer = new MutationObserver(() => {
-      if (queued) return;
+      if (patching || queued) return;
       queued = true;
-      setTimeout(() => { queued = false; try { _v478PatchCards(); } catch (_) {} }, 120);
+      setTimeout(() => {
+        queued = false;
+        if (patching) return;
+        patching = true;
+        try { _v478Observer.disconnect(); } catch (_) {}
+        try { _v478PatchCards(); } catch (_) {}
+        // Reconnect on the next frame, after our own mutations have been
+        // delivered and discarded, so they cannot re-arm the observer.
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            patching = false;
+            try { _v478Observer.observe(grid, { childList: true, subtree: true }); } catch (_) {}
+          });
+        });
+      }, 150);
     });
     _v478Observer.observe(grid, { childList: true, subtree: true });
   } catch (_) {}
@@ -9573,7 +9607,14 @@ function _v478PatchCards() {
       const html = _v477ControlPanel(sig);
       if (!html) continue;
       const existing = card.querySelector('.v477-control');
-      if (existing) { existing.outerHTML = html; continue; }
+      if (existing) {
+        // v502 — only touch the DOM when the content actually differs. The
+        // panel was being rewritten on every pass even when identical, which is
+        // what gave the observer something to react to and kept the loop alive.
+        if (existing.outerHTML === html) continue;
+        existing.outerHTML = html;
+        continue;
+      }
       // v481b — the anchor has to exist on the card actually in front of the
       // user. This looked only for .v433-clean / .v433-flags, which belong to
       // the server-signal template. Cards built by the in-browser scan use a
