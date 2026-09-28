@@ -1,10 +1,10 @@
 {
   "ok": true,
   "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-09-28T04:32:08.940Z",
+  "timestamp": "2026-09-28T11:15:08.023Z",
   "trustScore": 100,
   "trustLabel": "System Readiness",
-  "performanceScore": 78,
+  "performanceScore": 25,
   "readiness": {
     "score": 100,
     "activeGates": 11,
@@ -87,22 +87,22 @@
   "components": {
     "filteredLive": {
       "label": "Filtered-tier WR (what you actually trade)",
-      "score": null,
-      "note": "insufficient data"
+      "score": 0,
+      "weight": 0.35
     },
     "recentAll": {
       "label": "Recent 20-signal momentum",
-      "score": null,
-      "note": "insufficient data"
+      "score": 0,
+      "weight": 0.2
     },
     "calibration": {
       "label": "Confidence calibration",
-      "score": null,
-      "note": "insufficient data"
+      "score": 0,
+      "weight": 0.15
     },
     "activeQuality": {
       "label": "Live setup quality",
-      "score": 74,
+      "score": 84,
       "weight": 0.2
     },
     "selectivity": {
@@ -113,35 +113,58 @@
   },
   "filteredTier": {
     "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 0,
-    "lifetimeWinRate": null,
-    "recentWinRate": null
+    "resolvedSignals": 5,
+    "lifetimeWinRate": 0,
+    "recentWinRate": 0
   },
   "allTier": {
     "note": "All resolved signals including lower tiers",
-    "totalResolved": 0,
-    "lifetimeWinRate": null,
-    "recentWindowSize": 0,
-    "recentWinRate": null
+    "totalResolved": 5,
+    "lifetimeWinRate": 0,
+    "recentWindowSize": 5,
+    "recentWinRate": 0
   },
   "activeQuality": {
-    "signalCount": 9,
-    "avgConfidence": 82,
-    "avgStrategies": 3.3,
+    "signalCount": 11,
+    "avgConfidence": 86,
+    "avgStrategies": 5.4,
     "avgRR": 3.5,
-    "score": 74
+    "score": 84
   },
   "selectivity": {
     "note": "candidate count unavailable — assuming baseline strict filter",
     "score": 85
   },
-  "calibration": null,
+  "calibration": {
+    "accuracyPct": 0,
+    "meanErrorPts": 85,
+    "buckets": {
+      "60-70": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "70-80": {
+        "samples": 1,
+        "note": "too few samples"
+      },
+      "80-90": {
+        "samples": 3,
+        "winRate": 0,
+        "expected": 85,
+        "error": 85
+      },
+      "90+": {
+        "samples": 1,
+        "note": "too few samples"
+      }
+    }
+  },
   "historicalBacktest": {
     "note": "INFORMATIONAL ONLY — raw strategy without filters. Not in trust score.",
     "totalYearsCovered": 100,
-    "totalSignals": 2791,
+    "totalSignals": 2792,
     "wins": 805,
-    "losses": 1942,
+    "losses": 1943,
     "winRate": 29
   },
   "interpretation": "VERY HIGH TRUST — filtered signals calibrated & outperforming"
