@@ -1,10 +1,10 @@
 {
   "ok": true,
   "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-09-30T05:35:03.150Z",
+  "timestamp": "2026-09-30T11:22:24.162Z",
   "trustScore": 100,
   "trustLabel": "System Readiness",
-  "performanceScore": 26,
+  "performanceScore": 20,
   "readiness": {
     "score": 100,
     "activeGates": 11,
@@ -92,7 +92,7 @@
     },
     "recentAll": {
       "label": "Recent 20-signal momentum",
-      "score": 0,
+      "score": 10,
       "weight": 0.2
     },
     "calibration": {
@@ -102,7 +102,7 @@
     },
     "activeQuality": {
       "label": "Live setup quality",
-      "score": 89,
+      "score": 50,
       "weight": 0.2
     },
     "selectivity": {
@@ -113,23 +113,21 @@
   },
   "filteredTier": {
     "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 6,
-    "lifetimeWinRate": 17,
-    "recentWinRate": 17
+    "resolvedSignals": 9,
+    "lifetimeWinRate": 33,
+    "recentWinRate": 33
   },
   "allTier": {
     "note": "All resolved signals including lower tiers",
-    "totalResolved": 6,
-    "lifetimeWinRate": 17,
-    "recentWindowSize": 6,
-    "recentWinRate": 17
+    "totalResolved": 9,
+    "lifetimeWinRate": 33,
+    "recentWindowSize": 9,
+    "recentWinRate": 33
   },
   "activeQuality": {
-    "signalCount": 3,
-    "avgConfidence": 96,
-    "avgStrategies": 3.7,
-    "avgRR": 3.5,
-    "score": 89
+    "signalCount": 0,
+    "note": "No active signals — system holding cash (neutral)",
+    "score": 50
   },
   "selectivity": {
     "note": "candidate count unavailable — assuming baseline strict filter",
@@ -137,7 +135,7 @@
   },
   "calibration": {
     "accuracyPct": 0,
-    "meanErrorPts": 85,
+    "meanErrorPts": 51.9,
     "buckets": {
       "60-70": {
         "samples": 0,
@@ -154,8 +152,10 @@
         "error": 85
       },
       "90+": {
-        "samples": 2,
-        "note": "too few samples"
+        "samples": 5,
+        "winRate": 60,
+        "expected": 92,
+        "error": 32
       }
     }
   },
