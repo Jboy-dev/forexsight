@@ -1004,3 +1004,34 @@ h2.sec:active { cursor: grabbing; }
 @media (prefers-reduced-motion: reduce) {
   .seg.ro-holding::after, .tab.ro-holding::after { animation: none; width: 100%; opacity: .4; }
 }
+
+/* ─────────── live position tracker ─────────── */
+.trk { margin-top: 12px; padding: 12px 13px; border-radius: var(--r-sm);
+  background: #080c16a0; border: 1px solid var(--line-soft); }
+.trk-none { font-size: 11.5px; color: var(--text-faint); line-height: 1.5; }
+.trk-top { display: flex; align-items: baseline; gap: 10px; margin-bottom: 11px; }
+.trk-state { font: 650 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 6px 9px; border-radius: 5px; background: #0f1526; border: 1px solid var(--line); color: var(--text-dim); }
+.trk-state.up { color: var(--up); background: var(--up-soft); border-color: #2fd98a35; }
+.trk-state.dn { color: var(--down); background: var(--down-soft); border-color: #ff5f6d35; }
+.trk-px { margin-left: auto; font: 620 14px/1 var(--mono); letter-spacing: -.02em; text-align: right; }
+.trk-px i { display: block; font-style: normal; font: 500 9.5px var(--mono); color: var(--text-faint); margin-top: 4px; }
+
+.trk-bar { position: relative; height: 8px; border-radius: 4px; background: #0a0e1a;
+  border: 1px solid var(--line-soft); overflow: visible; }
+.trk-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px;
+  background: linear-gradient(90deg, #ff5f6d55, #6b8cff66 45%, #2fd98a88); }
+.trk-mark { position: absolute; top: -3px; width: 2px; height: 14px; border-radius: 1px; transform: translateX(-1px); }
+.trk-sl { background: var(--down); } .trk-t1, .trk-t2, .trk-t3 { background: #2fd98a99; }
+.trk-now { position: absolute; top: -5px; width: 3px; height: 18px; border-radius: 2px;
+  background: var(--text); box-shadow: 0 0 0 2px #070a12, 0 0 10px #eef2fb66; transform: translateX(-1.5px); }
+
+.trk-foot { font-size: 11.5px; color: var(--text-dim); line-height: 1.5; margin-top: 11px; }
+.trk-foot b { color: var(--text); }
+.trk-alert { color: var(--warn) !important; }
+.trk-near { border-color: #ffb63d55; background: #1a150a90; }
+.trk-near .trk-now { background: var(--warn); box-shadow: 0 0 0 2px #070a12, 0 0 14px #ffb63daa; }
+@media (prefers-reduced-motion: no-preference) {
+  .trk-near .trk-now { animation: trk-pulse 1.4s ease-in-out infinite; }
+  @keyframes trk-pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+}

@@ -732,5 +732,6 @@ function chClose() {
   CH.timer = null;
 }
 
-window.FSCHART = { open: chOpen, close: chClose, draw: chDraw, prefetch: chPrefetch,
+window.FSCHART = { cached: (p) => (CH_CACHE.get(p) || {}).bars || null,
+                   open: chOpen, close: chClose, draw: chDraw, prefetch: chPrefetch,
                    tvSymbol: chTvSymbol, tvUrl: chTvUrl, TV_MAP: CH_TV, state: CH };

@@ -1011,5 +1011,19 @@ t('a live refresh does not yank the view back to the right edge', () => {
   return true;
 });
 
+t('the live tracker reads price from the same bars the chart and engine use', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (!/function trackerBlock/.test(js)) return 'no live position tracker';
+  if (!/FSCHART[\s\S]{0,60}cached/.test(js)) {
+    return 'the tracker does not read the chart cache — it would show a price that disagrees with the chart';
+  }
+  // Running R must be computed, never read from the feed, so it is always current.
+  if (!/\(\(live\.price - entry\) \* sign\) \/ risk/.test(js)) return 'running R is not computed from the live price';
+  if (!/NEAR_R/.test(js)) return 'no proximity threshold — nothing would flag a level about to be hit';
+  // Absence must be stated, not implied.
+  if (!/trk-none/.test(js)) return 'a missing live price is not disclosed';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

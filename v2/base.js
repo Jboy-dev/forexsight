@@ -313,6 +313,7 @@ function card(s) {
           : 'This ladder does not pay more than it risks on a full run. It should not have been published.'}</p>
       </div></details>
 
+      ${trackerBlock(s)}
       ${moneyBlock(s)}
 
       <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>Costs, news and the modelled outcome</summary><div class="fold-in">
@@ -694,6 +695,89 @@ function installChart() {
     const card = head.closest('.card');
     if (card) openFor(card);
   });
+}
+
+
+/* ─────────────── where price is NOW, against the levels ───────────────
+   The card showed what a setup pays and risks, but never where price had
+   actually got to. That is the thing you look at most: is it running, is it
+   about to take a target, is it about to stop out.
+
+   The live price comes from the same published bars the chart draws, so this
+   agrees with the chart and with the engine. When no bar is available it says
+   so rather than implying a position it cannot see.
+   ----------------------------------------------------------------------- */
+const NEAR_R = 0.25;          // within a quarter of the risk counts as "about to hit"
+
+function livePrice(pair) {
+  const c = window.FSCHART && window.FSCHART.cached && window.FSCHART.cached(pair);
+  if (!c || !c.length) return null;
+  const last = c[c.length - 1];
+  return last && typeof last.c === 'number' ? { price: last.c, at: last.t } : null;
+}
+
+function trackerBlock(sig) {
+  const pair = pick(sig, 'pair');
+  const live = livePrice(pair);
+  const entry = num(pick(sig, 'entry')), sl = num(pick(sig, 'sl'));
+  const tp1 = num(pick(sig, 'tp1')), tp2 = num(pick(sig, 'tp2')), tp3 = num(pick(sig, 'tp3'));
+  const dir = String(pick(sig, 'direction') || '').toUpperCase();
+  if (entry == null || sl == null) return '';
+
+  const risk = Math.abs(entry - sl);
+  if (!(risk > 0)) return '';
+  const sign = (dir === 'BUY' || dir === 'LONG') ? 1 : -1;
+
+  if (!live) {
+    return `<div class="trk trk-none">Live price not loaded for ${esc(pair)} yet — open the chart to fetch it.</div>`;
+  }
+
+  // Running R: how far price has travelled in your favour, in units of risk.
+  const runR = ((live.price - entry) * sign) / risk;
+  const toLevel = (lvl) => (lvl == null ? null : ((lvl - live.price) * sign) / risk);
+
+  // Which level is closest in the direction it would be hit.
+  const cands = [
+    { name: 'stop', price: sl, r: -1, away: Math.abs(((sl - live.price) * sign) / risk), bad: true },
+    tp1 != null ? { name: 'TP1', price: tp1, r: toLevel(tp1), away: Math.abs(toLevel(tp1)) } : null,
+    tp2 != null ? { name: 'TP2', price: tp2, r: toLevel(tp2), away: Math.abs(toLevel(tp2)) } : null,
+    tp3 != null ? { name: 'TP3', price: tp3, r: toLevel(tp3), away: Math.abs(toLevel(tp3)) } : null,
+  ].filter(Boolean).sort((a, b) => a.away - b.away);
+  const nearest = cands[0];
+  const imminent = nearest && nearest.away <= NEAR_R;
+
+  // Position along the whole ladder, stop at 0 and TP3 at 100.
+  const lo = -1, hi = tp3 != null ? toLevel(tp3) + runR : 3.5;
+  const span = hi - lo;
+  const atPct = span > 0 ? Math.max(0, Math.min(100, ((runR - lo) / span) * 100)) : 50;
+  const markPct = (lvl) => {
+    const r = lvl == null ? null : ((lvl - entry) * sign) / risk;
+    return r == null || span <= 0 ? null : Math.max(0, Math.min(100, ((r - lo) / span) * 100));
+  };
+
+  const ageMin = Math.round((Date.now() - live.at) / 60000);
+  const cls = runR > 0 ? 'up' : runR < 0 ? 'dn' : '';
+
+  return `<div class="trk${imminent ? ' trk-near' : ''}">
+    <div class="trk-top">
+      <span class="trk-state ${cls}">${esc(dir)} &middot; ${esc(sign > 0 ? 'running' : 'running')} ${esc((runR >= 0 ? '+' : '') + runR.toFixed(2))}R</span>
+      <span class="trk-px">${esc(price(live.price, pair))}<i>${ageMin < 90 ? esc(ageMin) + 'm ago' : esc(Math.round(ageMin / 60)) + 'h ago'}</i></span>
+    </div>
+    <div class="trk-bar">
+      ${[['sl', sl], ['t1', tp1], ['t2', tp2], ['t3', tp3]].map(([k, v]) => {
+        const p2 = markPct(v);
+        return p2 == null ? '' : `<span class="trk-mark trk-${k}" style="left:${p2}%"></span>`;
+      }).join('')}
+      <span class="trk-fill" style="width:${atPct}%"></span>
+      <span class="trk-now" style="left:${atPct}%"></span>
+    </div>
+    <div class="trk-foot">
+      ${imminent
+        ? `<b class="trk-alert">About to hit ${esc(nearest.name)}</b> — ${esc(nearest.away.toFixed(2))}R away at ${esc(price(nearest.price, pair))}.`
+        : `Nearest level is <b>${esc(nearest.name)}</b>, ${esc(nearest.away.toFixed(2))}R away at ${esc(price(nearest.price, pair))}.`}
+      ${runR <= -1 ? ' <b class="trk-alert">Stop level reached.</b>' : ''}
+    </div>
+  </div>`;
 }
 
 /* ─────────── what this signal is worth, in your money ───────────
