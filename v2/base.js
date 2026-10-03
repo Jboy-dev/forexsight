@@ -278,27 +278,61 @@ function card(s) {
   </article>`;
 }
 
-/* ─────────────────────── the honest record ─────────────────────── */
+/* ─────────────────────── the honest record ───────────────────────
+   The brain publishes three measures of the same book and they disagree in
+   sign: every published signal reads +0.074R, the same trades collapsed to 59
+   independent episodes read -0.045R. Quoting only the first is quoting the
+   inflated one, because republications of the same move are not independent
+   observations. All three are shown, with the episode figure given equal
+   weight, which is what the brain's own note asks for.
+   ---------------------------------------------------------------------- */
 function renderRecord() {
   const b = S.learningBrain, box = el('record');
   if (!b) { box.innerHTML = `<div class="rec-note">The record file could not be read, so no record is shown. A missing file is not a zero.</div>`; return; }
-  const h = b.headline || b.overall || {};
-  const n = num(h.samples), wr = num(h.winRate), avg = num(h.avgR), ci = h.ci;
-  const posCi = Array.isArray(ci) && num(ci[0]) != null && ci[0] > 0;
+
+  const m = b.measures || {};
+  const everySignal = m.everySignal || b.headline || b.overall || {};
+  const episode     = m.episodeAverage || null;
+  const firstOf     = m.firstOfEpisode || null;
+
+  const raw       = num(b.rawPublications);
+  const collapsed = num(b.totalSamples);          // episodes — NOT headline.samples
+  const factor    = num(b.inflationFactor);
+
+  const block = (label, d, note) => {
+    if (!d) return '';
+    const avg = num(d.avgR), n = num(d.samples), wr = num(d.winRate), ci = d.ci;
+    const spansZero = Array.isArray(ci) && ci[0] <= 0 && ci[1] >= 0;
+    return `<div class="rec-i" style="min-width:184px">
+      <div class="k">${esc(label)}</div>
+      <div class="v" style="color:${avg == null ? 'var(--text)' : avg > 0 ? 'var(--up)' : 'var(--down)'}">${avg == null ? '—' : esc(sign(avg) + avg.toFixed(3)) + 'R'}</div>
+      <div style="font:500 11px/1.5 var(--mono);color:var(--text-faint);margin-top:6px">
+        ${n == null ? '—' : esc(n)} samples${wr == null ? '' : ` · ${esc(Math.round(wr * 100))}% won`}<br>
+        ${Array.isArray(ci) ? esc(`[${sign(ci[0])}${ci[0]}, ${sign(ci[1])}${ci[1]}]`) : '—'}
+        ${spansZero ? '<br><span style="color:var(--warn)">spans zero</span>' : ''}
+      </div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:7px;line-height:1.45;max-width:210px">${esc(note)}</div>
+    </div>`;
+  };
+
+  const eAvg = num(episode && episode.avgR), sAvg = num(everySignal.avgR);
+  const disagree = (eAvg != null && sAvg != null && (eAvg > 0) !== (sAvg > 0));
 
   box.innerHTML = `
-    <div class="rec-row">
-      <div class="rec-i"><div class="k">Signals judged</div><div class="v">${n == null ? '—' : esc(n)}</div></div>
-      <div class="rec-i"><div class="k">Win rate</div><div class="v">${wr == null ? '—' : esc(Math.round(wr * 100)) + '%'}</div></div>
-      <div class="rec-i"><div class="k">Average per signal</div>
-        <div class="v" style="color:${avg == null ? 'var(--text)' : avg > 0 ? 'var(--up)' : 'var(--down)'}">${avg == null ? '—' : esc(sign(avg) + avg.toFixed(3)) + 'R'}</div></div>
-      <div class="rec-i"><div class="k">Confidence interval</div>
-        <div class="v" style="font-size:16px">${Array.isArray(ci) ? esc(`[${sign(ci[0])}${ci[0]}, ${sign(ci[1])}${ci[1]}]`) : '—'}</div></div>
+    <div class="rec-row" style="gap:30px">
+      ${block('Every published signal', everySignal, 'What taking every setup would have returned. Republications of one move are counted separately here.')}
+      ${block('Collapsed to episodes', episode, 'The same trades, with republications of a single move counted once. This is the independent unit.')}
+      ${block('First of each episode', firstOf, 'Only the first publication of each move. Fewest samples, widest interval.')}
     </div>
-    <div class="rec-note">${Array.isArray(ci) && !posCi
-      ? `That interval includes zero, which means this record does not yet establish an edge in either direction. ${esc(b.verdict || '')}`
-      : esc(b.verdict || 'No verdict published.')}
-      ${b.inflationFactor ? ` Raw publications were ${esc(b.rawPublications ?? '?')}, collapsed to ${esc(n ?? '?')} independent moves — a factor of ${esc(b.inflationFactor)}. Counting the raw number instead would overstate the sample by that much.` : ''}</div>`;
+    <div class="rec-note">
+      ${raw != null && collapsed != null
+        ? `${esc(raw)} publications collapse to ${esc(collapsed)} independent moves — a factor of ${esc(factor ?? r2(raw / collapsed))}. Counting the raw number as the sample size would overstate the evidence by that much. `
+        : ''}
+      ${disagree
+        ? `<strong style="color:var(--warn)">The first two measures disagree in sign.</strong> Per signal the book reads ${esc(sign(sAvg) + sAvg.toFixed(3))}R; collapsed to independent moves it reads ${esc(sign(eAvg) + eAvg.toFixed(3))}R. The second is the one that respects independence, so this book is not established as positive. `
+        : ''}
+      ${esc(b.verdict || '')}
+    </div>`;
 }
 
 /* ───────────── every signal, judged — collapsible rows ───────────── */

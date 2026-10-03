@@ -144,5 +144,36 @@ t('published record does not claim an unproven edge', () => {
   return true;
 });
 
+/* ── BUG: base II's record printed "387 publications collapsed to 387
+   independent moves — a factor of 6.47", because it read headline.samples
+   (the per-signal count) as the collapsed count instead of totalSamples (the
+   episode count, 59). It also led with the per-signal figure alone, which is
+   the inflated one: per signal this book reads +0.074R, collapsed to episodes
+   it reads -0.045R. Those disagree in sign. ──────────────────────────────── */
+t('record panel reads the episode count, not the per-signal count', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (/collapsed\s*=\s*num\(b\.headline/.test(js)) return 'collapsed count is read from headline — that is the raw per-signal number';
+  if (!/collapsed\s*=\s*num\(b\.totalSamples\)/.test(js)) return 'collapsed count is not read from b.totalSamples';
+  return true;
+});
+
+t('record panel shows the episode measure, not only the per-signal one', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (!/episodeAverage/.test(js)) return 'the episode-collapsed measure is not rendered at all';
+  if (!/firstOfEpisode/.test(js)) return 'the first-of-episode measure is not rendered';
+  return true;
+});
+
+t('inflation arithmetic in the published brain is self-consistent', () => {
+  if (!existsSync('data/learning-brain.json')) return 'skipped: no brain file';
+  const b = JSON.parse(readFileSync('data/learning-brain.json', 'utf8'));
+  const raw = b.rawPublications, ep = b.totalSamples, f = b.inflationFactor;
+  if (raw == null || ep == null || f == null) return 'one of rawPublications / totalSamples / inflationFactor is missing';
+  const expect = raw / Math.max(1, ep);
+  if (Math.abs(expect - f) > 0.05) return `inflationFactor ${f} does not equal ${raw}/${ep} = ${expect.toFixed(2)}`;
+  if (raw === ep && f > 1.05) return `raw equals collapsed (${raw}) yet the factor is ${f} — these cannot both be true`;
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
