@@ -253,5 +253,30 @@ t('order layer: every command is self-describing, so help cannot drift', () => {
   return true;
 });
 
+/* ── BUG: the published feed was going BACKWARDS in time. The mirror writes
+   Cloudflare's payload straight over latest-signals.json; when that payload is
+   empty (every weekend) the newer committed feed was already destroyed, and the
+   only fallback considered was a snapshot that could be hours older. Measured
+   on 2026-10-03 the feed oscillated between 21:05 (fixed ADX) and 14:44 (ADX 0)
+   every few minutes, reverting engine fixes on screen minutes after release. ─ */
+t('ensure-signals considers the committed feed, not just the old snapshot', () => {
+  const src = readFileSync('tools/ensure-signals.mjs', 'utf8');
+  if (!/HEAD:\$\{FILE\}|HEAD:.*latest-signals/.test(src)) {
+    return 'the committed-at-HEAD candidate is gone — an empty mirror payload can clobber a newer feed again';
+  }
+  if (!/b\.ts - a\.ts/.test(src)) return 'candidates are no longer ranked newest-first';
+  return true;
+});
+
+t('ensure-signals never republishes a feed older than the one it replaces, when both have signals', () => {
+  const src = readFileSync('tools/ensure-signals.mjs', 'utf8');
+  // The usable filter must require signals AND recency; dropping either is how
+  // a stale copy wins.
+  if (!/c\.count > 0 && ageH\(c\) < KEEP_HOURS/.test(src)) {
+    return 'the usability filter no longer requires both signals and recency';
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
