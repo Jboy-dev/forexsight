@@ -245,13 +245,16 @@ const FS_COMMANDS = [
     },
   },
   {
-    name: 'currency', aliases: ['ccy', 'money', 'gbp', 'usd', 'eur', 'pounds', 'dollars', 'euros'],
-    help: 'currency gbp · currency usd · currency eur',
+    name: 'currency', aliases: ['ccy', 'gbp', 'usd', 'eur', 'jpy', 'chf', 'cad', 'pounds', 'dollars', 'euros', 'yen'],
+    help: 'currency gbp · usd · eur · jpy · chf · cad',
     run(cfg, rest, matched) {
       const all = ((rest || '') + ' ' + (matched || '')).toLowerCase();
       const c = /gbp|pound|sterling|£/.test(all) ? 'GBP'
-              : /usd|dollar|\$/.test(all) ? 'USD'
-              : /eur|euro|€/.test(all) ? 'EUR' : null;
+              : /\busd\b|dollar|\$/.test(all) ? 'USD'
+              : /eur|euro|€/.test(all) ? 'EUR'
+              : /jpy|yen|¥/.test(all) ? 'JPY'
+              : /chf|franc|swiss/.test(all) ? 'CHF'
+              : /cad|loonie|canad/.test(all) ? 'CAD' : null;
       if (!c) return null;
       cfg.currency = c;
       return `Showing money in ${c}.`;

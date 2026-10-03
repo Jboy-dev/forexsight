@@ -714,3 +714,109 @@ header.top { box-shadow: 0 1px 0 #ffffff06, 0 6px 24px -12px #000a; }
 .ms-b i, .ms-r i { display: block; font-style: normal; font: 500 9px var(--mono); color: var(--text-faint); margin-top: 3px; }
 .mny-note { font-size: 11px; color: var(--text-faint); line-height: 1.5; margin-top: 9px; }
 @media (max-width: 460px) { .mny-step { grid-template-columns: 38px 1fr 1fr; } .ms-p { display: none; } }
+
+/* three editable fields per signal */
+.mny-pct, .mny-amt { width: 56px; background: none; border: 0; outline: none; color: var(--text);
+  font: 620 12.5px/1 var(--mono); padding: 5px 0; text-align: right; }
+.mny-amt { width: 72px; }
+.mny-pct::-webkit-outer-spin-button, .mny-pct::-webkit-inner-spin-button,
+.mny-amt::-webkit-outer-spin-button, .mny-amt::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mny-pct, .mny-amt { -moz-appearance: textfield; }
+.mny-own { font-style: normal; font: 600 9px var(--mono); letter-spacing: .08em; color: var(--accent);
+  background: var(--accent-soft); border: 1px solid #6b8cff35; border-radius: 4px; padding: 3px 6px; }
+.mny-reset { cursor: pointer; font: 600 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-faint); background: #0a0e1a; border: 1px solid var(--line-soft); border-radius: 5px; padding: 6px 8px; }
+.mny-reset:hover { color: var(--down); border-color: #ff5f6d40; }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   iOS / iPhone
+   Written against a 17 Pro Max (440 x 956 CSS px, Dynamic Island, home
+   indicator), but everything here is generic safe-area work.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* 1. NO ZOOM ON FOCUS. iOS Safari zooms the entire page when a focused input
+      has a font-size under 16px, and then leaves you scrolled sideways. Several
+      inputs here were 12.5-14px. This is the single most noticeable iPhone bug
+      a site like this can ship, and it is purely a font-size rule. */
+/*    Gated on (pointer: coarse) rather than an iOS-only @supports query. The
+      @supports form only matched real Safari, which meant the rule could not be
+      verified anywhere else and silently did nothing in testing — the inputs
+      were still 12.5-14px when measured. Any touch device gets 16px now, which
+      is both correct and checkable. */
+@media (pointer: coarse), (max-width: 620px) {
+  #cmd-input, #calc-in, #rs-q,
+  .mny-bal, .mny-pct, .mny-amt,
+  .acct-in input, .acct-in select,
+  input[type="text"], input[type="number"], input[type="search"], select, textarea {
+    font-size: 16px !important;
+  }
+  /* Keep the visual weight by trimming padding rather than type size. */
+  .mny-bal, .mny-pct, .mny-amt { padding: 4px 0; }
+  .mny-bal { width: 92px; } .mny-pct { width: 64px; } .mny-amt { width: 88px; }
+  .mny-edit em { font-size: 9.5px; }
+}
+
+/* 2. SAFE AREAS. Without these the header sits under the Dynamic Island and
+      the last row hides behind the home indicator. */
+header.top { padding-top: env(safe-area-inset-top, 0px); }
+.top-in, .tabs-in, .wrap {
+  padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  padding-right: calc(16px + env(safe-area-inset-right, 0px));
+}
+body { padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+.copy-tip { bottom: calc(26px + env(safe-area-inset-bottom, 0px)); }
+.rs-panel { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* 3. Touch targets. 44px is the floor Apple specifies and it is the right one. */
+@media (pointer: coarse) {
+  .tab { min-height: 48px; padding: 15px 14px; }
+  .cmd-go, .rs-btn, .ans-x, .mny-reset, .cmd-chip, .rs-chip { min-height: 44px; }
+  .ans-x { width: 44px; height: 44px; }
+  .lvl.copyable { min-height: 56px; }
+  details.fold > summary, .hrow > summary { min-height: 44px; }
+  .mny-edit { min-height: 44px; }
+}
+
+/* 4. iOS text and scroll behaviour. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body { overscroll-behavior-y: none; }         /* no rubber-band under the header */
+.rs-body, .tabs-in { -webkit-overflow-scrolling: touch; }
+
+/* 5. Standalone (added to Home Screen): no browser chrome, so the header needs
+      to carry the full top inset itself. */
+@media (display-mode: standalone) {
+  header.top { padding-top: calc(env(safe-area-inset-top, 0px) + 4px); }
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* 6. The large iPhones are ~430-440px wide. The 620px breakpoint already
+      stacks things, but these are the details that read as unfinished on a
+      phone: numbers wrapping mid-figure, and cramped money rows. */
+@media (max-width: 460px) {
+  .mny-k { gap: 7px; }
+  .mny-edit { padding: 2px 8px; }
+  .mny-two { gap: 8px; }
+  .mny-win b, .mny-lose b { font-size: 22px; }
+  .lvl-v { font-size: 12.5px; }
+  .voice-head { font-size: 17px; }
+  .rec-i .v { font-size: 21px; }
+  .lg-rate .v { font-size: 30px; }
+  .calc-v { font-size: 26px; }
+  .acct { grid-template-columns: 1fr 1fr; }
+  .acct-r { grid-column: 1 / -1; }
+  h2.sec { margin: 24px 0 10px; }
+}
+
+/* 7. Numbers must never break across lines — a price split in two is unreadable
+      and, on a trading page, genuinely misleading. */
+.lvl-v, .mny-win b, .mny-lose b, .ms-b, .ms-r, .rec-i .v, .tile-v, .h-r, .calc-v, .lg-rate .v {
+  white-space: nowrap; font-variant-numeric: tabular-nums;
+}
+
+/* shorter cards: the detail folds away */
+.mny-at { font-style: normal; font: 500 10px var(--mono); color: var(--text-faint); text-transform: none; letter-spacing: 0; }
+.mny-edits { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 12px; }
+.mny-fold { border-top: 1px solid var(--line-soft); margin-top: 11px; padding-top: 10px; }
+.why-fold { border-top: 0; padding-top: 6px; margin-top: 6px; }
+.why-fold > summary { font-size: 9.5px; }
+.c-why { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }

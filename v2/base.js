@@ -290,7 +290,9 @@ function card(s) {
     </div>
     <div class="c-body">
       <div class="chips">${chips.join('')}</div>
-      <div class="c-why">${esc(why.join(' '))}</div>
+      <div class="c-why">${esc(why[0] || '')}</div>
+      ${why.length > 1 ? `<details class="fold why-fold"><summary>Why this setup</summary>
+        <div class="fold-in">${esc(why.slice(1).join(' '))}</div></details>` : ''}
 
       <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>The whole ladder and what it pays</summary><div class="fold-in">
         <dl class="kv">
@@ -436,6 +438,40 @@ function histRow(x) {
 
 
 
+
+/* ──────────────── staying up to date ────────────────
+   An installed app must not sit on an old build. The worker claims control as
+   soon as it activates and posts a message; the page reloads once when that
+   happens, and checks for a new worker whenever it is brought back to the
+   foreground — which is the moment a phone app is actually looked at.
+   ----------------------------------------------------------------------- */
+function installUpdates() {
+  if (window._fsUpdInstalled || !('serviceWorker' in navigator)) return;
+  window._fsUpdInstalled = true;
+  let reloading = false;
+
+  const refresh = () => {
+    if (reloading) return;
+    reloading = true;
+    // A reload here is safe: orders, balances and per-signal amounts all live
+    // in localStorage, so nothing the person set is lost.
+    setTimeout(() => location.reload(), 300);
+  };
+
+  navigator.serviceWorker.addEventListener('controllerchange', refresh);
+  navigator.serviceWorker.addEventListener('message', (e) => {
+    if (e.data && e.data.type === 'sw-updated') refresh();
+  });
+
+  const check = () => {
+    navigator.serviceWorker.getRegistration().then(r => { if (r) r.update().catch(() => {}); }).catch(() => {});
+  };
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) check(); });
+  window.addEventListener('focus', check);
+  setInterval(check, 15 * 60 * 1000);
+  check();
+}
+
 /* ──────────────── answers clear themselves ────────────────
    An answer you have finished with is clutter. Each one gets an explicit
    close button AND a timer, and the timer restarts on any real interaction
@@ -498,21 +534,54 @@ function installIdle() {
 function installSignalBalance() {
   if (window._fsSigBalInstalled) return;
   window._fsSigBalInstalled = true;
-  document.addEventListener('change', (e) => {
-    const inp = e.target.closest && e.target.closest('.mny-bal');
-    if (!inp) return;
-    const key = inp.dataset.sigkey;
-    const v = parseFloat(inp.value);
-    if (!key) return;
+
+  const put = (key, patch) => {
     S.cfg.perSignal = S.cfg.perSignal || {};
-    if (!(v > 0) || v === S.cfg.balance) delete S.cfg.perSignal[key];
-    else S.cfg.perSignal[key] = v;
-    if (window.FS) window.FS.save(S.cfg);      // persisted, so it is still here next visit
+    const cur = S.cfg.perSignal[key];
+    const base = (typeof cur === 'number') ? { balance: cur } : (cur || {});
+    const next = { ...base, ...patch };
+    // Anything matching the account defaults is not an override; drop it so the
+    // signal follows the account again rather than silently pinning itself.
+    if (next.balance === S.cfg.balance) delete next.balance;
+    if (next.riskPct === S.cfg.riskPct) delete next.riskPct;
+    if (Object.keys(next).length) S.cfg.perSignal[key] = next;
+    else delete S.cfg.perSignal[key];
+    if (window.FS) window.FS.save(S.cfg);
+    render();
+  };
+
+  document.addEventListener('change', (e) => {
+    const el0 = e.target;
+    if (!el0 || !el0.classList) return;
+    const key = el0.dataset && el0.dataset.sigkey;
+    if (!key) return;
+    const v = parseFloat(el0.value);
+
+    if (el0.classList.contains('mny-bal')) {
+      if (v > 0) put(key, { balance: v });
+    } else if (el0.classList.contains('mny-pct')) {
+      if (v > 0 && v <= 100) put(key, { riskPct: v });
+    } else if (el0.classList.contains('mny-amt')) {
+      // Cash at risk is the most direct way to say it. The percent is derived
+      // from whatever balance this signal is using, so the three stay consistent.
+      const cur = (S.cfg.perSignal || {})[key];
+      const o = (typeof cur === 'number') ? { balance: cur } : (cur || {});
+      const bal = o.balance != null ? o.balance : S.cfg.balance;
+      if (v > 0 && bal > 0) put(key, { riskPct: +((v / bal) * 100).toFixed(4) });
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('.mny-reset');
+    if (!b) return;
+    if (S.cfg.perSignal) delete S.cfg.perSignal[b.dataset.sigkey];
+    if (window.FS) window.FS.save(S.cfg);
     render();
   });
-  // Typing in the box must not trigger a re-render on every keystroke.
+
   document.addEventListener('keydown', (e) => {
-    if (e.target && e.target.classList && e.target.classList.contains('mny-bal') && e.key === 'Enter') e.target.blur();
+    const c = e.target && e.target.classList;
+    if (c && (c.contains('mny-bal') || c.contains('mny-pct') || c.contains('mny-amt')) && e.key === 'Enter') e.target.blur();
   });
 }
 
@@ -532,8 +601,16 @@ function moneyBlock(sig) {
   // A signal may carry its own balance. Everything else — risk percent,
   // currency — still comes from the account, so only the amount differs.
   const key = sigKey(sig);
-  const own = (base.perSignal || {})[key];
-  const cfg = own ? { ...base, balance: own } : base;
+  const ov = (base.perSignal || {})[key];
+  // An override may be a bare number (an older saved balance) or an object
+  // carrying balance and/or risk. Both are read, so nothing saved earlier breaks.
+  const o = (typeof ov === 'number') ? { balance: ov } : (ov || {});
+  const cfg = {
+    ...base,
+    balance: o.balance != null ? o.balance : base.balance,
+    riskPct: o.riskPct != null ? o.riskPct : base.riskPct,
+  };
+  const own = o.balance != null || o.riskPct != null;
   const r = C.calcSignal(sig, cfg, S.fxRates);
   if (!r) return '';
   const M = (v) => C.money(v, r.currency);
@@ -545,41 +622,44 @@ function moneyBlock(sig) {
 
   const best = r.best, worst = r.worst;
   return `<div class="mny">
-    <div class="mny-k">Your money
-      <span class="mny-edit">
-        <i>${esc(C.SYM[r.currency] || '')}</i>
-        <input class="mny-bal" type="number" inputmode="decimal" min="1" step="any"
-               value="${esc(r.balance)}" data-sigkey="${esc(key)}"
-               aria-label="Balance for this signal" title="Change the amount for this signal only">
-        <em>at ${esc(r.riskPct)}%${own ? ' · just this signal' : ''}</em>
-      </span></div>
+    <div class="mny-k">Your money${own ? ' <em class="mny-own">just this signal</em>' : ''}
+      <em class="mny-at">${esc(C.SYM[r.currency] || '')}${esc(Number(r.balance).toLocaleString())} at ${esc(+r.riskPct)}%</em></div>
     <div class="mny-two">
       <div class="mny-win"><span>if it runs to TP3</span><b>${esc(M(best.money))}</b></div>
       <div class="mny-lose"><span>if the stop is hit</span><b>${esc(M(worst.money))}</b></div>
     </div>
-    ${r.ladder && r.ladder.length ? `<div class="mny-steps">
-      ${r.ladder.map(st => `<div class="mny-step">
-        <span class="ms-n">${esc(st.name)}</span>
-        <span class="ms-p">${esc(price(st.price, pick(sig, 'pair')))}</span>
-        <span class="ms-b">+${esc(M(st.bankedMoney))}<i>banked</i></span>
-        <span class="ms-r">${esc(M(st.runningMoney))}<i>total so far</i></span>
-      </div>`).join('')}
-      <div class="mny-note">A third closes at each target. The amounts above are what you actually take at each one, and the running total once you have — not what the position would be worth if it were all still open.</div>
-    </div>` : ''}
-    <details class="fold mny-fold" ${cfg.expand ? 'open' : ''}><summary>Every outcome, and the size behind it</summary>
+
+    <details class="fold mny-fold"><summary>Change the amount, and see each target</summary>
       <div class="fold-in">
-        <table class="kb-t"><tr><th>what happens</th><th>R</th><th>${esc(r.currency)}</th></tr>
-        ${r.outcomes.map(o => `<tr><td>${esc(o.name)}<br><i class="mny-d">${esc(o.detail)}</i></td>
-          <td>${esc(o.r >= 0 ? '+' : '')}${esc(o.r)}</td>
-          <td class="${o.money >= 0 ? 'pos' : 'neg'}">${esc(M(o.money))}</td></tr>`).join('')}
-        </table>
-        <dl class="kv">
-          <dt>Risking</dt><dd>${esc(M(r.riskAmount))} (1R)</dd>
-          <dt>Stop distance</dt><dd>${esc(r.priceRisk.toPrecision(4))} ${esc(r.quote)}</dd>
-          <dt>Position size</dt><dd>${esc(r.units.toLocaleString(undefined, { maximumFractionDigits: r.units < 10 ? 4 : 1 }))} units</dd>
-          <dt>Settles in</dt><dd>${esc(r.quote)}, converted at ${esc(r.rate.toPrecision(5))}</dd>
-        </dl>
-        <p style="margin-top:9px">These amounts are exact arithmetic from your balance and this setup's own levels. Which outcome happens is not something I can tell you — the middle rows are the realistic ones, not the bottom.</p>
+        <div class="mny-edits">
+          <span class="mny-edit" title="Balance used for this signal">
+            <i>${esc(C.SYM[r.currency] || '')}</i>
+            <input class="mny-bal" type="number" inputmode="decimal" min="1" step="any"
+                   value="${esc(r.balance)}" data-sigkey="${esc(key)}" aria-label="Balance for this signal">
+            <em>balance</em>
+          </span>
+          <span class="mny-edit" title="Percent of that balance risked here">
+            <input class="mny-pct" type="number" inputmode="decimal" min="0.01" max="100" step="0.1"
+                   value="${esc(+r.riskPct)}" data-sigkey="${esc(key)}" aria-label="Risk percent for this signal">
+            <i>%</i><em>risk</em>
+          </span>
+          <span class="mny-edit" title="Or set the cash you are willing to lose; the percent follows">
+            <i>${esc(C.SYM[r.currency] || '')}</i>
+            <input class="mny-amt" type="number" inputmode="decimal" min="0.01" step="any"
+                   value="${esc(+r.riskAmount.toFixed(2))}" data-sigkey="${esc(key)}" aria-label="Risk amount for this signal">
+            <em>at risk</em>
+          </span>
+          ${own ? `<button class="mny-reset" data-sigkey="${esc(key)}" title="Use the account defaults again">reset</button>` : ''}
+        </div>
+        ${r.ladder && r.ladder.length ? `<div class="mny-steps">
+          ${r.ladder.map(st => `<div class="mny-step">
+            <span class="ms-n">${esc(st.name)}</span>
+            <span class="ms-p">${esc(price(st.price, pick(sig, 'pair')))}</span>
+            <span class="ms-b">+${esc(M(st.bankedMoney))}<i>banked</i></span>
+            <span class="ms-r">${esc(M(st.runningMoney))}<i>total so far</i></span>
+          </div>`).join('')}
+          <div class="mny-note">A third closes at each target. These are what you take at each one, and the running total once you have.</div>
+        </div>` : ''}
       </div></details>
   </div>`;
 }
@@ -613,9 +693,14 @@ function renderCalc() {
         <label class="acct-f"><span>Risk per trade</span>
           <div class="acct-in"><input id="in-risk" type="number" inputmode="decimal" min="0.01" max="100" step="0.1" value="${esc(ctx.riskPct)}" aria-label="Risk percent"><i>%</i></div>
         </label>
+        <label class="acct-f"><span>Or cash at risk</span>
+          <div class="acct-in"><i>${esc(C.SYM[ctx.currency] || '')}</i>
+            <input id="in-riskamt" type="number" inputmode="decimal" min="0.01" step="any" value="${esc(+perR.toFixed(2))}" aria-label="Risk amount"></div>
+        </label>
         <label class="acct-f"><span>Currency</span>
           <div class="acct-in"><select id="in-ccy" aria-label="Account currency">
-            ${['GBP', 'USD', 'EUR'].map(c => `<option value="${c}"${c === ctx.currency ? ' selected' : ''}>${c}</option>`).join('')}
+            ${(S.fxRates && S.fxRates.toAccount ? Object.keys(S.fxRates.toAccount) : ['GBP', 'USD', 'EUR'])
+                .map(c => `<option value="${c}"${c === ctx.currency ? ' selected' : ''}>${c}</option>`).join('')}
           </select></div>
         </label>
         <div class="acct-r"><span>That is your 1R</span><b>${esc(M(perR))}</b>
@@ -661,6 +746,14 @@ function renderCalc() {
   if (bal) bal.addEventListener('change', () => { const v = parseFloat(bal.value); if (v > 0) commit({ balance: v }); });
   if (rsk) rsk.addEventListener('change', () => { const v = parseFloat(rsk.value); if (v > 0 && v <= 100) commit({ riskPct: v }); });
   if (ccy) ccy.addEventListener('change', () => commit({ currency: ccy.value }));
+  const amt = el('in-riskamt');
+  if (amt) amt.addEventListener('change', () => {
+    // Setting the cash you are willing to lose sets the percent, because the
+    // percent is the thing the rest of the maths actually uses.
+    const v = parseFloat(amt.value);
+    const b = parseFloat(bal ? bal.value : ctx.balance) || ctx.balance;
+    if (v > 0 && b > 0) commit({ riskPct: +((v / b) * 100).toFixed(4) });
+  });
   if (rng) {
     // Live preview while dragging, committed on release — so the page is not
     // re-rendered on every pixel of the drag.
@@ -1222,6 +1315,7 @@ function bootConfig() {
   installCopy();
   installIdle();
   installSignalBalance();
+  installUpdates();
   installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
 
 async function cycle() {

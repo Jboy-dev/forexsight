@@ -84,5 +84,18 @@
 <script src="/v2/calc.js?v=6"></script>
 <script src="/v2/commands.js?v=6"></script>
 <script src="/v2/base.js?v=6"></script>
+<script>
+// Register the service worker. Base II shipped without this: the promotion
+// moved the page but left registration behind in the old shell, so the
+// installed app had no worker at all — no offline shell, and no route for an
+// update to reach the phone.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
+      .then(function (r) { r.update().catch(function () {}); })
+      .catch(function (e) { console.warn('[sw] registration failed', e && e.message); });
+  });
+}
+</script>
 </body>
 </html>

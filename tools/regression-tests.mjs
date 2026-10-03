@@ -653,5 +653,81 @@ t('a per-signal balance override is persisted, not just displayed', () => {
   return true;
 });
 
+/* ── iPhone. The zoom-on-focus bug is the most visible failure a page like
+   this can ship: iOS Safari zooms the whole viewport when a focused input is
+   under 16px and leaves you scrolled sideways. ─────────────────────────── */
+t('iOS: every input is 16px on touch, so focusing one does not zoom the page', () => {
+  const css = readFileSync('v2/base.css', 'utf8');
+  if (/@supports \(-webkit-touch-callout: none\)[\s\S]{0,400}?font-size: 16px/.test(css)) {
+    return 'the 16px rule is gated on an iOS-only @supports query — it cannot be verified anywhere '
+         + 'and silently did nothing when measured';
+  }
+  const m = css.match(/@media \(pointer: coarse\)[^{]*\{([\s\S]{0,700}?)\n\}/);
+  if (!m || !/font-size: 16px !important/.test(m[1])) return 'no coarse-pointer rule setting inputs to 16px';
+  for (const sel of ['#cmd-input', '#calc-in', '#rs-q', '.mny-bal', '.mny-pct', '.mny-amt']) {
+    if (!m[1].includes(sel)) return `${sel} is not covered by the 16px rule`;
+  }
+  return true;
+});
+
+t('iOS: safe-area insets are respected, so nothing hides under the notch or home bar', () => {
+  const css = readFileSync('v2/base.css', 'utf8');
+  for (const need of ['safe-area-inset-top', 'safe-area-inset-bottom', 'safe-area-inset-left']) {
+    if (!css.includes(need)) return `${need} is never used — content will sit under the ${need.includes('top') ? 'Dynamic Island' : 'home indicator'}`;
+  }
+  const html = readFileSync('index.html', 'utf8');
+  if (!/viewport-fit=cover/.test(html)) return 'viewport-fit=cover is missing, so the insets are always zero';
+  // Blocking pinch-zoom is an accessibility failure and is not the right fix.
+  if (/maximum-scale=1|user-scalable=no/.test(html)) return 'pinch-zoom is disabled — that is an accessibility failure';
+  return true;
+});
+
+/* ── The installed app must not sit on an old build. ───────────────────── */
+t('the service worker is build-stamped on every deploy', () => {
+  const sw = readFileSync('service-worker.js', 'utf8');
+  if (!/const BUILD = '__BUILD__'/.test(sw)) {
+    return 'the BUILD placeholder is missing or has a stamped value committed — deploys would stop changing this file';
+  }
+  if (!/const CACHE = 'forexsight-' \+ BUILD/.test(sw)) return 'the cache name is not derived from the build';
+  if (!/skipWaiting/.test(sw) || !/clients\.claim/.test(sw)) {
+    return 'without skipWaiting and clients.claim a new worker waits for every tab to close';
+  }
+  const deploy = readFileSync('tools/deploy.sh', 'utf8');
+  if (!/__BUILD__/.test(deploy)) return 'deploy.sh does not stamp the build';
+  return true;
+});
+
+t('both shells register the service worker', () => {
+  for (const f of ['index.html', 'v2/index.html']) {
+    if (!/serviceWorker\.register/.test(readFileSync(f, 'utf8'))) {
+      return `${f} never registers the worker — the installed app would have no offline shell and no update route`;
+    }
+  }
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (!/controllerchange/.test(js)) return 'the page never listens for a new worker taking control';
+  return true;
+});
+
+/* ── Currencies. The picker must follow the published rates, not a list. ── */
+t('account currencies come from the rates file, not a hard-coded list', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (/\['GBP', 'USD', 'EUR'\]\.map\(c => `<option/.test(js)) {
+    return 'the picker is hard-coded to three currencies — adding a rate would not surface it';
+  }
+  if (!/S\.fxRates && S\.fxRates\.toAccount/.test(js)) return 'the picker does not read the published rate list';
+  if (!existsSync('data/fx-rates.json')) return 'skipped: no rates file';
+  const r = JSON.parse(readFileSync('data/fx-rates.json', 'utf8'));
+  const accts = Object.keys(r.toAccount || {});
+  if (accts.length < 4) return `only ${accts.length} account currencies are published`;
+  // Every account currency must be able to convert every quote currency it meets.
+  const quotes = [...new Set(Object.values(r.quoteOf || {}))];
+  for (const a of accts) {
+    for (const q of quotes) {
+      if (r.toAccount[a][q] == null) return `no ${q} -> ${a} rate, so signals quoted in ${q} cannot be priced in ${a}`;
+    }
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

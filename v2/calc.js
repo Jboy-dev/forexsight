@@ -18,7 +18,7 @@
 'use strict';
 
 const CALC_DEFAULTS = { balance: 1000, riskPct: 1, currency: 'GBP' };
-const CALC_SYM = { GBP: '£', USD: '$', EUR: '€' };
+const CALC_SYM = { GBP: '£', USD: '$', EUR: '€', JPY: '¥', CHF: 'CHF ', CAD: 'C$', AUD: 'A$', NZD: 'NZ$' };
 
 /** How many units of `acct` one unit of `quote` is worth. */
 function calcRate(rates, quote, acct) {

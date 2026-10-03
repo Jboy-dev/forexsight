@@ -46,7 +46,10 @@ const usdPer = {
   CAD: usdcad ? 1 / usdcad.price : null,
 };
 
-const accounts = ['GBP', 'USD', 'EUR'];
+// Every currency we hold a reliable rate for can be an account currency. The
+// list is derived from usdPer rather than hard-coded, so adding a rate above
+// automatically makes it selectable.
+const accounts = Object.entries(usdPer).filter(([, v]) => v != null && v > 0).map(([k]) => k);
 const toAccount = {};
 for (const acct of accounts) {
   if (!usdPer[acct]) continue;
@@ -80,9 +83,10 @@ const out = {
 writeFileSync('data/fx-rates.json', JSON.stringify(out, null, 2));
 
 console.log(`rates: priced ${out.pricedAt.slice(0, 16)} (${out.ageHours}h old)`);
+console.log(`  account currencies available: ${accounts.join(', ')}`);
 for (const acct of accounts) {
   if (!toAccount[acct]) continue;
   const r = toAccount[acct];
-  console.log(`  1 unit -> ${acct}:  ` + ['USD', 'EUR', 'JPY', 'CHF', 'CAD'].filter(c => r[c] != null)
+  console.log(`  1 unit -> ${acct}:  ` + ['USD', 'EUR', 'JPY', 'CHF', 'CAD', 'GBP'].filter(c => r[c] != null && c !== acct)
     .map(c => `${c} ${r[c].toFixed(c === 'JPY' ? 6 : 4)}`).join('  '));
 }

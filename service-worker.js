@@ -6,7 +6,18 @@
 // bump, anyone with the PWA installed would keep being served the old '/' and
 // '/app.js' from forexsight-cf-v392 indefinitely, and would never see the new
 // site no matter how many times they opened it.
-const CACHE = 'forexsight-cf-v610';
+// __BUILD__ is rewritten by tools/deploy.sh on every single deploy.
+//
+// This matters more than it looks. A browser only installs a new service worker
+// when the BYTES of this file change. The cache name used to be bumped by hand,
+// so any deploy that did not happen to touch this file produced no worker
+// update at all — and an installed phone app went on serving the old shell from
+// cache indefinitely, no matter how many times it was opened. Stamping the
+// build here means every deploy changes these bytes, so every deploy reaches
+// the phone. skipWaiting() + clients.claim() below then make it take effect
+// immediately instead of waiting for every tab to close.
+const BUILD = '__BUILD__';
+const CACHE = 'forexsight-' + BUILD;
 const SHELL = ['/', '/index.html', '/v2/base.js', '/v2/base.css', '/v2/commands.js', '/v2/knowledge.js', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
@@ -40,7 +51,22 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
+      .then(async () => {
+        // Tell any open page that a new build is live, so it can refresh itself
+        // rather than sitting on the old code until the user happens to reopen.
+        try {
+          const cs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+          for (const c of cs) c.postMessage({ type: 'sw-updated', build: BUILD });
+        } catch {}
+      })
   );
+});
+
+// Lets the page ask the worker which build it is running.
+self.addEventListener('message', (e) => {
+  if (e.data && e.data.type === 'which-build') {
+    try { e.source.postMessage({ type: 'build', build: BUILD }); } catch {}
+  }
 });
 
 // NETWORK-FIRST strategy with cache fallback.
