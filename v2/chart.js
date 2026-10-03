@@ -15,6 +15,9 @@ const CH = {
   bars: [], pair: null, sig: null, tf: '1h',
   view: { from: 0, to: 0 },          // index window into bars
   hover: null, dpr: 1, timer: null, lastFetch: 0,
+  // Vertical state. null means auto-fit to what is visible, which is what you
+  // want almost always; dragging the price axis takes manual control.
+  yCenter: null, yZoom: 1, viewMode: 'own',
 };
 
 const CH_COL = {
@@ -109,8 +112,15 @@ function chDraw() {
   if (s) for (const v of [s.entry, s.sl, s.tp1, s.tp2, s.tp3]) {
     if (typeof v === 'number' && isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; }
   }
-  const span = (hi - lo) || (hi * 0.001) || 1;
-  lo -= span * 0.08; hi += span * 0.08;
+  const span0 = (hi - lo) || (hi * 0.001) || 1;
+  lo -= span0 * 0.08; hi += span0 * 0.08;
+
+  // Manual vertical zoom and pan, applied around the chosen centre.
+  if (CH.yZoom !== 1 || CH.yCenter != null) {
+    const c = CH.yCenter != null ? CH.yCenter : (lo + hi) / 2;
+    const half = ((hi - lo) / 2) / CH.yZoom;
+    lo = c - half; hi = c + half;
+  }
 
   const x = (i) => padL + (i + 0.5) * (plotW / vis.length);
   const y = (p) => padT + (hi - p) / (hi - lo) * plotH;
@@ -220,6 +230,271 @@ function chDraw() {
   }
 }
 
+
+/* ─────────────────── the real TradingView ───────────────────
+   Our own chart is drawn from the bars the engine read, so it always agrees
+   with the signal. TradingView is the other thing you want: the live market,
+   with every tool you already know.
+
+   Both are offered rather than one replacing the other, because they answer
+   different questions — "what was this signal computed from" and "what is
+   price doing right now".
+
+   This is a third-party embed. It loads script from s3.tradingview.com, needs
+   a connection, and will not work offline. Said plainly in the panel rather
+   than left to be discovered.
+   ----------------------------------------------------------------------- */
+
+// Exchange prefixes matter: a bare "EURUSD" resolves to whatever TradingView
+// picks that day, which may not be the instrument the signal is about.
+const CH_TV = {
+  'EUR/USD': 'FX:EURUSD',   'GBP/USD': 'FX:GBPUSD',   'USD/JPY': 'FX:USDJPY',
+  'AUD/USD': 'FX:AUDUSD',   'NZD/USD': 'FX:NZDUSD',   'USD/CAD': 'FX:USDCAD',
+  'USD/CHF': 'FX:USDCHF',   'EUR/GBP': 'FX:EURGBP',   'EUR/JPY': 'FX:EURJPY',
+  'GBP/JPY': 'FX:GBPJPY',   'AUD/JPY': 'FX:AUDJPY',
+  'XAU/USD': 'OANDA:XAUUSD','XAG/USD': 'OANDA:XAGUSD',
+  'BTC/USD': 'BITSTAMP:BTCUSD', 'ETH/USD': 'BITSTAMP:ETHUSD',
+  'SOL/USD': 'COINBASE:SOLUSD', 'XRP/USD': 'BITSTAMP:XRPUSD',
+  'US30': 'TVC:DJI',        'NAS100': 'TVC:NDX',
+};
+
+function chTvSymbol(pair) {
+  const p = String(pair || '').toUpperCase();
+  if (CH_TV[p]) return CH_TV[p];
+  // Last resort for an instrument added without a mapping: strip the slash and
+  // let TradingView resolve it. Flagged in the UI so it is not mistaken for a
+  // verified mapping.
+  return p.replace('/', '');
+}
+
+function chTvUrl(pair) {
+  return `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(chTvSymbol(pair))}`;
+}
+
+let chTvLoaded = false;
+function chMountTradingView() {
+  const host = document.getElementById('tv-host');
+  if (!host) return;
+  const sym = chTvSymbol(CH.pair);
+  const known = !!CH_TV[String(CH.pair).toUpperCase()];
+
+  host.innerHTML = `<div class="tv-wrap"><div id="tv-widget"></div></div>
+    <div class="tv-note">Live from TradingView${known ? '' : ' — this instrument has no verified symbol mapping, so check the ticker matches'}.
+      Your signal levels are on the <b>Our chart</b> tab; TradingView does not know about them.</div>`;
+
+  const build = () => {
+    try {
+      /* global TradingView */
+      new TradingView.widget({
+        container_id: 'tv-widget',
+        symbol: sym,
+        interval: '60',
+        timezone: 'Etc/UTC',
+        theme: 'dark',
+        style: '1',
+        locale: 'en',
+        autosize: true,
+        hide_side_toolbar: false,
+        allow_symbol_change: true,
+        backgroundColor: 'rgba(11, 16, 32, 1)',
+        gridColor: 'rgba(26, 34, 56, 0.6)',
+        studies: [],
+      });
+    } catch (e) {
+      host.innerHTML = `<div class="tv-fail"><strong>TradingView could not load</strong>
+        <p>${chEsc(e.message || 'the embed failed')}. It needs a connection and is blocked by some networks.</p>
+        <p><a href="${chTvUrl(CH.pair)}" target="_blank" rel="noopener noreferrer">Open ${chEsc(sym)} on tradingview.com instead</a></p></div>`;
+    }
+  };
+
+  if (chTvLoaded && window.TradingView) { build(); return; }
+  const sc = document.createElement('script');
+  sc.src = 'https://s3.tradingview.com/tv.js';
+  sc.async = true;
+  sc.onload = () => { chTvLoaded = true; build(); };
+  sc.onerror = () => {
+    host.innerHTML = `<div class="tv-fail"><strong>TradingView could not be reached</strong>
+      <p>The embed script did not load — you may be offline, or a network filter is blocking it.</p>
+      <p><a href="${chTvUrl(CH.pair)}" target="_blank" rel="noopener noreferrer">Open ${chEsc(sym)} on tradingview.com instead</a></p></div>`;
+  };
+  document.head.appendChild(sc);
+}
+
+const chEsc = (x) => String(x ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+function chSetView(which) {
+  CH.viewMode = which;
+  const own = document.querySelector('.ch-wrap');
+  const tv = document.getElementById('tv-host');
+  const rd = document.getElementById('chart-readout');
+  const lg = document.getElementById('chart-legend');
+  const zoom = document.querySelector('.ch-zoom');
+  if (!own || !tv) return;
+  const isTv = which === 'tv';
+  own.style.display = isTv ? 'none' : '';
+  tv.style.display = isTv ? '' : 'none';
+  if (rd) rd.style.display = isTv ? 'none' : '';
+  if (lg) lg.style.display = isTv ? 'none' : '';
+  if (zoom) zoom.style.display = isTv ? 'none' : '';
+  for (const b of document.querySelectorAll('.ch-mode')) b.classList.toggle('on', b.dataset.mode === which);
+  if (isTv) chMountTradingView(); else chDraw();
+}
+
+
+/* ─────────────────── interaction ───────────────────
+   Wheel and pinch to zoom, drag to pan, double-click to reset. The price axis
+   is its own drag target for vertical zoom, so panning sideways never fights
+   with rescaling.
+
+   Cheap by design: every gesture only edits CH.view or the y-state and asks for
+   one redraw on the next frame. A full redraw measures 0.2ms, so this stays
+   inside a 120Hz budget with room to spare.
+   ----------------------------------------------------------------------- */
+function chClampView(from, to) {
+  const n = CH.bars.length;
+  let w = Math.max(20, Math.min(n, Math.round(to - from)));   // never fewer than 20 bars
+  let f = Math.round(from);
+  if (f < 0) f = 0;
+  if (f + w > n) f = n - w;
+  if (f < 0) { f = 0; w = n; }
+  return { from: f, to: f + w };
+}
+
+function chZoomAt(factor, anchorRatio) {
+  const { from, to } = CH.view;
+  const w = to - from;
+  const nw = w / factor;
+  const a = from + w * anchorRatio;                 // keep this bar under the cursor
+  CH.view = chClampView(a - nw * anchorRatio, a - nw * anchorRatio + nw);
+  chRequestDraw();
+}
+
+let _drawPending = false;
+function chRequestDraw() {
+  if (_drawPending) return;
+  _drawPending = true;
+  requestAnimationFrame(() => { _drawPending = false; chDraw(); });
+}
+
+function chInstallInteraction(cv) {
+  if (cv._chInteract) return;
+  cv._chInteract = true;
+  const PAD_R = 72, PAD_L = 6;
+  const plotW = () => Math.max(1, cv.clientWidth - PAD_R - PAD_L);
+
+  // ── wheel: zoom the time window around the pointer
+  cv.addEventListener('wheel', (e) => {
+    if (!CH.bars.length) return;
+    e.preventDefault();
+    const r = cv.getBoundingClientRect();
+    const overAxis = (e.clientX - r.left) > cv.clientWidth - PAD_R;
+    const factor = e.deltaY < 0 ? 1.18 : 1 / 1.18;
+    if (overAxis || e.shiftKey) {
+      // Over the price axis, the wheel scales vertically instead.
+      chSetYZoom(CH.yZoom * factor, r, e.clientY - r.top);
+    } else {
+      const ratio = Math.max(0, Math.min(1, (e.clientX - r.left - PAD_L) / plotW()));
+      chZoomAt(factor, ratio);
+    }
+  }, { passive: false });
+
+  // ── drag: pan. Horizontal over the plot, vertical over the price axis.
+  let pan = null;
+  cv.addEventListener('pointerdown', (e) => {
+    if (!CH.bars.length) return;
+    const r = cv.getBoundingClientRect();
+    const onAxis = (e.clientX - r.left) > cv.clientWidth - PAD_R;
+    pan = { x: e.clientX, y: e.clientY, view: { ...CH.view }, onAxis,
+            yZoom: CH.yZoom, yCenter: CH.yCenter, moved: false, id: e.pointerId };
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!pan) return;
+    const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
+    if (!pan.moved && Math.abs(dx) + Math.abs(dy) < 4) return;    // still a click
+    pan.moved = true;
+    cv.style.cursor = 'grabbing';
+    if (pan.onAxis) {
+      chSetYZoom(pan.yZoom * (1 + dy / 220), cv.getBoundingClientRect(), null, pan.yCenter);
+    } else {
+      const w = pan.view.to - pan.view.from;
+      const barsMoved = (dx / plotW()) * w;
+      CH.view = chClampView(pan.view.from - barsMoved, pan.view.to - barsMoved);
+      chRequestDraw();
+    }
+  });
+  const endPan = (e) => {
+    if (!pan) return;
+    const wasDrag = pan.moved;
+    try { cv.releasePointerCapture(pan.id); } catch (_) {}
+    pan = null;
+    cv.style.cursor = '';
+    if (wasDrag) { for (const b of document.querySelectorAll('.ch-z')) b.classList.remove('on'); }
+  };
+  cv.addEventListener('pointerup', endPan);
+  cv.addEventListener('pointercancel', endPan);
+
+  // ── pinch to zoom, two fingers
+  const touches = new Map();
+  let pinchStart = null;
+  cv.addEventListener('pointerdown', (e) => {
+    if (e.pointerType !== 'touch') return;
+    touches.set(e.pointerId, e);
+    if (touches.size === 2) {
+      const [a, b] = [...touches.values()];
+      pinchStart = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), view: { ...CH.view } };
+      pan = null;                                   // a pinch is not a pan
+    }
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'touch' || !touches.has(e.pointerId)) return;
+    touches.set(e.pointerId, e);
+    if (touches.size !== 2 || !pinchStart) return;
+    e.preventDefault();
+    const [a, b] = [...touches.values()];
+    const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+    const factor = d / (pinchStart.dist || 1);
+    const w = pinchStart.view.to - pinchStart.view.from;
+    const nw = w / factor;
+    const mid = (pinchStart.view.from + pinchStart.view.to) / 2;
+    CH.view = chClampView(mid - nw / 2, mid + nw / 2);
+    chRequestDraw();
+  }, { passive: false });
+  const dropTouch = (e) => { touches.delete(e.pointerId); if (touches.size < 2) pinchStart = null; };
+  cv.addEventListener('pointerup', dropTouch);
+  cv.addEventListener('pointercancel', dropTouch);
+
+  // ── double-click / double-tap: back to auto
+  cv.addEventListener('dblclick', (e) => { e.preventDefault(); chResetView(); });
+  let lastTap = 0;
+  cv.addEventListener('pointerup', (e) => {
+    if (e.pointerType !== 'touch') return;
+    const now = Date.now();
+    if (now - lastTap < 300) chResetView();
+    lastTap = now;
+  });
+}
+
+function chSetYZoom(z, rect, pointerY, keepCentre) {
+  CH.yZoom = Math.max(0.25, Math.min(12, z));
+  if (CH.yCenter == null && keepCentre == null) {
+    // Lock the centre to whatever is on screen the first time it is used, so
+    // the chart does not jump when manual scaling begins.
+    const vis = CH.bars.slice(CH.view.from, CH.view.to);
+    if (vis.length) {
+      let lo = Infinity, hi = -Infinity;
+      for (const b of vis) { if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; }
+      CH.yCenter = (lo + hi) / 2;
+    }
+  } else if (keepCentre != null) CH.yCenter = keepCentre;
+  chRequestDraw();
+}
+
+function chResetView() {
+  CH.yZoom = 1; CH.yCenter = null;
+  chSetBars(120);
+}
+
 /* ── open / refresh ─────────────────────────────────────────────────────── */
 async function chOpen(sig, pickFn) {
   const pick = pickFn || ((o, ...k) => k.reduce((a, kk) => a ?? o[kk], null));
@@ -245,8 +520,15 @@ async function chOpen(sig, pickFn) {
           </div>
           <button class="rs-x" data-chclose="1" aria-label="Close">&times;</button>
         </div>
+        <div class="ch-modes">
+          <button class="ch-mode on" data-mode="own">Our chart</button>
+          <button class="ch-mode" data-mode="tv">TradingView</button>
+          <a class="ch-ext" id="chart-ext" target="_blank" rel="noopener noreferrer">Open in TradingView &nearr;</a>
+        </div>
         <div class="ch-readout" id="chart-readout"></div>
         <div class="ch-wrap"><canvas id="chart-canvas"></canvas></div>
+        <div id="tv-host" style="display:none"></div>
+        <div class="ch-hint">Scroll or pinch to zoom · drag to pan · drag the price axis to stretch it · double-click to reset</div>
         <div class="ch-legend" id="chart-legend"></div>
       </div>`;
     document.body.appendChild(el0);
@@ -255,6 +537,8 @@ async function chOpen(sig, pickFn) {
       if (e.target.dataset.chclose) chClose();
       const z = e.target.closest('[data-bars]');
       if (z) { chSetBars(+z.dataset.bars); }
+      const m = e.target.closest('[data-mode]');
+      if (m) chSetView(m.dataset.mode);
     });
     const cv = el0.querySelector('#chart-canvas');
     let rafPending = false;
@@ -269,12 +553,16 @@ async function chOpen(sig, pickFn) {
       requestAnimationFrame(() => { rafPending = false; chDraw(); });
     }, { passive: true });
     cv.addEventListener('pointerleave', () => { CH.hover = null; chDraw(); const rd = document.getElementById('chart-readout'); if (rd) rd.innerHTML = ''; });
-    window.addEventListener('resize', () => chDraw());
+    chInstallInteraction(cv);
+    window.addEventListener('resize', () => chRequestDraw());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') chClose(); });
   }
   el0.classList.add('open');
 
   document.getElementById('chart-pair').textContent = `${CH.pair} ${CH.sig.direction}`;
+  const ext = document.getElementById('chart-ext');
+  if (ext) { ext.href = chTvUrl(CH.pair); ext.title = `Open ${chTvSymbol(CH.pair)} on tradingview.com`; }
+  chSetView('own');                       // always open on our own chart
   document.getElementById('chart-sub').textContent = 'loading bars…';
   document.getElementById('chart-legend').innerHTML = '';
 
@@ -305,6 +593,7 @@ async function chOpen(sig, pickFn) {
 }
 
 function chSetBars(n) {
+  CH.yZoom = 1; CH.yCenter = null;          // a preset window implies auto-fit
   const total = CH.bars.length;
   CH.view = { from: Math.max(0, total - n), to: total };
   for (const b of document.querySelectorAll('.ch-z')) b.classList.toggle('on', +b.dataset.bars === n);
@@ -355,4 +644,5 @@ function chClose() {
   CH.timer = null;
 }
 
-window.FSCHART = { open: chOpen, close: chClose, draw: chDraw, prefetch: chPrefetch, state: CH };
+window.FSCHART = { open: chOpen, close: chClose, draw: chDraw, prefetch: chPrefetch,
+                   tvSymbol: chTvSymbol, tvUrl: chTvUrl, TV_MAP: CH_TV, state: CH };

@@ -445,6 +445,77 @@ function histRow(x) {
 
 
 
+
+/* ──────────── staying fresh when the mirror falls behind ────────────
+   The feed is published by GitHub Actions. Measured over 56 hours, the
+   COMBINED gap between publishes across both workflows has a median of 188
+   minutes and a worst case of 400 — GitHub throttles scheduled workflows hard
+   on a free account, whatever the cron says. A quarter-hourly cron does not
+   mean every quarter hour.
+
+   So when the published feed goes stale the page asks the live endpoint
+   directly, which computes from current bars on demand. That endpoint is the
+   expensive path — it is what the static-first work moved away from — so it is
+   used only when it is actually needed:
+
+     · only when the mirror is older than STALE_MIN
+     · at most once every LIVE_COOLDOWN
+     · only while the tab is visible
+     · never on a weekend, when the market is shut and nothing has changed
+
+   At worst that is a handful of requests per session against a 100,000/day
+   limit, instead of the 51,504 a single always-polling tab once used.
+   ------------------------------------------------------------------- */
+const STALE_MIN = 45;
+const LIVE_COOLDOWN = 10 * 60 * 1000;
+let _lastLive = 0;
+
+function marketLikelyOpen() {
+  const d = new Date();
+  const day = d.getUTCDay(), h = d.getUTCHours();
+  if (day === 6) return false;                       // Saturday
+  if (day === 0 && h < 21) return false;             // Sunday before the open
+  if (day === 5 && h >= 21) return false;            // after Friday's close
+  return true;
+}
+
+async function refreshIfStale() {
+  const feed = S.latestSignals;
+  if (!feed || !feed.ts) return;
+  const ageMin = (Date.now() - feed.ts) / 60000;
+  if (ageMin < STALE_MIN) return;
+  if (document.hidden) return;
+  if (Date.now() - _lastLive < LIVE_COOLDOWN) return;
+  // Crypto trades at weekends; everything else does not. If the only thing
+  // that could have changed is shut, a live call buys nothing.
+  const cryptoOnly = !marketLikelyOpen();
+  _lastLive = Date.now();
+  try {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), 20000);
+    const r = await fetch('/api/check-signals?_b=' + Date.now(), { signal: ctl.signal, cache: 'no-store' });
+    clearTimeout(timer);
+    if (!r.ok) return;
+    const j = await r.json();
+    if (!j || typeof j !== 'object') return;
+    // The same rule as everywhere else: a feed with signals beats an empty one,
+    // then newest wins. A live call returning nothing must not wipe the board.
+    const haveNow = (feed.signals || []).length;
+    const haveNew = (j.signals || []).length;
+    if (haveNew === 0 && haveNow > 0) {
+      S.liveNote = `Checked live ${cryptoOnly ? '(weekend — crypto only)' : ''}: nothing new qualifies, so the published setups are kept.`;
+      render();
+      return;
+    }
+    if ((j.ts || 0) > (feed.ts || 0)) {
+      j._src = 'live';
+      S.latestSignals = j;
+      S.liveNote = 'Refreshed from the live engine because the published feed had gone stale.';
+      render();
+    }
+  } catch (_) { /* offline or blocked — the published feed is still shown */ }
+}
+
 /* ──────────────── staying up to date ────────────────
    An installed app must not sit on an old build. The worker claims control as
    soon as it activates and posts a message; the page reloads once when that
@@ -1373,8 +1444,9 @@ function renderChrome() {
   const rb = document.getElementById('research-btn');
   if (rb && !rb._wired) { rb._wired = true; rb.addEventListener('click', () => openResearch('')); }
 
+  const stale = ts && (Date.now() - ts) / 60000 > STALE_MIN;
   el('meta').innerHTML = ts
-    ? `feed ${esc(ago(ts))} · ${esc((feed.signals || []).length)} published${feed._src ? ` · ${esc(feed._src)}` : ''}`
+    ? `feed ${esc(ago(ts))}${stale ? ' <b class="meta-stale">stale</b>' : ''} · ${esc((feed.signals || []).length)} published${feed._src ? ` · ${esc(feed._src)}` : ''}`
     : 'feed unreadable';
 
   el('foot').innerHTML = `
@@ -1424,6 +1496,7 @@ async function cycle() {
   try { await load(); } catch (e) { console.error('[base II] load failed', e); }
   render();
   try { await maybeAlert(); } catch (e) { console.error('[base II] alert check failed', e); }
+  try { await refreshIfStale(); } catch (e) { console.error('[base II] live refresh failed', e); }
 }
 
 cycle();

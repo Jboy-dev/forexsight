@@ -848,5 +848,70 @@ t('an unknown section is kept, not dropped, when a saved order is applied', () =
   return true;
 });
 
+/* ── TradingView. A wrong exchange prefix shows a different instrument, which
+   is worse than showing nothing. ──────────────────────────────────────── */
+t('every signalling instrument has an explicit TradingView symbol', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  const m = js.match(/const CH_TV = \{([\s\S]*?)\};/);
+  if (!m) return 'no TradingView symbol map';
+  const mapped = new Set([...m[1].matchAll(/'([^']+)'\s*:/g)].map(x => x[1]));
+  const gen = readFileSync('tools/generate-signals.mjs', 'utf8');
+  const g = gen.match(/const PAIR_SYMBOLS = \{([\s\S]*?)\};/);
+  if (!g) return 'could not read the generator pair list';
+  const pairs = [...g[1].matchAll(/'([A-Z0-9]{2,6}(?:\/[A-Z]{3})?)'\s*:/g)].map(x => x[1]);
+  const missing = pairs.filter(p2 => !mapped.has(p2));
+  if (missing.length) return `${missing.length} instrument(s) would fall back to a guessed ticker: ${missing.join(', ')}`;
+  // Every mapping must carry an exchange prefix, or TradingView picks for us.
+  for (const [k, v] of [...m[1].matchAll(/'([^']+)'\s*:\s*'([^']+)'/g)].map(x => [x[1], x[2]])) {
+    if (!v.includes(':')) return `${k} maps to "${v}" with no exchange prefix — TradingView would resolve it to whatever it likes`;
+  }
+  return true;
+});
+
+t('the chart opens on our own chart, not the third-party embed', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  if (!/chSetView\('own'\)/.test(js)) {
+    return 'it does not force our own chart on open — the embed needs a network round trip and '
+         + 'would leave the panel blank, and it does not know the signal levels';
+  }
+  if (!/tv-fail/.test(js)) return 'no fallback when the embed cannot load';
+  return true;
+});
+
+/* ── Chart interaction. Both charts must be directly manipulable. ──────── */
+t('our chart supports zoom, pan, pinch and reset', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  const need = {
+    "wheel zoom": /addEventListener\('wheel'/,
+    "drag to pan": /chClampView\(pan\.view\.from - barsMoved/,
+    "pinch": /pinchStart/,
+    "vertical scale": /function chSetYZoom/,
+    "double-click reset": /addEventListener\('dblclick'/,
+    "frame-coalesced redraw": /function chRequestDraw/,
+  };
+  for (const [what, re] of Object.entries(need)) if (!re.test(js)) return `no ${what}`;
+  // A zoom must not be able to collapse the window to nothing.
+  if (!/Math\.max\(20, Math\.min\(n, Math\.round\(to - from\)\)\)/.test(js)) {
+    return 'the view window is not clamped — zooming in far enough would show zero bars';
+  }
+  return true;
+});
+
+t('no source file is broken by a comment that closes itself early', () => {
+  // Writing a cron expression inside a block comment terminates it at the */
+  // and turns the rest of the comment into code. This shipped once.
+  for (const f of readdirSync('v2').filter(x => x.endsWith('.js'))) {
+    const src = readFileSync(`v2/${f}`, 'utf8');
+    try { new Function(src); }
+    catch (e) { return `v2/${f} does not parse: ${e.message}`; }
+  }
+  for (const f of ['service-worker.js']) {
+    if (!existsSync(f)) continue;
+    try { new Function(readFileSync(f, 'utf8')); }
+    catch (e) { return `${f} does not parse: ${e.message}`; }
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

@@ -21,7 +21,13 @@ name: Mirror signals to git
 
 on:
   schedule:
+    # GitHub throttles scheduled workflows on free accounts: a */15 cron was
+    # measured delivering a MEDIAN gap of 188 minutes across both workflows,
+    # worst case 400. Listing several explicit times gives it more chances to
+    # fire one; it does not guarantee any of them. The page also falls back to
+    # the live endpoint when the published feed goes stale.
     - cron: '*/15 * * * *'
+    - cron: '5,20,35,50 * * * *'
   workflow_dispatch:
 
 concurrency:
