@@ -150,8 +150,32 @@ jobs:
       # The broad search: 72 entry x filter combinations over 57,045 daily bars,
       # three-way split with the newest 25% opened once, a Bonferroni bar for the
       # number of hypotheses, and a random-entry null. Re-runs as history grows.
+      # The intraday foundation: 224,582 bars, refreshed and re-verified before
+      # anything learns from it. The verifier's triangular control is what keeps
+      # a bid-only feed artefact from being read as a session edge.
+      - name: Restore intraday caches
+        uses: actions/cache@v4
+        with:
+          path: data/intraday
+          key: intraday-${{ github.run_id }}
+          restore-keys: |
+            intraday-
+
+      - name: Top up intraday history
+        run: node tools/fetch-intraday.mjs
+        continue-on-error: true
+
+      - name: Verify intraday data
+        run: node tools/verify-intraday.mjs
+        continue-on-error: true
+
       - name: Strategy trials
         run: node tools/strategy-trials.mjs
+        continue-on-error: true
+
+      # The same search on H1, the timeframe the site actually signals on.
+      - name: Strategy trials (H1)
+        run: node tools/strategy-trials.mjs --tf=1h
         continue-on-error: true
 
       # The ONLY route a rule can take into the signal path. Promotes on sealed
