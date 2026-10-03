@@ -24,7 +24,8 @@ const PAIRS = {
   'AUD/USD': 'AUDUSD=X', 'USD/CAD': 'USDCAD=X', 'NZD/USD': 'NZDUSD=X',
   'USD/CHF': 'USDCHF=X', 'XAU/USD': 'GC=F',
   'BTC/USD': 'BTC-USD', 'ETH/USD': 'ETH-USD',
-};
+  'XAG/USD':'SI=F', 'EUR/GBP':'EURGBP=X', 'EUR/JPY':'EURJPY=X', 'GBP/JPY':'GBPJPY=X',
+  'AUD/JPY':'AUDJPY=X', 'US30':'^DJI', 'NAS100':'^NDX', 'SOL/USD':'SOL-USD', 'XRP/USD':'XRP-USD',};
 
 // 14 days of hourly bars. Long enough to cover any trade the app would still
 // consider open (the longest time-stop is 4h, and expiry is 48h) with a wide

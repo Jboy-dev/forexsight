@@ -729,5 +729,65 @@ t('account currencies come from the rates file, not a hard-coded list', () => {
   return true;
 });
 
+t('every v2 script file is actually loaded by both shells', () => {
+  const scripts = readdirSync('v2').filter(f => f.endsWith('.js'));
+  for (const shell of ['index.html', 'v2/index.html']) {
+    const html = readFileSync(shell, 'utf8');
+    for (const f of scripts) {
+      // A file that exists and is served but is never referenced is dead code
+      // that looks alive — exactly how chart.js shipped without being loaded.
+      if (!html.includes(`/v2/${f}`)) return `${shell} never loads v2/${f}`;
+    }
+  }
+  return true;
+});
+
+/* ── The chart. It must draw from the SAME bars the engine reads, or it is a
+   lookalike that quietly disagrees with the signal it is illustrating. ──── */
+t('the chart reads the published OHLC the engine uses', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  if (!/data\/ohlc\//.test(js)) return 'the chart does not read the published OHLC files';
+  if (!/raw\.githubusercontent/.test(js)) return 'no mirror source — it would go stale between deploys';
+  if (!/got\.sort\(\(a, b\) => b\.ts - a\.ts\)/.test(js)) return 'it does not take the freshest source';
+  return true;
+});
+
+t('published OHLC covers every instrument that can produce a signal', () => {
+  if (!existsSync('data/ohlc')) return 'skipped: no published OHLC';
+  const charted = new Set(readdirSync('data/ohlc').filter(f => f.endsWith('.json')).map(f => f.replace('.json', '')));
+  const gen = readFileSync('tools/generate-signals.mjs', 'utf8');
+  const m = gen.match(/const PAIR_SYMBOLS = \{([\s\S]*?)\};/);
+  if (!m) return 'could not read the generator pair list';
+  const pairs = [...m[1].matchAll(/'([A-Z0-9]{2,6}(?:\/[A-Z]{3})?)'\s*:/g)].map(x => x[1].replace('/', '-'));
+  const missing = pairs.filter(p => !charted.has(p));
+  // A signal with no chart is a signal you cannot check before taking.
+  if (missing.length) return `${missing.length} instrument(s) can signal but have no chart: ${missing.join(', ')}`;
+  return true;
+});
+
+t('the chart scales to include every level it draws', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  // A stop outside the visible range would silently look like it does not exist.
+  if (!/for \(const v of \[s\.entry, s\.sl, s\.tp1, s\.tp2, s\.tp3\]\)/.test(js)) {
+    return 'the price scale is computed from bars only — a level outside the bar range would be invisible';
+  }
+  return true;
+});
+
+t('the chart is cached and prefetched, so opening it does not wait on the network', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  if (!/CH_CACHE/.test(js)) return 'no bar cache — every open would re-fetch';
+  if (!/function chPrefetch/.test(js)) return 'no prefetch — the first open would always be slow';
+  if (!/requestAnimationFrame\(\(\) => \{ rafPending = false/.test(js)) {
+    return 'the crosshair is not frame-coalesced; a 120Hz pointer would redraw faster than the screen refreshes';
+  }
+  if (!/Math\.min\(window\.devicePixelRatio \|\| 1, 3\)/.test(js)) {
+    return 'device pixel ratio is not capped — the buffer grows quadratically on a high-density screen';
+  }
+  const base = readFileSync('v2/base.js', 'utf8');
+  if (!/FSCHART\.prefetch/.test(base)) return 'the signal list never warms the chart cache';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

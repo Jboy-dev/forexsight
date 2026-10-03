@@ -820,3 +820,99 @@ body { overscroll-behavior-y: none; }         /* no rubber-band under the header
 .why-fold { border-top: 0; padding-top: 6px; margin-top: 6px; }
 .why-fold > summary { font-size: 9.5px; }
 .c-why { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* ─────────────────────── signal chart ─────────────────────── */
+.c-chart { cursor: pointer; transition: background .14s ease; }
+.c-chart:hover { background: var(--ink-hover); }
+.c-chart:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.c-chart-i { align-self: center; font: 600 8.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--accent); background: var(--accent-soft); border: 1px solid #6b8cff30;
+  border-radius: 4px; padding: 5px 6px; flex: 0 0 auto; }
+.c-chart:hover .c-chart-i { background: #6b8cff28; }
+
+.ch { position: fixed; inset: 0; z-index: 110; display: none; }
+.ch.open { display: block; }
+.ch-back { position: absolute; inset: 0; background: #04060cdd; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.ch-panel {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(1000px, 96vw); height: min(680px, 88vh); display: flex; flex-direction: column;
+  background: linear-gradient(165deg, #141b31, #0b1020 72%);
+  border: 1px solid #28344f; border-radius: var(--r-lg);
+  box-shadow: 0 2px 8px #0009, 0 40px 100px -24px #000e, inset 0 1px 0 #ffffff0c; overflow: hidden;
+}
+.ch-top { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border-bottom: 1px solid var(--line); flex: 0 0 auto; }
+.ch-pair { font: 650 17px/1.2 var(--sans); letter-spacing: -.025em; }
+.ch-sub { font: 500 11px/1.4 var(--mono); color: var(--text-faint); margin-top: 4px; }
+.ch-zoom { margin-left: auto; display: flex; gap: 3px; }
+.ch-z { cursor: pointer; font: 600 10.5px/1 var(--mono); color: var(--text-faint);
+  background: #0a0e1a; border: 1px solid var(--line-soft); border-radius: 5px; padding: 8px 10px; }
+.ch-z.on { color: var(--accent); background: var(--accent-soft); border-color: #6b8cff40; }
+.ch-readout { display: flex; flex-wrap: wrap; gap: 14px; padding: 9px 16px; min-height: 34px;
+  font: 500 11px/1.4 var(--mono); color: var(--text-dim); border-bottom: 1px solid var(--line-soft); }
+.ch-readout b { color: var(--text); font-weight: 620; }
+.ch-readout .up { color: var(--up); } .ch-readout .dn { color: var(--down); }
+.ch-wrap { flex: 1; min-height: 0; padding: 6px 10px 2px; }
+#chart-canvas { width: 100%; height: 100%; display: block; touch-action: none; }
+.ch-legend { display: flex; flex-wrap: wrap; gap: 12px; padding: 11px 16px; border-top: 1px solid var(--line); flex: 0 0 auto; }
+.ch-lg { display: inline-flex; align-items: center; gap: 6px; font: 500 11px/1 var(--mono); color: var(--text-dim); }
+.ch-lg i { width: 11px; height: 3px; border-radius: 2px; }
+.ch-lg b { color: var(--text); font-weight: 620; }
+
+@media (max-width: 620px) {
+  .ch-panel { width: 100vw; height: 100vh; border-radius: 0; top: 0; left: 0; transform: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px); padding-top: env(safe-area-inset-top, 0px); }
+  .ch-zoom { width: 100%; order: 3; margin-left: 0; }
+  .ch-top { flex-wrap: wrap; }
+  .ch-legend { gap: 8px; font-size: 10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   OLED / high-density displays
+
+   On an OLED panel a true black pixel is switched OFF: deeper contrast and
+   less power. The base was #070a12 — nearly black, but every one of those
+   pixels was still lit. These rules only apply where the display can benefit,
+   so an LCD keeps the slightly-lifted background that stops it looking flat.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (dynamic-range: high), (color-gamut: p3) {
+  :root {
+    --ink: #000000;
+    --ink-raised: #080c15;
+    --ink-card: #0b1018;
+    --line: #1c2740;
+    --line-soft: #141c2e;
+    /* P3 gives real headroom on these, so they read as vivid rather than neon */
+    --up: color(display-p3 0.18 0.85 0.54);
+    --down: color(display-p3 1 0.36 0.42);
+    --accent: color(display-p3 0.42 0.55 1);
+    --warn: color(display-p3 1 0.72 0.24);
+  }
+  body { background-color: #000; }
+  .card, .tile, .record, .voice, #cmd-form, .hrow { background: linear-gradient(160deg, #0e1420e0, #05080fe8); }
+}
+
+/* Crisp type and edges on high-density panels. */
+@media (min-resolution: 2dppx) {
+  body { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+  .lg-bar span, .tab.on::after, .ch-lg i { transform: translateZ(0); }
+}
+
+/* ── responsiveness ──────────────────────────────────────────────────────
+   Containment stops a change inside one card forcing layout of the whole
+   page, which is what makes a long list feel heavy to scroll and tap. */
+.card, .tile, .hrow, .trial-row, .lg-row { contain: layout style; }
+.cards, .hist { content-visibility: auto; contain-intrinsic-size: auto 400px; }
+
+/* Taps must register immediately rather than waiting out the 300ms
+   double-tap-to-zoom delay that some mobile browsers still apply. */
+a, button, summary, .lvl.copyable, .tab, .cmd-chip, .rs-chip, .c-chart { touch-action: manipulation; }
+
+/* Give the compositor warning only where something actually animates, and
+   only while it does — a permanent will-change wastes memory. */
+.card:hover, .ch-panel, .rs-panel { will-change: transform; }
+
+/* Honour the system setting. Someone who has asked for less motion gets none. */
+@media (prefers-reduced-motion: reduce) {
+  .card, .tile, .voice, .record { animation: none !important; }
+  * { transition-duration: 0.01ms !important; }
+}

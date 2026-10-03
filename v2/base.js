@@ -207,6 +207,11 @@ function renderCards() {
     return;
   }
   box.innerHTML = sigs.map(card).join('');
+  // Warm the chart cache for what is on screen, so the first tap paints
+  // immediately instead of waiting on a fetch.
+  if (window.FSCHART && window.FSCHART.prefetch) {
+    try { window.FSCHART.prefetch(sigs.map(x => pick(x, 'pair')).filter(Boolean)); } catch (_) {}
+  }
   if (all.length !== sigs.length) {
     box.insertAdjacentHTML('beforeend',
       `<div class="empty" style="padding:16px"><strong>${esc(all.length - sigs.length)} hidden by your orders</strong>
@@ -273,13 +278,14 @@ function card(s) {
       <div class="lvl-d">${rr != null ? esc(rr.toFixed(2) + 'R') : '&nbsp;'}</div></div>`;
   };
 
-  return `<article class="card ${buy ? 'buy' : 'sell'}">
-    <div class="c-head">
+  return `<article class="card ${buy ? 'buy' : 'sell'}" data-sigkey="${esc(sigKey(s))}">
+    <div class="c-head c-chart" role="button" tabindex="0" title="Open the chart for this setup">
       <div>
         <div class="c-pair">${esc(pair)}</div>
         <div class="c-sub">${esc(pick(s, 'detectedAt') ? ago(Date.parse(pick(s, 'detectedAt'))) : 'time unknown')}${barAge != null ? ` · bar ${esc(barAge)}m old` : ''}</div>
       </div>
       <span class="c-dir ${buy ? 'buy' : 'sell'}">${esc(dir || '?')}</span>
+      <span class="c-chart-i" aria-hidden="true">chart</span>
     </div>
     <div class="c-levels five">
       ${lvl('Entry', entry, null, '')}
@@ -582,6 +588,40 @@ function installSignalBalance() {
   document.addEventListener('keydown', (e) => {
     const c = e.target && e.target.classList;
     if (c && (c.contains('mny-bal') || c.contains('mny-pct') || c.contains('mny-amt')) && e.key === 'Enter') e.target.blur();
+  });
+}
+
+
+/* ─────────── open a signal's chart ───────────
+   Delegated from document: renderCards() replaces innerHTML every cycle, so a
+   listener bound to a card would be destroyed two minutes later.
+   ----------------------------------------------------------------------- */
+function installChart() {
+  if (window._fsChartInstalled || !window.FSCHART) return;
+  window._fsChartInstalled = true;
+
+  const openFor = (card) => {
+    const key = card.dataset.sigkey;
+    const all = (S.latestSignals && S.latestSignals.signals) || [];
+    const sig = all.find(x => sigKey(x) === key);
+    if (sig) window.FSCHART.open(sig, pick);
+  };
+
+  document.addEventListener('click', (e) => {
+    // A tap on a copyable level copies it; it must not also open the chart.
+    if (e.target.closest('.lvl.copyable') || e.target.closest('details') || e.target.closest('input') || e.target.closest('button')) return;
+    const head = e.target.closest('.c-chart');
+    if (!head) return;
+    const card = head.closest('.card');
+    if (card) openFor(card);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const head = e.target.closest && e.target.closest('.c-chart');
+    if (!head) return;
+    e.preventDefault();
+    const card = head.closest('.card');
+    if (card) openFor(card);
   });
 }
 
@@ -1316,6 +1356,7 @@ function bootConfig() {
   installIdle();
   installSignalBalance();
   installUpdates();
+  installChart();
   installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
 
 async function cycle() {
