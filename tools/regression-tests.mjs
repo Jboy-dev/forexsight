@@ -416,5 +416,62 @@ t('the app icon set is complete, including a separate maskable', () => {
   return true;
 });
 
+/* ── Tabs. Pane words and filter words share a namespace, and they collided:
+   "open market" matched expand's 'open' alias, "show me the ledger" matched
+   only's 'show', and "signals" was being stripped as filler. ───────────── */
+t('tabs: pane words route to the pane, not to a filter', () => {
+  const want = { 'ledger': 'ledger', 'market': 'market', 'tested': 'tested', 'signals': 'signals',
+                 'open market': 'market', 'go to tested': 'tested', 'show me the ledger': 'ledger',
+                 'record': 'ledger', 'view trials': 'tested' };
+  for (const [order, pane] of Object.entries(want)) {
+    const cfg = { ...FS.DEFAULTS };
+    const r = FS.run(order, cfg);
+    if (!r.ok) return `"${order}" was refused`;
+    if (cfg.tab !== pane) return `"${order}" opened ${cfg.tab}, expected ${pane}`;
+  }
+  return true;
+});
+
+t('tabs: filter orders still filter and do not change pane', () => {
+  for (const order of ['only gold', 'hide weak', 'confidence 70', 'sort by r', 'expand', 'reset']) {
+    const cfg = { ...FS.DEFAULTS };
+    const r = FS.run(order, cfg);
+    if (!r.ok) return `"${order}" was refused`;
+    if (cfg.tab !== 'signals') return `"${order}" changed the pane to ${cfg.tab}`;
+  }
+  return true;
+});
+
+/* ── The ledger. The book used to delete everything beyond 400 outright. ── */
+t('the signal book archives instead of deleting history', () => {
+  const src = readFileSync('tools/watch-setups.mjs', 'utf8');
+  if (/book\.splice\(0, book\.length - 400\)/.test(src)) {
+    return 'the plain splice is back — history beyond the newest 400 is being destroyed again';
+  }
+  if (!/signal-archive\.json/.test(src)) return 'no archive is written before trimming';
+  return true;
+});
+
+t('the ledger publishes BOTH win-rate definitions', () => {
+  if (!existsSync('data/ledger.json')) return 'skipped: ledger not built yet';
+  const L = JSON.parse(readFileSync('data/ledger.json', 'utf8'));
+  if (!L.winRates || !L.winRates.byOutcome || !L.winRates.byTarget) {
+    return 'only one win-rate definition is published — quoting the kinder one alone overstates the hit rate';
+  }
+  for (const k of ['byOutcome', 'byTarget']) {
+    if (typeof L.winRates[k].rate !== 'number') return `${k} has no rate`;
+    if (!L.winRates[k].definition) return `${k} has no stated definition`;
+  }
+  // They genuinely differ on this book; if they ever converge that is fine,
+  // but both must still be present.
+  if (!L.episodes || typeof L.episodes.inflation !== 'number') {
+    return 'the ledger does not collapse episodes — republications would be counted as independent evidence';
+  }
+  if (!L.risk || typeof L.risk.maxDrawdownR !== 'number' || typeof L.risk.longestLossStreak !== 'number') {
+    return 'drawdown and losing-streak figures are missing — a record without them flatters itself';
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

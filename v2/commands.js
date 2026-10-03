@@ -30,6 +30,7 @@ const FS_DEFAULTS = {
   expand: false,        // open every collapsible section
   density: 'normal',    // normal | compact
   newsStrict: false,    // hide anything whose news verdict is not 'clear'
+  tab: 'signals',       // which pane is open
   alerts: false,        // notify when a NEW signal passes the standing orders
   alertMinConf: null,   // optional extra bar that applies to alerts only
 };
@@ -166,7 +167,7 @@ const FS_COMMANDS = [
     },
   },
   {
-    name: 'expand', aliases: ['open', 'unfold', 'details'],
+    name: 'expand', aliases: ['unfold', 'details', 'expandall'],
     help: 'expand — open every detail section · collapse to close them',
     run(cfg) { cfg.expand = true; return 'Opening every detail section.'; },
   },
@@ -219,6 +220,21 @@ const FS_COMMANDS = [
     run() { if (typeof cycle === 'function') cycle(); return 'Pulling the feed again.'; },
   },
   {
+    name: 'tab', aliases: ['open', 'go', 'view', 'switch'],
+    help: 'ledger · market · tested · signals — switch pane',
+    run(cfg, rest, matched) {
+      // "ledger" on its own is both the verb and the target.
+      const all = ((rest || '') + ' ' + (matched || '')).toLowerCase();
+      const want = /ledger|record|history|result/.test(all) ? 'ledger'
+                 : /market|voice|context|condition/.test(all) ? 'market'
+                 : /test|trial|strateg|search/.test(all) ? 'tested'
+                 : /signal|setup|live|trade/.test(all) ? 'signals' : null;
+      if (!want) return null;
+      cfg.tab = want;
+      return `Opened ${want}.`;
+    },
+  },
+  {
     name: 'research', aliases: ['ask', 'explain', 'why', 'learn', 'teach'],
     help: 'research <question> — ask anything about this site or about trading',
     run(cfg, rest) {
@@ -245,14 +261,32 @@ function fsParse(input) {
   if (!raw) return null;
   // strip filler so "show me only the gold setups please" still works
   const text = raw.toLowerCase()
-    .replace(/\b(me|the|a|an|please|setups?|signals?|trades?|by|to|is|are|with|and)\b/g, ' ')
+    .replace(/\b(me|the|a|an|please|by|to|is|are|with|and)\b/g, ' ')
     .replace(/\s+/g, ' ').trim();
+
+  // A pane name anywhere in the input wins outright. These words are not
+  // ambiguous — nothing else on this site is called "ledger" — and resolving
+  // them first stops "open market" matching expand's 'open' alias and
+  // "show me the ledger" matching only's 'show'.
+  const PANE_RE = /\b(ledger|market|tested|signals?|trials?|record|history)\b/;
+  const paneHit = text.match(PANE_RE);
+  if (paneHit) {
+    const tabCmd = FS_COMMANDS.find(c => c.name === 'tab');
+    // ...unless the input also names a filter that takes a target, e.g.
+    // "only gold" has no pane word, but "hide signals" should still hide.
+    const isFilterish = /\b(only|show|hide|just|filter)\b/.test(text) && !/\b(open|go|tab|view|switch)\b/.test(text)
+                        && /\b(gold|xau|eur|gbp|usd|jpy|btc|eth|buy|sell|weak)\b/.test(text);
+    if (tabCmd && !isFilterish) return { cmd: tabCmd, rest: paneHit[1], matched: paneHit[1] };
+  }
 
   const words = text.split(' ');
   for (let i = 0; i < words.length; i++) {
     const w = words[i].replace(/[^a-z?]/g, '');
     const cmd = FS_COMMANDS.find(c => c.name === w || (c.aliases || []).includes(w));
-    if (cmd) return { cmd, rest: words.slice(i + 1).join(' ') };
+    // Pass the matched word through. An alias can BE the argument — typing
+    // "ledger" matches the tab command via its alias list, and without this the
+    // command received an empty rest and could not tell which pane was meant.
+    if (cmd) return { cmd, rest: words.slice(i + 1).join(' '), matched: w };
   }
   // No verb found. Treat a bare instrument as "only <that>", because typing
   // "gold" plainly means show me gold.
@@ -266,7 +300,7 @@ function fsRun(input, cfg) {
   if (!p) return { ok: false, msg: '' };
   if (!p.cmd) return { ok: false, msg: `I do not have an order for "${p.rest}". Type help to see what I can do.` };
   let msg;
-  try { msg = p.cmd.run(cfg, p.rest); }
+  try { msg = p.cmd.run(cfg, p.rest, p.matched); }
   catch (e) { return { ok: false, msg: `That order failed: ${e.message}` }; }
   if (msg === null || msg === undefined) {
     return { ok: false, msg: `I understood "${p.cmd.name}" but not "${p.rest}". Try: ${p.cmd.help}` };

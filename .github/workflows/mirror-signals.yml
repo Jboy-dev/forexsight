@@ -238,6 +238,13 @@ jobs:
       - name: Build learning brain
         run: node tools/build-brain.mjs
 
+      # The complete record: working book plus the archive of what the 400-row
+      # cap used to delete. Publishes both win-rate definitions rather than
+      # choosing the flattering one.
+      - name: Build signal ledger
+        run: node tools/build-ledger.mjs
+        continue-on-error: true
+
       - name: Backfill attribution
         run: node tools/backfill-attribution.mjs
 

@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -430,6 +430,151 @@ function histRow(x) {
 
 
 
+
+
+/* ─────────────────────────── tabs ───────────────────────────
+   Four panes instead of one long scroll. The active pane is part of the
+   persisted config, so it survives a reload and a reopen — and it is an order
+   too, so "ledger" or "tab market" works from the command bar.
+
+   Panes are shown and hidden with a class, never unmounted. Unmounting would
+   mean re-rendering on every switch and would throw away the open/closed state
+   of every <details> inside — which is the same mistake the old base made.
+   ----------------------------------------------------------------------- */
+const PANES = ['signals', 'market', 'ledger', 'tested'];
+
+function applyTab() {
+  const want = PANES.includes(S.cfg && S.cfg.tab) ? S.cfg.tab : 'signals';
+  for (const p of document.querySelectorAll('.pane')) {
+    p.classList.toggle('on', p.dataset.pane === want);
+  }
+  for (const b of document.querySelectorAll('.tab')) {
+    const on = b.dataset.tab === want;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', on ? 'true' : 'false');
+  }
+}
+
+function installTabs() {
+  if (window._fsTabsInstalled) return;
+  window._fsTabsInstalled = true;
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.tab');
+    if (!b) return;
+    S.cfg.tab = b.dataset.tab;
+    if (window.FS) window.FS.save(S.cfg);
+    applyTab();
+    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  });
+}
+
+/** Counts on the tabs, so you can see where something is without opening it. */
+function renderTabCounts() {
+  const n = (S.latestSignals && S.latestSignals.signals) || [];
+  const shown = window.FS ? window.FS.apply(n, S.cfg || {}, READ).length : n.length;
+  const a = el('tab-n-signals'); if (a) a.textContent = shown ? String(shown) : '';
+  const L = S.ledger;
+  const b = el('tab-n-ledger');
+  if (b) b.textContent = L && L.coverage ? String(L.coverage.total) : '';
+  applyTab();
+}
+
+/* ───────────────────── the signal ledger ─────────────────────
+   Every signal this site has published, and what became of it. Two win rates
+   are shown because there are two defensible definitions and they differ by
+   fourteen points — quoting only the kinder one is how a 33% hit rate gets
+   advertised as 47%.
+   ----------------------------------------------------------------------- */
+function renderLedger() {
+  const L = S.ledger, box = el('ledger');
+  if (!box) return;
+  if (!L) { box.innerHTML = `<div class="empty">The ledger has not been published yet.</div>`; return; }
+
+  const wo = L.winRates.byOutcome, wt = L.winRates.byTarget, r = L.returns, ep = L.episodes, rk = L.risk;
+  const ciStr = Array.isArray(r.ci95) ? `[${sign(r.ci95[0])}${r.ci95[0]}, ${sign(r.ci95[1])}${r.ci95[1]}]` : '—';
+  const spansZero = Array.isArray(r.ci95) && r.ci95[0] <= 0 && r.ci95[1] >= 0;
+
+  const bar = (p) => `<div class="lg-bar"><span style="width:${Math.max(0, Math.min(100, p || 0))}%"></span></div>`;
+  const tbl = (rows, label) => !rows || !rows.length ? '' : `
+    <table class="kb-t lg-tbl"><tr><th>${esc(label)}</th><th>n</th><th>win %</th><th>avg R</th><th>total R</th></tr>
+    ${rows.slice(0, 10).map(x => `<tr>
+      <td>${esc(x.key)}</td><td>${esc(x.n)}</td>
+      <td>${esc(x.winRate)}%</td>
+      <td class="${x.avgR > 0 ? 'pos' : 'neg'}">${esc(sign(x.avgR) + x.avgR)}</td>
+      <td class="${x.totalR > 0 ? 'pos' : 'neg'}">${esc(sign(x.totalR) + x.totalR)}</td></tr>`).join('')}</table>`;
+
+  box.innerHTML = `
+    <div class="record" style="margin-top:0">
+      <div class="lg-rates">
+        <div class="lg-rate">
+          <div class="k">Win rate — by outcome</div>
+          <div class="v" style="color:var(--up)">${esc(wo.rate)}%</div>
+          ${bar(wo.rate)}
+          <div class="lg-sub">${esc(wo.wins)} closed positive · ${esc(wo.losses)} closed negative</div>
+          <div class="lg-def">${esc(wo.definition)}</div>
+        </div>
+        <div class="lg-rate">
+          <div class="k">Win rate — by target reached</div>
+          <div class="v" style="color:var(--warn)">${esc(wt.rate)}%</div>
+          ${bar(wt.rate)}
+          <div class="lg-sub">${esc(wt.hit)} reached TP1 or better · ${esc(wt.missed)} never did</div>
+          <div class="lg-def">${esc(wt.definition)}</div>
+        </div>
+      </div>
+      <div class="rec-note"><strong>These are both true.</strong> ${esc(wo.note || L.winRates.note)}</div>
+    </div>
+
+    <div class="strip" style="margin-top:12px">
+      <div class="tile"><div class="tile-k">Signals recorded</div><div class="tile-v">${esc(L.coverage.total)}</div>
+        <div class="tile-n">${esc(L.coverage.resolved)} resolved · ${esc(L.coverage.open)} still open</div></div>
+      <div class="tile"><div class="tile-k">Average per signal</div>
+        <div class="tile-v" style="color:${r.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(r.avgR) + r.avgR)}R</div>
+        <div class="tile-n">${esc(ciStr)}${spansZero ? ' — spans zero' : ''}</div></div>
+      <div class="tile"><div class="tile-k">Total</div>
+        <div class="tile-v" style="color:${r.totalR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(r.totalR) + r.totalR)}R</div>
+        <div class="tile-n">avg win ${esc(sign(r.avgWin) + r.avgWin)}R · avg loss ${esc(r.avgLoss)}R</div></div>
+      <div class="tile"><div class="tile-k">Payoff ratio</div><div class="tile-v">${esc(r.payoff ?? '—')}</div>
+        <div class="tile-n">winners are ${esc(r.payoff ?? '?')}x the size of losers</div></div>
+      <div class="tile"><div class="tile-k">Worst drawdown</div>
+        <div class="tile-v" style="color:var(--down)">&minus;${esc(rk.maxDrawdownR)}R</div>
+        <div class="tile-n">peak to trough, in risk units</div></div>
+      <div class="tile"><div class="tile-k">Longest losing run</div>
+        <div class="tile-v" style="color:var(--down)">${esc(rk.longestLossStreak)}</div>
+        <div class="tile-n">best winning run ${esc(rk.longestWinStreak)}</div></div>
+    </div>
+
+    <div class="voice-honest" style="margin-top:12px">${esc(L.verdict)}
+      Collapsed to ${esc(ep.count)} independent episodes (an inflation factor of ${esc(ep.inflation)}x),
+      it reads ${esc(sign(ep.avgR) + ep.avgR)}R${Array.isArray(ep.ci95) ? ` with interval [${esc(ep.ci95.join(', '))}]` : ''}.</div>
+
+    <details class="fold" style="margin-top:14px;border-top:0"><summary>Where the wins and losses actually came from</summary>
+      <div class="fold-in">
+        ${tbl(L.byPair, 'by pair')}
+        ${tbl(L.byDirection, 'by direction')}
+        ${tbl(L.byConfidence, 'by confidence band')}
+        ${tbl(L.byRegime, 'by regime')}
+        <p style="margin-top:10px">Each row is a slice of the same book. With ${esc(L.coverage.resolved)} resolved signals spread across this many slices, individual rows carry few trades — a pair showing a strong number on 12 trades is not evidence, and the intervals will tell you so.</p>
+      </div></details>
+
+    <details class="fold"><summary>Every recorded signal (${esc((L.recent || []).length)} most recent)</summary>
+      <div class="fold-in">
+        <div class="lg-head"><span>signal</span><span>fired</span><span>reached</span><span>result</span></div>
+        ${(L.recent || []).map(x => {
+          const rr = num(x.resultR);
+          const st = rr == null ? 'open' : rr > 0 ? 'win' : 'loss';
+          return `<div class="lg-row">
+            <span class="lg-p"><b>${esc(x.pair)}</b> ${esc(String(x.direction || '').toUpperCase())}${x.confidence != null ? ` <i>conf ${esc(x.confidence)}</i>` : ''}</span>
+            <span class="lg-t">${esc(x.firedAt ? ago(Date.parse(x.firedAt)) : '—')}</span>
+            <span class="lg-t">${x.tpReached ? 'TP' + esc(x.tpReached) : (rr == null ? 'running' : 'no target')}</span>
+            <span class="lg-r ${st}">${rr == null ? '—' : esc(sign(rr) + rr.toFixed(2)) + 'R'}</span>
+          </div>`;
+        }).join('')}
+      </div></details>
+
+    <p style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">
+      ${esc(L.coverage.note)} Covering ${esc(String(L.coverage.from).slice(0, 10))} to ${esc(String(L.coverage.to).slice(0, 10))}.</p>`;
+}
+
 /* ──────────────── what has been tested, and what survived ────────────────
    The search runs continuously and almost always concludes that nothing works.
    That conclusion is the product, so it is shown rather than buried: a page
@@ -765,7 +910,7 @@ function renderChrome() {
 function render() {
   const steps = [
     ['command', renderCommand], ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
-    ['record', renderRecord], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome],
+    ['record', renderRecord], ['ledger', renderLedger], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts],
   ];
   for (const [name, fn] of steps) {
     // One failing panel must not blank the page — the old base learned this the
@@ -781,7 +926,8 @@ function render() {
 }
 
 function bootConfig() {
-  installCopy(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
+  installCopy();
+  installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
 
 async function cycle() {
   bootConfig();

@@ -21,42 +21,59 @@
     <button id="research-btn" class="rs-btn" title="Ask anything about this site or trading">Research</button>
     <span class="top-meta" id="meta">loading</span>
   </div>
+  <nav class="tabs" id="tabs" role="tablist">
+    <div class="tabs-in">
+      <button class="tab" data-tab="signals" role="tab">Signals <span class="tab-n" id="tab-n-signals"></span></button>
+      <button class="tab" data-tab="market"  role="tab">Market</button>
+      <button class="tab" data-tab="ledger"  role="tab">Ledger <span class="tab-n" id="tab-n-ledger"></span></button>
+      <button class="tab" data-tab="tested"  role="tab">Tested</button>
+    </div>
+  </nav>
 </header>
 
 <div class="wrap">
 
   <section class="cmd" id="command"></section>
 
-  <!-- What the market is talking about. Reserved height so arrival shifts nothing. -->
-  <section class="voice" id="voice">
-    <div class="voice-label">What the market is doing</div>
-    <div class="voice-head skel" style="height:26px;width:72%"></div>
-    <div class="voice-reads">
-      <div class="vr"></div><div class="vr"></div><div class="vr"></div>
+  <!-- ── SIGNALS ─────────────────────────────────────────────────────── -->
+  <section class="pane" data-pane="signals">
+    <h2 class="sec">Live signals</h2>
+    <div class="cards" id="cards">
+      <div class="empty"><strong>Loading</strong>Reading the published feed.</div>
     </div>
   </section>
 
-  <div class="strip" id="context"></div>
+  <!-- ── MARKET ──────────────────────────────────────────────────────── -->
+  <section class="pane" data-pane="market">
+    <div class="voice" id="voice">
+      <div class="voice-label">What the market is doing</div>
+      <div class="voice-head skel" style="height:26px;width:72%"></div>
+      <div class="voice-reads"><div class="vr"></div><div class="vr"></div><div class="vr"></div></div>
+    </div>
+    <div class="strip" id="context"></div>
+  </section>
 
-  <h2 class="sec">Live signals</h2>
-  <div class="cards" id="cards">
-    <div class="empty"><strong>Loading</strong>Reading the published feed.</div>
-  </div>
+  <!-- ── LEDGER ──────────────────────────────────────────────────────── -->
+  <section class="pane" data-pane="ledger">
+    <h2 class="sec">Signal ledger — every signal and what became of it</h2>
+    <div id="ledger"></div>
+    <h2 class="sec">Honest record</h2>
+    <div class="record" id="record"></div>
+    <h2 class="sec">Every signal, judged</h2>
+    <div class="hist" id="hist"></div>
+  </section>
 
-  <h2 class="sec">Honest record</h2>
-  <div class="record" id="record"></div>
-
-  <h2 class="sec">What has been tested</h2>
-  <div id="trials"></div>
-
-  <h2 class="sec">Every signal, judged</h2>
-  <div class="hist" id="hist"></div>
+  <!-- ── TESTED ──────────────────────────────────────────────────────── -->
+  <section class="pane" data-pane="tested">
+    <h2 class="sec">What has been tested</h2>
+    <div id="trials"></div>
+  </section>
 
   <footer class="foot" id="foot"></footer>
 </div>
 
-<script src="/v2/knowledge.js?v=3"></script>
-<script src="/v2/commands.js?v=3"></script>
-<script src="/v2/base.js?v=3"></script>
+<script src="/v2/knowledge.js?v=4"></script>
+<script src="/v2/commands.js?v=4"></script>
+<script src="/v2/base.js?v=4"></script>
 </body>
 </html>

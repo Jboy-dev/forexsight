@@ -149,8 +149,34 @@ for (const s of (latest.signals || [])) {
   added++;
 }
 
-// Keep the book bounded — 400 setups is far more history than the UI shows.
-if (book.length > 400) book.splice(0, book.length - 400);
+// Keep the WORKING book bounded, but never destroy history.
+//
+// This used to be a plain splice, which permanently deleted every setup beyond
+// the newest 400. The whole record before 2026-09-17 was already gone that way
+// — roughly sixteen days of history was all that survived, and the win rate was
+// being computed from a rolling window rather than from everything the site has
+// ever published. A record that forgets is not a record.
+//
+// Resolved setups are now appended to data/signal-archive.json before they
+// leave the working book. The archive is append-only and deduplicated by key.
+const WORKING = 400;
+if (book.length > WORKING) {
+  const retiring = book.slice(0, book.length - WORKING).filter(s => s.status !== 'open');
+  if (retiring.length) {
+    let archive = [];
+    try { archive = JSON.parse(readFileSync('data/signal-archive.json', 'utf8')); } catch {}
+    if (!Array.isArray(archive)) archive = [];
+    const seen = new Set(archive.map(s => s.key));
+    let added = 0;
+    for (const s of retiring) if (s.key && !seen.has(s.key)) { archive.push(s); seen.add(s.key); added++; }
+    archive.sort((a, b) => Date.parse(a.firedAt || 0) - Date.parse(b.firedAt || 0));
+    writeFileSync('data/signal-archive.json', JSON.stringify(archive));
+    console.log(`  archived ${added} resolved setup(s) — archive now holds ${archive.length}`);
+  }
+  // Only drop what is both old AND resolved; an open setup is never discarded.
+  const keep = book.filter((s, i) => i >= book.length - WORKING || s.status === 'open');
+  book.length = 0; book.push(...keep);
+}
 
 // ── Re-walk every setup that is still open ────────────────────────────────
 const pairs = [...new Set(book.filter(s => s.status === 'open').map(s => s.pair))];
