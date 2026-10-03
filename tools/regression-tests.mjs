@@ -175,5 +175,83 @@ t('inflation arithmetic in the published brain is self-consistent', () => {
   return true;
 });
 
+/* ── The order layer. These exist because an order system that silently does
+   the wrong thing is worse than none: "make me rich" once parsed as an
+   instrument filter and blanked the page without saying anything. ──────── */
+function loadFS() {
+  const code = readFileSync('v2/commands.js', 'utf8');
+  const sandbox = { window: {}, localStorage: { getItem: () => null, setItem: () => {} } };
+  new Function('window', 'localStorage', code)(sandbox.window, sandbox.localStorage);
+  return sandbox.window.FS;
+}
+const FS = loadFS();
+const SIGS = [
+  { pair: 'XAU/USD', d: 'BUY',  c: 88, w: false, n: 'clear',     r: 1.4, t: 3 },
+  { pair: 'EUR/USD', d: 'SELL', c: 52, w: true,  n: 'uncovered', r: 1.2, t: 4 },
+  { pair: 'BTC/USD', d: 'BUY',  c: 97, w: false, n: 'uncovered', r: 1.2, t: 2 },
+  { pair: 'GBP/USD', d: 'BUY',  c: 71, w: false, n: 'clear',     r: 1.2, t: 1 },
+];
+const RD = { pair: s => s.pair, dir: s => s.d, conf: s => s.c, weak: s => s.w,
+             news: s => s.n, at: s => s.t, r1: s => s.r };
+const after = (order) => { const cfg = { ...FS.DEFAULTS }; const res = FS.run(order, cfg);
+  return { res, out: FS.apply(SIGS, cfg, RD).map(x => x.pair) }; };
+
+t('order layer: nonsense is refused, never obeyed into a blank page', () => {
+  for (const junk of ['make me rich', 'do something', 'guarantee profit', 'only banana', 'win every trade']) {
+    const { res, out } = after(junk);
+    if (res.ok) return `"${junk}" was accepted as a real order`;
+    if (out.length !== SIGS.length) return `"${junk}" was refused but still filtered the list to ${out.length}`;
+  }
+  return true;
+});
+
+t('order layer: instrument orders filter correctly in every spelling', () => {
+  const want = { 'only gold': 'XAU/USD', 'gold': 'XAU/USD', 'eurusd': 'EUR/USD',
+                 'eur/usd': 'EUR/USD', 'xauusd': 'XAU/USD', 'btc': 'BTC/USD' };
+  for (const [order, pair] of Object.entries(want)) {
+    const { res, out } = after(order);
+    if (!res.ok) return `"${order}" was refused`;
+    if (out.length !== 1 || out[0] !== pair) return `"${order}" gave [${out}], expected [${pair}]`;
+  }
+  return true;
+});
+
+t('order layer: direction, confidence, weak and news orders each bite', () => {
+  if (after('only buy').out.length !== 3) return 'only buy did not filter to the three BUYs';
+  if (after('only sell').out.length !== 1) return 'only sell did not filter to the one SELL';
+  if (after('confidence 70').out.length !== 3) return 'confidence 70 did not drop the 52';
+  if (after('hide weak').out.length !== 3) return 'hide weak did not drop the weak one';
+  if (after('news strict').out.length !== 2) return 'news strict did not keep only the two clear ones';
+  if (after('risk 1.3').out.length !== 1) return 'risk 1.3 did not keep only the 1.4R';
+  return true;
+});
+
+t('order layer: orders stack and sort rather than replacing each other', () => {
+  const cfg = { ...FS.DEFAULTS };
+  FS.run('only buy', cfg); FS.run('confidence 70', cfg); FS.run('sort by confidence', cfg);
+  const out = FS.apply(SIGS, cfg, RD).map(x => x.pair);
+  if (out.length !== 3) return `stacking gave ${out.length}, expected 3`;
+  if (out[0] !== 'BTC/USD') return `sort by confidence put ${out[0]} first, expected BTC/USD (97)`;
+  if (FS.chips(cfg).length !== 3) return `expected 3 standing-order chips, got ${FS.chips(cfg).length}`;
+  return true;
+});
+
+t('order layer: reset clears every standing order', () => {
+  const cfg = { ...FS.DEFAULTS };
+  FS.run('only gold', cfg); FS.run('confidence 90', cfg); FS.run('compact', cfg);
+  FS.run('reset', cfg);
+  if (FS.chips(cfg).length) return `reset left ${FS.chips(cfg).length} orders in force`;
+  if (FS.apply(SIGS, cfg, RD).length !== SIGS.length) return 'reset did not restore the full list';
+  return true;
+});
+
+t('order layer: every command is self-describing, so help cannot drift', () => {
+  for (const c of FS.COMMANDS) {
+    if (!c.name || typeof c.run !== 'function') return `command ${c.name || '?'} is malformed`;
+    if (!c.help || c.help.length < 4) return `command ${c.name} has no usable help text`;
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

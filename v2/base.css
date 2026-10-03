@@ -271,3 +271,61 @@ footer.foot code { font: 500 10.5px var(--mono); color: var(--text-dim); }
   .top-meta { font-size: 10.5px; }
 }
 @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
+/* ─────────────────────── the order bar ───────────────────────
+   Sits directly under the header because it is the primary control, not a
+   preference buried in a menu. Reserved height like everything else. */
+.cmd { margin-top: 18px; min-height: 52px; contain: layout; }
+#cmd-form {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--ink-card); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 4px 6px 4px 14px; box-shadow: var(--shadow);
+  transition: border-color .15s ease, box-shadow .15s ease;
+}
+#cmd-form:focus-within { border-color: var(--accent); box-shadow: var(--shadow), 0 0 0 3px var(--accent-soft); }
+.cmd-caret { font: 700 17px/1 var(--mono); color: var(--accent); flex: 0 0 auto; }
+#cmd-input {
+  flex: 1; background: none; border: 0; outline: none; color: var(--text);
+  font: 500 14px/1.4 var(--mono); padding: 11px 0; min-width: 0;
+}
+#cmd-input::placeholder { color: var(--text-faint); }
+.cmd-go {
+  flex: 0 0 auto; cursor: pointer; font: 650 11px/1 var(--mono); letter-spacing: .09em;
+  text-transform: uppercase; color: var(--accent); background: var(--accent-soft);
+  border: 1px solid #6b8cff40; border-radius: 7px; padding: 10px 14px;
+  transition: background .15s ease;
+}
+.cmd-go:hover { background: #6b8cff28; }
+
+.cmd-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; }
+.cmd-chips-k { font: 600 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-right: 2px; }
+.cmd-chip {
+  cursor: pointer; font: 600 10.5px/1 var(--mono); color: var(--accent);
+  background: var(--accent-soft); border: 1px solid #6b8cff35; border-radius: 5px;
+  padding: 6px 9px; display: inline-flex; align-items: center; gap: 6px;
+}
+.cmd-chip span { color: var(--text-faint); font-size: 12px; }
+.cmd-chip:hover { background: #6b8cff28; }
+.cmd-chip:hover span { color: var(--down); }
+.cmd-chip.clear-all { color: var(--text-dim); background: #0a0e1a; border-color: var(--line-soft); }
+
+.cmd-msg {
+  margin-top: 10px; padding: 11px 13px; border-radius: var(--r-sm);
+  background: var(--up-soft); border-left: 2px solid var(--up);
+  font: 500 12px/1.6 var(--mono); color: var(--text-dim);
+  white-space: pre-wrap; overflow-x: auto;
+}
+.cmd-msg.bad { background: var(--warn-soft); border-left-color: var(--warn); }
+
+/* compact density, set by the `compact` order */
+body[data-density="compact"] { --pad: 12px; --gap: 9px; --h-card: 210px; }
+body[data-density="compact"] .c-head { padding: 11px var(--pad) 9px; }
+body[data-density="compact"] .c-body { padding: 10px var(--pad) var(--pad); }
+body[data-density="compact"] .c-pair { font-size: 17px; }
+body[data-density="compact"] .lvl { padding: 8px 6px; }
+body[data-density="compact"] .cards { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+
+@media (max-width: 620px) {
+  .cmd-go { padding: 10px 11px; font-size: 10px; }
+  #cmd-input { font-size: 13px; }
+}

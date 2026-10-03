@@ -32,7 +32,7 @@ const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/
 const LOCAL  = '/data/';
 const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation'];
 
-const S = { loaded: false, at: 0, errors: [] };   // the single source of truth
+const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
 /* ───────────────────────────── helpers ───────────────────────────── */
 const el = (id) => document.getElementById(id);
@@ -168,15 +168,50 @@ function renderContext() {
 }
 
 /* ─────────────────────────── signals ─────────────────────────── */
+/** How fsApply reads a signal. Kept here so the order layer never has to know
+    the feed's field names, and so both stay fixed in one place. */
+const READ = {
+  pair: s => pick(s, 'pair', 'symbol', 'instrument'),
+  dir:  s => pick(s, 'direction', 'side'),
+  conf: s => num(pick(s, 'confidence', 'score')),
+  weak: s => pick(s, 'weakSignal') === true,
+  news: s => (pick(s, 'newsCheck') || {}).verdict,
+  at:   s => { const d = pick(s, 'detectedAt'); return d ? Date.parse(d) : 0; },
+  r1:   s => {
+    const e = num(pick(s, 'entry', 'price')), sl = num(pick(s, 'sl', 'stopLoss')), t1 = num(pick(s, 'tp1'));
+    if (e == null || sl == null || t1 == null) return null;
+    const risk = Math.abs(e - sl);
+    return risk > 0 ? Math.abs(t1 - e) / risk : null;
+  },
+};
+
 function renderCards() {
   const feed = S.latestSignals, box = el('cards');
-  const sigs = (feed && feed.signals) || [];
-  if (!sigs.length) {
+  const all = (feed && feed.signals) || [];
+  const cfg = S.cfg || {};
+  const sigs = window.FS ? window.FS.apply(all, cfg, READ) : all;
+
+  document.body.dataset.density = cfg.density || 'normal';
+
+  if (!all.length) {
     box.innerHTML = `<div class="empty"><strong>No setups published right now</strong>
       ${feed ? `The feed is live and ${esc(ago(feed.ts))}; it simply contains nothing that passed. An empty feed is a result, not a fault.` : 'The feed could not be read from either source.'}</div>`;
     return;
   }
+  if (!sigs.length) {
+    // Filtered to nothing is a different thing from published nothing, and
+    // saying so is the difference between "it is broken" and "your orders are
+    // strict". The feed count is shown so the distinction is checkable.
+    box.innerHTML = `<div class="empty"><strong>Your orders filtered out all ${esc(all.length)} setups</strong>
+      Nothing published right now matches what you asked for. Type <code>reset</code> to see everything again.</div>`;
+    return;
+  }
   box.innerHTML = sigs.map(card).join('');
+  if (all.length !== sigs.length) {
+    box.insertAdjacentHTML('beforeend',
+      `<div class="empty" style="padding:16px"><strong>${esc(all.length - sigs.length)} hidden by your orders</strong>
+       ${esc(sigs.length)} of ${esc(all.length)} shown. Type <code>reset</code> to see them all.</div>`);
+  }
 }
 
 function card(s) {
@@ -249,7 +284,7 @@ function card(s) {
       <div class="chips">${chips.join('')}</div>
       <div class="c-why">${esc(why.join(' '))}</div>
 
-      <details class="fold"><summary>The whole ladder and what it pays</summary><div class="fold-in">
+      <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>The whole ladder and what it pays</summary><div class="fold-in">
         <dl class="kv">
           <dt>TP1</dt><dd>${esc(price(tp1, pair))} · ${r1 != null ? esc(r1.toFixed(2)) + 'R' : '—'} · bank a third</dd>
           <dt>TP2</dt><dd>${esc(price(tp2, pair))} · ${r2v != null ? esc(r2v.toFixed(2)) + 'R' : '—'} · bank a third, stop to entry</dd>
@@ -262,7 +297,7 @@ function card(s) {
           : 'This ladder does not pay more than it risks on a full run. It should not have been published.'}</p>
       </div></details>
 
-      <details class="fold"><summary>Costs, news and the modelled outcome</summary><div class="fold-in">
+      <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>Costs, news and the modelled outcome</summary><div class="fold-in">
         <dl class="kv">
           ${cost.spreadPips != null ? `<dt>Spread</dt><dd>${esc(cost.spreadPips)} pips (${esc(cost.spreadAsPctOfRisk ?? '?')}% of risk)</dd>` : ''}
           ${cost.riskPips != null ? `<dt>Risk</dt><dd>${esc(cost.riskPips)} pips</dd>` : ''}
@@ -355,7 +390,7 @@ function histRow(x) {
   const label = open ? 'OPEN' : R > 0 ? 'WIN' : 'LOSS';
   const mae = num(x.maeR), mfe = num(x.mfeR);
 
-  return `<details class="hrow">
+  return `<details class="hrow" ${S.cfg && S.cfg.expand ? "open" : ""}>
     <summary>
       <span class="h-caret">▸</span>
       <span class="h-res ${cls}">${esc(label)}</span>
@@ -383,6 +418,57 @@ function histRow(x) {
           : `Closed ${esc(sign(R) + R.toFixed(2))}R.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : mfe != null ? ` It reached ${esc(sign(mfe) + mfe.toFixed(2))}R before turning.` : ''}`}</p>
     </div>
   </details>`;
+}
+
+
+/* ─────────────────────── the order bar ───────────────────────
+   One line you talk to. Rendered once like everything else; the input keeps
+   its own value across re-renders because it is only written when absent.
+   ----------------------------------------------------------------------- */
+function renderCommand() {
+  const box = el('command');
+  if (!box) return;
+  const cfg = S.cfg || {};
+  const chips = window.FS ? window.FS.chips(cfg) : [];
+  const existing = box.querySelector('#cmd-input');
+  const keep = existing ? existing.value : '';
+
+  box.innerHTML = `
+    <form id="cmd-form" autocomplete="off">
+      <span class="cmd-caret">&rsaquo;</span>
+      <input id="cmd-input" type="text" spellcheck="false"
+             placeholder="tell it what to do — try: only gold · confidence 70 · hide weak · sort by r · help"
+             aria-label="Give the site an order">
+      <button type="submit" class="cmd-go">Run</button>
+    </form>
+    ${chips.length ? `<div class="cmd-chips">
+      <span class="cmd-chips-k">standing orders</span>
+      ${chips.map(([label, key]) => `<button class="cmd-chip" data-clear="${esc(key)}" title="Click to cancel this order">${esc(label)} <span>&times;</span></button>`).join('')}
+      <button class="cmd-chip clear-all" data-clear="__all">clear all</button>
+    </div>` : ''}
+    ${S.lastMsg ? `<pre class="cmd-msg${S.lastMsg.ok ? '' : ' bad'}">${esc(S.lastMsg.msg)}</pre>` : ''}`;
+
+  const input = box.querySelector('#cmd-input');
+  if (keep) input.value = keep;
+
+  box.querySelector('#cmd-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const v = input.value.trim();
+    if (!v) return;
+    S.lastMsg = window.FS.run(v, S.cfg);
+    input.value = '';
+    render();
+    el('command').querySelector('#cmd-input').focus();
+  });
+
+  box.querySelectorAll('.cmd-chip').forEach(btn => btn.addEventListener('click', () => {
+    const k = btn.dataset.clear;
+    if (k === '__all') Object.assign(S.cfg, window.FS.DEFAULTS);
+    else S.cfg[k] = window.FS.DEFAULTS[k];
+    window.FS.save(S.cfg);
+    S.lastMsg = { ok: true, msg: k === '__all' ? 'Cleared every order.' : 'Cancelled that order.' };
+    render();
+  }));
 }
 
 /* ─────────────────────────── chrome ─────────────────────────── */
@@ -414,7 +500,7 @@ function renderChrome() {
    ----------------------------------------------------------------------- */
 function render() {
   const steps = [
-    ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
+    ['command', renderCommand], ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
     ['record', renderRecord], ['hist', renderHist], ['chrome', renderChrome],
   ];
   for (const [name, fn] of steps) {
@@ -430,7 +516,10 @@ function render() {
   }
 }
 
+function bootConfig() { if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
+
 async function cycle() {
+  bootConfig();
   try { await load(); } catch (e) { console.error('[base II] load failed', e); }
   render();
 }

@@ -1,7 +1,13 @@
 // ForexSight Service Worker — required for iOS PWA notifications and offline shell.
 
-const CACHE = 'forexsight-cf-v392';
-const SHELL = ['/', '/index.html', '/app.js', '/style.css', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
+// v600 — base II is now the site at '/'. The cache name MUST change on this
+// promotion: the activate handler deletes every cache whose key is not CACHE,
+// so bumping the name is what evicts the precached old shell. Without this
+// bump, anyone with the PWA installed would keep being served the old '/' and
+// '/app.js' from forexsight-cf-v392 indefinitely, and would never see the new
+// site no matter how many times they opened it.
+const CACHE = 'forexsight-cf-v600';
+const SHELL = ['/', '/index.html', '/v2/base.js', '/v2/base.css', '/manifest.json', '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (event) => {
   // v391b — nuke ALL old caches on install so a fresh app.js always wins
