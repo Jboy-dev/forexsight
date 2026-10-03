@@ -435,14 +435,105 @@ function histRow(x) {
 
 
 
+
+/* ──────────────── answers clear themselves ────────────────
+   An answer you have finished with is clutter. Each one gets an explicit
+   close button AND a timer, and the timer restarts on any real interaction
+   with the page — so nothing disappears while it is being read.
+   ----------------------------------------------------------------------- */
+// How long an answer stays before clearing itself. ?answerLife=3 shortens it
+// so the behaviour can actually be tested rather than assumed — the first
+// version of this was gated on an idle timer that re-armed for a FULL window on
+// every touch, so it could postpone forever and never fired at all.
+const ANSWER_LIFE_MS = (() => {
+  const q = new URLSearchParams(location.search).get('answerLife');
+  const n = q ? parseFloat(q) * 1000 : NaN;
+  return isFinite(n) && n >= 500 ? n : 45000;
+})();
+
+let _msgTimer = null, _calcTimer = null;
+
+/**
+ * Clears an answer a set time after it APPEARED. Interacting with the thing
+ * that produced it restarts the clock; anything else does not. Deterministic,
+ * so "it should go away on its own" is a claim that can be checked.
+ */
+function armAutoDismiss() {
+  clearTimeout(_msgTimer);
+  if (!S.lastMsg) return;
+  const shownFor = S.lastMsg;                       // identity, not a timestamp
+  _msgTimer = setTimeout(() => {
+    if (S.lastMsg !== shownFor) return;             // a newer answer replaced it
+    S.lastMsg = null;
+    try { render(); } catch (_) {}
+  }, ANSWER_LIFE_MS);
+}
+
+function armCalcDismiss() {
+  clearTimeout(_calcTimer);
+  _calcTimer = setTimeout(() => {
+    const o = el('calc-out');
+    if (!o || !o.innerHTML) return;
+    // Do not clear while the person is actually typing in the box.
+    if (document.activeElement && document.activeElement.id === 'calc-in') { armCalcDismiss(); return; }
+    o.innerHTML = '';
+  }, ANSWER_LIFE_MS);
+}
+
+function installIdle() {
+  if (window._fsIdleInstalled) return;
+  window._fsIdleInstalled = true;
+  // Typing a new order restarts the clock on whatever is currently shown,
+  // because you are plainly still using it.
+  document.addEventListener('keydown', (e) => {
+    if (e.target && (e.target.id === 'cmd-input' || e.target.id === 'calc-in')) {
+      armAutoDismiss(); armCalcDismiss();
+    }
+  }, { passive: true });
+}
+
+
+/** Per-signal balance edits. Delegated from document because renderCards()
+    replaces innerHTML, so a listener bound to a card dies on the next cycle. */
+function installSignalBalance() {
+  if (window._fsSigBalInstalled) return;
+  window._fsSigBalInstalled = true;
+  document.addEventListener('change', (e) => {
+    const inp = e.target.closest && e.target.closest('.mny-bal');
+    if (!inp) return;
+    const key = inp.dataset.sigkey;
+    const v = parseFloat(inp.value);
+    if (!key) return;
+    S.cfg.perSignal = S.cfg.perSignal || {};
+    if (!(v > 0) || v === S.cfg.balance) delete S.cfg.perSignal[key];
+    else S.cfg.perSignal[key] = v;
+    if (window.FS) window.FS.save(S.cfg);      // persisted, so it is still here next visit
+    render();
+  });
+  // Typing in the box must not trigger a re-render on every keystroke.
+  document.addEventListener('keydown', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('mny-bal') && e.key === 'Enter') e.target.blur();
+  });
+}
+
 /* ─────────── what this signal is worth, in your money ───────────
    Shown on every card, not hidden behind a fold, because "how much do I make
    and how much do I lose" is the first question and should not need a click.
    ----------------------------------------------------------------------- */
+/** A stable id for a signal, so a per-signal balance survives a re-render. */
+function sigKey(sig) {
+  return [pick(sig, 'pair'), pick(sig, 'direction'), num(pick(sig, 'entry')) ?? ''].join('|');
+}
+
 function moneyBlock(sig) {
   if (!window.FSCALC) return '';
-  const cfg = S.cfg || {};
+  const base = S.cfg || {};
   const C = window.FSCALC;
+  // A signal may carry its own balance. Everything else — risk percent,
+  // currency — still comes from the account, so only the amount differs.
+  const key = sigKey(sig);
+  const own = (base.perSignal || {})[key];
+  const cfg = own ? { ...base, balance: own } : base;
   const r = C.calcSignal(sig, cfg, S.fxRates);
   if (!r) return '';
   const M = (v) => C.money(v, r.currency);
@@ -454,11 +545,27 @@ function moneyBlock(sig) {
 
   const best = r.best, worst = r.worst;
   return `<div class="mny">
-    <div class="mny-k">Your money &middot; ${esc(r.riskPct)}% of ${esc(Number(r.balance).toLocaleString())} ${esc(r.currency)}</div>
+    <div class="mny-k">Your money
+      <span class="mny-edit">
+        <i>${esc(C.SYM[r.currency] || '')}</i>
+        <input class="mny-bal" type="number" inputmode="decimal" min="1" step="any"
+               value="${esc(r.balance)}" data-sigkey="${esc(key)}"
+               aria-label="Balance for this signal" title="Change the amount for this signal only">
+        <em>at ${esc(r.riskPct)}%${own ? ' · just this signal' : ''}</em>
+      </span></div>
     <div class="mny-two">
       <div class="mny-win"><span>if it runs to TP3</span><b>${esc(M(best.money))}</b></div>
       <div class="mny-lose"><span>if the stop is hit</span><b>${esc(M(worst.money))}</b></div>
     </div>
+    ${r.ladder && r.ladder.length ? `<div class="mny-steps">
+      ${r.ladder.map(st => `<div class="mny-step">
+        <span class="ms-n">${esc(st.name)}</span>
+        <span class="ms-p">${esc(price(st.price, pick(sig, 'pair')))}</span>
+        <span class="ms-b">+${esc(M(st.bankedMoney))}<i>banked</i></span>
+        <span class="ms-r">${esc(M(st.runningMoney))}<i>total so far</i></span>
+      </div>`).join('')}
+      <div class="mny-note">A third closes at each target. The amounts above are what you actually take at each one, and the running total once you have — not what the position would be worth if it were all still open.</div>
+    </div>` : ''}
     <details class="fold mny-fold" ${cfg.expand ? 'open' : ''}><summary>Every outcome, and the size behind it</summary>
       <div class="fold-in">
         <table class="kb-t"><tr><th>what happens</th><th>R</th><th>${esc(r.currency)}</th></tr>
@@ -498,14 +605,24 @@ function renderCalc() {
 
   box.innerHTML = `
     <div class="record" style="margin-top:0">
-      <div class="rec-row" style="gap:26px">
-        <div class="rec-i"><div class="k">Account</div><div class="v">${esc(C.SYM[ctx.currency] || '')}${esc(Number(ctx.balance).toLocaleString())}</div>
-          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">type <code>balance 5000</code></div></div>
-        <div class="rec-i"><div class="k">Risk per trade</div><div class="v">${esc(ctx.riskPct)}%</div>
-          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">type <code>risk 2%</code></div></div>
-        <div class="rec-i"><div class="k">That is your 1R</div><div class="v" style="color:var(--accent)">${esc(M(perR))}</div>
-          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">what one stop-out costs</div></div>
+      <div class="acct">
+        <label class="acct-f"><span>Account balance</span>
+          <div class="acct-in"><i>${esc(C.SYM[ctx.currency] || '')}</i>
+            <input id="in-balance" type="number" inputmode="decimal" min="1" step="any" value="${esc(ctx.balance)}" aria-label="Account balance"></div>
+        </label>
+        <label class="acct-f"><span>Risk per trade</span>
+          <div class="acct-in"><input id="in-risk" type="number" inputmode="decimal" min="0.01" max="100" step="0.1" value="${esc(ctx.riskPct)}" aria-label="Risk percent"><i>%</i></div>
+        </label>
+        <label class="acct-f"><span>Currency</span>
+          <div class="acct-in"><select id="in-ccy" aria-label="Account currency">
+            ${['GBP', 'USD', 'EUR'].map(c => `<option value="${c}"${c === ctx.currency ? ' selected' : ''}>${c}</option>`).join('')}
+          </select></div>
+        </label>
+        <div class="acct-r"><span>That is your 1R</span><b>${esc(M(perR))}</b>
+          <i>what one stop-out costs</i></div>
       </div>
+      <input id="in-risk-range" type="range" min="0.1" max="5" step="0.1" value="${esc(Math.min(5, ctx.riskPct))}" aria-label="Risk percent slider">
+      <div class="acct-hint">Drag for risk, or type <code>balance 5000</code> in the order bar. Every money figure on every signal updates immediately.</div>
     </div>
 
     <div class="cmd" style="margin-top:14px">
@@ -531,6 +648,30 @@ function renderCalc() {
   const form = el('calc-form'), input = el('calc-in');
   if (form) form.addEventListener('submit', (e) => { e.preventDefault(); runCalc(input.value, ctx); });
   if (input) input.addEventListener('input', () => runCalc(input.value, ctx));
+
+  // Editing any of these rewrites every money figure on the site, including the
+  // per-signal amounts on the Signals pane, because they all read the same cfg.
+  const commit = (patch) => {
+    Object.assign(S.cfg, patch);
+    if (window.FS) window.FS.save(S.cfg);
+    render();
+    const f = el('calc-in'); if (f && input) f.value = input.value;
+  };
+  const bal = el('in-balance'), rsk = el('in-risk'), ccy = el('in-ccy'), rng = el('in-risk-range');
+  if (bal) bal.addEventListener('change', () => { const v = parseFloat(bal.value); if (v > 0) commit({ balance: v }); });
+  if (rsk) rsk.addEventListener('change', () => { const v = parseFloat(rsk.value); if (v > 0 && v <= 100) commit({ riskPct: v }); });
+  if (ccy) ccy.addEventListener('change', () => commit({ currency: ccy.value }));
+  if (rng) {
+    // Live preview while dragging, committed on release — so the page is not
+    // re-rendered on every pixel of the drag.
+    rng.addEventListener('input', () => {
+      const v = parseFloat(rng.value);
+      const live = el('in-risk'); if (live) live.value = v;
+      const r1 = document.querySelector('.acct-r b');
+      if (r1) r1.textContent = window.FSCALC.money(ctx.balance * v / 100, ctx.currency);
+    });
+    rng.addEventListener('change', () => commit({ riskPct: parseFloat(rng.value) }));
+  }
 }
 
 function runCalc(text, ctx) {
@@ -538,14 +679,19 @@ function runCalc(text, ctx) {
   if (!String(text || '').trim()) { out.innerHTML = ''; return; }
   const r = window.FSCALC.calcDynamic(text, ctx);
   if (!r) {
+    armCalcDismiss();
     out.innerHTML = `<pre class="cmd-msg bad">I cannot work that one out. Try one of the forms listed below — or ask Research for the arithmetic behind it.</pre>`;
     return;
   }
   out.innerHTML = `<div class="calc-ans">
+    <button class="ans-x" data-dismiss="calc" aria-label="Clear this answer" title="Clear">&times;</button>
     <div class="calc-t">${esc(r.title)}</div>
     <div class="calc-v">${esc(r.value)}</div>
     <ol class="calc-w">${r.work.map(w => `<li>${esc(w)}</li>`).join('')}</ol>
   </div>`;
+  const x = out.querySelector('[data-dismiss="calc"]');
+  if (x) x.addEventListener('click', () => { out.innerHTML = ''; const i = el('calc-in'); if (i) { i.value = ''; i.focus(); } });
+  armCalcDismiss();
 }
 
 /* ─────────────────────────── tabs ───────────────────────────
@@ -764,6 +910,11 @@ function openResearch(prefill) {
     document.body.appendChild(el0);
     el0.addEventListener('click', (e) => {
       if (e.target.dataset.close) closeResearch();
+      if (e.target.dataset.clearq) {
+        const q = document.getElementById('rs-q');
+        q.value = ''; answerResearch(''); q.focus();
+        return;
+      }
       const chip = e.target.closest('[data-topic]');
       if (chip) { const q = document.getElementById('rs-q'); q.value = chip.dataset.topic; answerResearch(chip.dataset.topic); }
     });
@@ -789,6 +940,24 @@ function answerResearch(query) {
       <div class="rs-chips">${KB.TOPICS.map(t => `<button class="rs-chip" data-topic="${KB.esc(t.q)}">${KB.esc(t.q)}</button>`).join('')}</div>`;
     return;
   }
+  // No prepared topic matched. Before refusing, try to RESOLVE whatever the
+  // question refers to — an instrument, a field name, a term, a count — against
+  // live data. The prepared list only covers questions I thought of; this
+  // covers the ones I did not.
+  if (!hits.length && window.FSRESOLVE) {
+    const dyn = window.FSRESOLVE.resolve(query, S);
+    if (dyn) {
+      const badge = dyn.kind === 'measured' ? 'measured from live data' : 'mechanical — true by construction';
+      body.innerHTML = `<div class="rs-ans">
+        <div class="rs-kind rs-${KB.esc(dyn.kind)}">${KB.esc(badge)}</div>
+        <h3>${KB.esc(dyn.q)}</h3>
+        ${dyn.body}
+        <div class="rs-src">Source: ${KB.esc(dyn.source)}</div>
+        <button class="rs-clear" data-clearq="1">Clear this answer</button>
+      </div>`;
+      return;
+    }
+  }
   if (!hits.length) {
     body.innerHTML = `<div class="rs-ans"><h3>I do not know that one</h3>
       <p>I answer questions about this site and about trading mechanics. I will not guess at something outside that, because a confident wrong answer in a trading tool is worse than no answer.</p>
@@ -809,6 +978,7 @@ function answerResearch(query) {
       <h3>${KB.esc(top.q)}</h3>
       ${a.body}
       <div class="rs-src">Source: ${KB.esc(a.source)}</div>
+      <button class="rs-clear" data-clearq="1">Clear this answer</button>
     </div>
     ${hits.length > 1 ? `<div class="rs-more"><span>Related</span>
       <div class="rs-chips">${hits.slice(1, 5).map(t => `<button class="rs-chip" data-topic="${KB.esc(t.q)}">${KB.esc(t.q)}</button>`).join('')}</div></div>` : ''}`;
@@ -839,7 +1009,8 @@ function renderCommand() {
       ${chips.map(([label, key]) => `<button class="cmd-chip" data-clear="${esc(key)}" title="Click to cancel this order">${esc(label)} <span>&times;</span></button>`).join('')}
       <button class="cmd-chip clear-all" data-clear="__all">clear all</button>
     </div>` : ''}
-    ${S.lastMsg ? `<pre class="cmd-msg${S.lastMsg.ok ? '' : ' bad'}">${esc(S.lastMsg.msg)}</pre>` : ''}`;
+    ${S.lastMsg ? `<div class="ans-wrap"><button class="ans-x" data-dismiss="msg" aria-label="Clear this answer" title="Clear">&times;</button>
+      <pre class="cmd-msg${S.lastMsg.ok ? '' : ' bad'}">${esc(S.lastMsg.msg)}</pre></div>` : ''}`;
 
   const input = box.querySelector('#cmd-input');
   if (keep) input.value = keep;
@@ -853,6 +1024,12 @@ function renderCommand() {
     render();
     el('command').querySelector('#cmd-input').focus();
   });
+
+  const dx = box.querySelector('[data-dismiss="msg"]');
+  if (dx) dx.addEventListener('click', () => { S.lastMsg = null; clearTimeout(_msgTimer); render(); });
+  // An answer you have stopped looking at is clutter, so it clears itself.
+  // The timer is reset on any interaction, so it never vanishes mid-read.
+  armAutoDismiss();
 
   box.querySelectorAll('.cmd-chip').forEach(btn => btn.addEventListener('click', () => {
     const k = btn.dataset.clear;
@@ -1043,6 +1220,8 @@ function render() {
 
 function bootConfig() {
   installCopy();
+  installIdle();
+  installSignalBalance();
   installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
 
 async function cycle() {

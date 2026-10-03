@@ -575,5 +575,83 @@ t('calculator: the typed forms all resolve, and nonsense does not', () => {
   return true;
 });
 
+/* ── The dynamic resolver. Its failure mode is the dangerous one: answering a
+   question it cannot answer. The first version matched the single-letter key
+   "r" inside "france", so "what is the capital of france" came back with a
+   confident definition of the R-multiple. ──────────────────────────────── */
+const RES = (() => { const w = {}; new Function('window', readFileSync('v2/resolve.js', 'utf8'))(w); return w.FSRESOLVE; })();
+const RS_STATE = {
+  ledger: existsSync('data/ledger.json') ? JSON.parse(readFileSync('data/ledger.json', 'utf8')) : null,
+  marketVoice: existsSync('data/market-voice.json') ? JSON.parse(readFileSync('data/market-voice.json', 'utf8')) : null,
+  latestSignals: existsSync('data/latest-signals.json') ? JSON.parse(readFileSync('data/latest-signals.json', 'utf8')) : null,
+};
+
+t('resolver: off-topic questions get NO answer, never a confident wrong one', () => {
+  for (const q of ['what is the capital of france', 'who is the prime minister', 'tell me a joke',
+                   'asdfgh', 'what is the weather', 'book me a table for two']) {
+    const a = RES.resolve(q, RS_STATE);
+    if (a) return `"${q}" was answered with "${a.q}" — it should have returned nothing`;
+  }
+  return true;
+});
+
+t('resolver: instrument questions resolve to that instrument', () => {
+  const want = { 'how has gold done': 'XAU/USD', 'is bitcoin any good': 'BTC/USD',
+                 'what about cable': 'GBP/USD', 'tell me about silver': 'XAG/USD',
+                 'guppy': 'GBP/JPY', 'how is the nasdaq': 'NAS100' };
+  for (const [q, pair] of Object.entries(want)) {
+    const found = RES.findInstrument(q);
+    if (found !== pair) return `"${q}" resolved to ${found}, expected ${pair}`;
+  }
+  return true;
+});
+
+t('resolver: field and term questions resolve to the right definition', () => {
+  const want = { 'what is maeR': 'maeR', 'explain mfe': 'mfeR', 'what does spans zero mean': 'spans zero',
+                 'what is the payoff ratio': 'payoff ratio', 'what is expectancy': 'expectancy',
+                 'what is an episode': 'episode' };
+  for (const [q, term] of Object.entries(want)) {
+    const a = RES.resolve(q, RS_STATE);
+    if (!a) return `"${q}" resolved to nothing`;
+    if (!a.q.toLowerCase().includes(term.toLowerCase())) return `"${q}" gave "${a.q}", expected ${term}`;
+  }
+  return true;
+});
+
+t('resolver: every answer carries a source and no undefined', () => {
+  for (const q of ['how has gold done', 'what is maeR', 'how many signals in total', 'is bitcoin any good']) {
+    const a = RES.resolve(q, RS_STATE);
+    if (!a) return `"${q}" resolved to nothing`;
+    if (!a.source) return `"${q}" has no source attribution`;
+    if (/undefined|NaN|\[object Object\]/.test(a.body)) return `"${q}" leaked undefined/NaN`;
+  }
+  return true;
+});
+
+/* ── Per-signal money. The ladder breakdown must not double-count. ─────── */
+t('calculator: the per-target ladder sums to the full-run figure', () => {
+  if (!RATES) return 'skipped: no fx-rates.json';
+  const r = CALC.calcSignal({ pair: 'EUR/USD', entry: 1.1, sl: 1.098, tp1: 1.1024, tp2: 1.104, tp3: 1.107 },
+                            { balance: 1000, riskPct: 1, currency: 'GBP' }, RATES);
+  if (!r.ladder || r.ladder.length !== 3) return 'the per-target ladder is missing or incomplete';
+  const summed = r.ladder.reduce((s2, st) => s2 + st.bankedMoney, 0);
+  const full = r.best.money;
+  if (Math.abs(summed - full) > 1e-6) {
+    return `the three banked amounts sum to ${summed.toFixed(6)} but the full run says ${full.toFixed(6)}`;
+  }
+  // The running total on the last step must equal the full run too.
+  if (Math.abs(r.ladder[2].runningMoney - full) > 1e-6) return 'the running total does not close on the full-run figure';
+  return true;
+});
+
+t('a per-signal balance override is persisted, not just displayed', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (!/perSignal/.test(js)) return 'no per-signal override exists';
+  if (!/window\.FS\.save\(S\.cfg\)/.test(js)) return 'the override is never saved — it would vanish on reload';
+  const cmd = readFileSync('v2/commands.js', 'utf8');
+  if (!/perSignal/.test(cmd)) return 'perSignal is not in the persisted defaults, so it will not round-trip';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

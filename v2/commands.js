@@ -34,6 +34,7 @@ const FS_DEFAULTS = {
   balance: 1000,        // account size, for the money figures
   riskPct: 1,           // percent of balance risked per trade
   currency: 'GBP',      // account currency
+  perSignal: {},        // per-signal balance overrides, keyed by signal
   alerts: false,        // notify when a NEW signal passes the standing orders
   alertMinConf: null,   // optional extra bar that applies to alerts only
 };

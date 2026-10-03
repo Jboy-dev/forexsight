@@ -26,7 +26,9 @@ const PAIRS = {
   'EUR-USD': 'EURUSD=X', 'GBP-USD': 'GBPUSD=X', 'AUD-USD': 'AUDUSD=X', 'NZD-USD': 'NZDUSD=X',
   'USD-JPY': 'USDJPY=X', 'USD-CHF': 'USDCHF=X', 'USD-CAD': 'USDCAD=X',
   'XAU-USD': 'GC=F',     'BTC-USD': 'BTC-USD',  'ETH-USD': 'ETH-USD',
-};
+
+  'XAG-USD': 'SI=F', 'EUR-GBP': 'EURGBP=X', 'EUR-JPY': 'EURJPY=X', 'GBP-JPY': 'GBPJPY=X',
+  'AUD-JPY': 'AUDJPY=X', 'US30': '^DJI', 'NAS100': '^NDX', 'SOL-USD': 'SOL-USD', 'XRP-USD': 'XRP-USD',};
 // Each timeframe with the range that actually returns the most, not the one
 // that reads most naturally.
 const TFS = [

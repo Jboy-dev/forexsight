@@ -70,6 +70,9 @@ const out = {
     'EUR/USD': 'USD', 'GBP/USD': 'USD', 'AUD/USD': 'USD', 'NZD/USD': 'USD',
     'XAU/USD': 'USD', 'XAG/USD': 'USD', 'BTC/USD': 'USD', 'ETH/USD': 'USD',
     'USD/JPY': 'JPY', 'USD/CHF': 'CHF', 'USD/CAD': 'CAD',
+    // The crosses settle in their own quote currency, not in dollars.
+    'EUR/GBP': 'GBP', 'EUR/JPY': 'JPY', 'GBP/JPY': 'JPY', 'AUD/JPY': 'JPY',
+    'SOL/USD': 'USD', 'XRP/USD': 'USD', 'US30': 'USD', 'NAS100': 'USD',
   },
   note: 'P&L lands in the instrument quote currency and is converted at these rates. '
       + 'Rates come from the same verified price caches the signals use.',

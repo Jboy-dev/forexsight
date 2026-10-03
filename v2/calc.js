@@ -105,6 +105,32 @@ function calcSignal(sig, cfg, rates) {
     riskAmount: riskAcct,
     priceRisk, units,
     perR,
+    // What each third banks AT each target, and the running total once it has.
+    // "Money at TP2" is not 2R — it is the third banked there plus whatever was
+    // already banked at TP1, with a third still running.
+    ladder: (() => {
+      const steps = [];
+      let running = 0;
+      const rs = [r1, r2, r3];
+      for (let i = 0; i < 3; i++) {
+        const rr = rs[i];
+        if (rr == null) break;
+        const bankedR = third * rr;
+        running += bankedR;
+        steps.push({
+          name: `TP${i + 1}`,
+          price: [tp1, tp2, tp3][i],
+          r: +rr.toFixed(3),
+          bankedR: +bankedR.toFixed(4),
+          bankedMoney: perR * bankedR,
+          runningR: +running.toFixed(4),
+          runningMoney: perR * running,
+          stillOpen: 1 - (i + 1) / 3,
+          stopNow: i === 0 ? 'stop moves to entry' : i === 1 ? 'stop moves to TP1' : 'position closed',
+        });
+      }
+      return steps;
+    })(),
     targets: [
       r1 != null ? { name: 'TP1', price: tp1, r: +r1.toFixed(3), fullMoney: perR * r1 } : null,
       r2 != null ? { name: 'TP2', price: tp2, r: +r2.toFixed(3), fullMoney: perR * r2 } : null,

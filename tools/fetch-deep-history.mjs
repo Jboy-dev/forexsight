@@ -8,7 +8,9 @@
 import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'fs';
 const PAIRS = { 'EUR/USD':'EURUSD=X','GBP/USD':'GBPUSD=X','AUD/USD':'AUDUSD=X','NZD/USD':'NZDUSD=X',
   'USD/CAD':'USDCAD=X','USD/CHF':'USDCHF=X','USD/JPY':'USDJPY=X','XAU/USD':'GC=F',
-  'BTC/USD':'BTC-USD','ETH/USD':'ETH-USD' };
+  'BTC/USD':'BTC-USD','ETH/USD':'ETH-USD',
+  'XAG/USD':'SI=F', 'EUR/GBP':'EURGBP=X', 'EUR/JPY':'EURJPY=X', 'GBP/JPY':'GBPJPY=X',
+  'AUD/JPY':'AUDJPY=X', 'US30':'^DJI', 'NAS100':'^NDX', 'SOL/USD':'SOL-USD', 'XRP/USD':'XRP-USD',};
 const MAX_AGE_H = Number(process.env.DEEP_MAX_AGE_H || 72);
 mkdirSync('data/deep', { recursive: true });
 const p1 = Math.floor(new Date('1970-01-01').getTime()/1000), p2 = Math.floor(Date.now()/1000);

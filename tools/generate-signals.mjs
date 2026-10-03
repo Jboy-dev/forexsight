@@ -30,7 +30,9 @@ const PAIR_SYMBOLS = {
   'AUD/USD': 'AUDUSD=X', 'USD/CAD': 'USDCAD=X', 'NZD/USD': 'NZDUSD=X',
   'USD/CHF': 'USDCHF=X', 'XAU/USD': 'GC=F',
   'BTC/USD': 'BTC-USD', 'ETH/USD': 'ETH-USD',
-};
+
+  'XAG/USD':'SI=F', 'EUR/GBP':'EURGBP=X', 'EUR/JPY':'EURJPY=X', 'GBP/JPY':'GBPJPY=X',
+  'AUD/JPY':'AUDJPY=X', 'US30':'^DJI', 'NAS100':'^NDX', 'SOL/USD':'SOL-USD', 'XRP/USD':'XRP-USD',};
 
 const DRY = process.argv.includes('--dry-run');
 
