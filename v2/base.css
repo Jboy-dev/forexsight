@@ -329,3 +329,22 @@ body[data-density="compact"] .cards { grid-template-columns: repeat(auto-fill, m
   .cmd-go { padding: 10px 11px; font-size: 10px; }
   #cmd-input { font-size: 13px; }
 }
+
+/* strategy trials table */
+.trial-head, .trial-row {
+  display: grid; grid-template-columns: 1.7fr 1fr 1fr 1fr 1fr; gap: 10px;
+  padding: 9px 0; align-items: baseline;
+}
+.trial-head { font: 600 9px/1 var(--mono); letter-spacing: .09em; text-transform: uppercase;
+  color: var(--text-faint); border-bottom: 1px solid var(--line-soft); }
+.trial-row { border-bottom: 1px solid var(--line-soft); font: 500 11.5px/1.4 var(--mono); }
+.trial-row:last-child { border-bottom: 0; }
+.tr-name { color: var(--text); }
+.tr-n { color: var(--text-dim); }
+.tr-n.pos { color: var(--up); } .tr-n.neg { color: var(--down); }
+.tr-n i { font-style: normal; color: var(--text-faint); font-size: 10px; }
+@media (max-width: 700px) {
+  .trial-head { display: none; }
+  .trial-row { grid-template-columns: 1fr 1fr; gap: 4px 10px; padding: 11px 0; }
+  .tr-name { grid-column: 1 / -1; font-weight: 600; }
+}

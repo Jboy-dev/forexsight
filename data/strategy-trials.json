@@ -1,0 +1,263 @@
+{
+  "ts": 1791064975928,
+  "isoTime": "2026-10-03T22:02:55.928Z",
+  "builtBy": "tools/strategy-trials.mjs",
+  "instruments": 10,
+  "totalDailyBars": 57045,
+  "hypotheses": 72,
+  "bonferroniBarT": 3.39,
+  "method": "daily bars, entry at next open, v442 managed ladder, costs charged, NON-OVERLAPPING trades, three-way split with the newest 25% opened once, random-entry null at matched trade count",
+  "trainTop": [
+    {
+      "name": "momentum-120 × above-200",
+      "n": 1195,
+      "avgR": 0.1963,
+      "t": 5.26
+    },
+    {
+      "name": "momentum-120 × with-200",
+      "n": 1844,
+      "avgR": 0.1278,
+      "t": 4.3
+    },
+    {
+      "name": "momentum-120 × none",
+      "n": 1943,
+      "avgR": 0.1217,
+      "t": 4.2
+    },
+    {
+      "name": "momentum-120 × vol-high",
+      "n": 927,
+      "avgR": 0.1745,
+      "t": 4.17
+    },
+    {
+      "name": "momentum-60 × none",
+      "n": 1923,
+      "avgR": 0.1202,
+      "t": 4.14
+    },
+    {
+      "name": "donchian-20 × expanding",
+      "n": 768,
+      "avgR": 0.1858,
+      "t": 4.04
+    },
+    {
+      "name": "momentum-120 × expanding",
+      "n": 1699,
+      "avgR": 0.1249,
+      "t": 4.03
+    },
+    {
+      "name": "momentum-120 × contracting",
+      "n": 1493,
+      "avgR": 0.1332,
+      "t": 4.03
+    },
+    {
+      "name": "momentum-60 × with-200",
+      "n": 1759,
+      "avgR": 0.1207,
+      "t": 3.97
+    },
+    {
+      "name": "donchian-20 × with-200",
+      "n": 829,
+      "avgR": 0.1655,
+      "t": 3.68
+    }
+  ],
+  "survivors": [
+    {
+      "name": "momentum-120 × above-200",
+      "train": {
+        "n": 1195,
+        "avgR": 0.1963,
+        "t": 5.26
+      },
+      "validate": {
+        "n": 548,
+        "avgR": 0.0785,
+        "t": 1.44
+      }
+    },
+    {
+      "name": "momentum-60 × with-200",
+      "train": {
+        "n": 1759,
+        "avgR": 0.1207,
+        "t": 3.97
+      },
+      "validate": {
+        "n": 831,
+        "avgR": 0.049,
+        "t": 1.16
+      }
+    },
+    {
+      "name": "momentum-60 × above-200",
+      "train": {
+        "n": 1228,
+        "avgR": 0.1305,
+        "t": 3.57
+      },
+      "validate": {
+        "n": 546,
+        "avgR": 0.0722,
+        "t": 1.35
+      }
+    },
+    {
+      "name": "rsi-trend × above-200",
+      "train": {
+        "n": 876,
+        "avgR": 0.1398,
+        "t": 3.22
+      },
+      "validate": {
+        "n": 394,
+        "avgR": 0.0954,
+        "t": 1.47
+      }
+    },
+    {
+      "name": "donchian-20 × above-200",
+      "train": {
+        "n": 649,
+        "avgR": 0.1388,
+        "t": 2.74
+      },
+      "validate": {
+        "n": 267,
+        "avgR": 0.1012,
+        "t": 1.32
+      }
+    }
+  ],
+  "sealed": [
+    {
+      "name": "momentum-120 × above-200",
+      "entry": "momentum-120",
+      "filter": "above-200",
+      "train": {
+        "n": 1195,
+        "avgR": 0.1963,
+        "t": 5.26
+      },
+      "validate": {
+        "n": 548,
+        "avgR": 0.0785,
+        "t": 1.44
+      },
+      "sealed": {
+        "n": 574,
+        "avgR": 0.0134,
+        "t": 0.26,
+        "nullP95": 0.1651,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    },
+    {
+      "name": "momentum-60 × with-200",
+      "entry": "momentum-60",
+      "filter": "with-200",
+      "train": {
+        "n": 1759,
+        "avgR": 0.1207,
+        "t": 3.97
+      },
+      "validate": {
+        "n": 831,
+        "avgR": 0.049,
+        "t": 1.16
+      },
+      "sealed": {
+        "n": 816,
+        "avgR": -0.0062,
+        "t": -0.15,
+        "nullP95": 0.1784,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    },
+    {
+      "name": "momentum-60 × above-200",
+      "entry": "momentum-60",
+      "filter": "above-200",
+      "train": {
+        "n": 1228,
+        "avgR": 0.1305,
+        "t": 3.57
+      },
+      "validate": {
+        "n": 546,
+        "avgR": 0.0722,
+        "t": 1.35
+      },
+      "sealed": {
+        "n": 562,
+        "avgR": 0.0097,
+        "t": 0.19,
+        "nullP95": 0.204,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    },
+    {
+      "name": "rsi-trend × above-200",
+      "entry": "rsi-trend",
+      "filter": "above-200",
+      "train": {
+        "n": 876,
+        "avgR": 0.1398,
+        "t": 3.22
+      },
+      "validate": {
+        "n": 394,
+        "avgR": 0.0954,
+        "t": 1.47
+      },
+      "sealed": {
+        "n": 422,
+        "avgR": 0.0315,
+        "t": 0.53,
+        "nullP95": 0.2172,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    },
+    {
+      "name": "donchian-20 × above-200",
+      "entry": "donchian-20",
+      "filter": "above-200",
+      "train": {
+        "n": 649,
+        "avgR": 0.1388,
+        "t": 2.74
+      },
+      "validate": {
+        "n": 267,
+        "avgR": 0.1012,
+        "t": 1.32
+      },
+      "sealed": {
+        "n": 264,
+        "avgR": 0.0919,
+        "t": 1.22,
+        "nullP95": 0.2948,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    }
+  ],
+  "passed": [],
+  "verdict": "Nothing cleared. 72 combinations tested, 5 repeated on validation, 5 reached the sealed set, 0 passed it. On this evidence no combination here earns a place in the signal path."
+}

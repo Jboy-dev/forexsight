@@ -147,6 +147,19 @@ jobs:
       - name: Track candidate strategy
         run: node tools/candidate-tracker.mjs
 
+      # The broad search: 72 entry x filter combinations over 57,045 daily bars,
+      # three-way split with the newest 25% opened once, a Bonferroni bar for the
+      # number of hypotheses, and a random-entry null. Re-runs as history grows.
+      - name: Strategy trials
+        run: node tools/strategy-trials.mjs
+        continue-on-error: true
+
+      # The ONLY route a rule can take into the signal path. Promotes on sealed
+      # evidence alone; today it promotes nothing, which is the correct output.
+      - name: Promote what passed
+        run: node tools/strategy-promote.mjs
+        continue-on-error: true
+
       - name: Ladder rule test
         run: node tools/ladder-rule-test.mjs
 

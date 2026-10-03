@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -421,6 +421,56 @@ function histRow(x) {
 }
 
 
+
+/* ──────────────── what has been tested, and what survived ────────────────
+   The search runs continuously and almost always concludes that nothing works.
+   That conclusion is the product, so it is shown rather than buried: a page
+   that only displayed winners would imply there were some.
+   ----------------------------------------------------------------------- */
+function renderTrials() {
+  const t = S.strategyTrials, a = S.activeStrategy, box = el('trials');
+  if (!box) return;
+  if (!t) { box.innerHTML = `<div class="empty">The strategy search has not published results yet.</div>`; return; }
+
+  const sealed = t.sealed || [];
+  const active = a && a.active;
+
+  box.innerHTML = `
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:28px">
+        <div class="rec-i"><div class="k">Combinations tested</div><div class="v">${esc(t.hypotheses ?? '—')}</div></div>
+        <div class="rec-i"><div class="k">Reached the sealed set</div><div class="v">${esc(sealed.length)}</div></div>
+        <div class="rec-i"><div class="k">Passed it</div>
+          <div class="v" style="color:${(t.passed || []).length ? 'var(--up)' : 'var(--down)'}">${esc((t.passed || []).length)}</div></div>
+        <div class="rec-i"><div class="k">Bar to clear</div><div class="v" style="font-size:19px">|t| &gt; ${esc(t.bonferroniBarT ?? '—')}</div></div>
+      </div>
+      <div class="rec-note">${esc(t.verdict || '')}</div>
+    </div>
+
+    ${active ? `<div class="voice-honest proven" style="margin-top:12px">
+        <strong>Active strategy: ${esc(active.name)}</strong> — sealed ${esc(sign(active.sealed.avgR) + active.sealed.avgR)}R over ${esc(active.sealed.n)} trades.
+        ${esc(active.note || '')}
+      </div>`
+      : `<div class="voice-honest" style="margin-top:12px">${esc((a && a.verdict) || 'No strategy is active.')}</div>`}
+
+    ${sealed.length ? `<details class="fold" style="margin-top:14px;border-top:0">
+      <summary>How each survivor decayed from training to the sealed set</summary>
+      <div class="fold-in">
+        <div class="trial-head"><span>combination</span><span>train</span><span>validate</span><span>sealed</span><span>random null</span></div>
+        ${sealed.map(c => `<div class="trial-row">
+          <span class="tr-name">${esc(c.name)}</span>
+          <span class="tr-n ${c.train && c.train.avgR > 0 ? 'pos' : 'neg'}">${c.train ? esc(sign(c.train.avgR) + c.train.avgR.toFixed(3)) + 'R <i>t=' + esc(c.train.t) + '</i>' : '—'}</span>
+          <span class="tr-n ${c.validate && c.validate.avgR > 0 ? 'pos' : 'neg'}">${c.validate ? esc(sign(c.validate.avgR) + c.validate.avgR.toFixed(3)) + 'R <i>t=' + esc(c.validate.t) + '</i>' : '—'}</span>
+          <span class="tr-n ${c.sealed && c.sealed.avgR > 0 ? 'pos' : 'neg'}">${c.sealed && !c.sealed.tooFew ? esc(sign(c.sealed.avgR) + c.sealed.avgR.toFixed(3)) + 'R <i>t=' + esc(c.sealed.t) + '</i>' : 'too few'}</span>
+          <span class="tr-n">${c.sealed && c.sealed.nullP95 != null ? esc('+' + c.sealed.nullP95.toFixed(3)) + 'R' : '—'}</span>
+        </div>`).join('')}
+        <p style="margin-top:12px">The pattern in every row is the same: strong in training, weaker on validation, gone by the sealed set. That is what choosing a rule on the data you are measuring it with produces. The last column is the 95th percentile of entering at random with the same ladder and trade count — where it exceeds the sealed column, the rule did not beat chance.</p>
+      </div>
+    </details>` : ''}
+
+    <p style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">${esc(t.method || '')}</p>`;
+}
+
 /* ─────────────────────── the order bar ───────────────────────
    One line you talk to. Rendered once like everything else; the input keeps
    its own value across re-renders because it is only written when absent.
@@ -501,7 +551,7 @@ function renderChrome() {
 function render() {
   const steps = [
     ['command', renderCommand], ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
-    ['record', renderRecord], ['hist', renderHist], ['chrome', renderChrome],
+    ['record', renderRecord], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome],
   ];
   for (const [name, fn] of steps) {
     // One failing panel must not blank the page — the old base learned this the
