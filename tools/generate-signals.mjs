@@ -480,6 +480,9 @@ async function applyNewsGate(list) {
     s.newsCheck = {
       verdict: a.verdict,
       note: a.note || null,
+      // How far forward the feed can actually see. 'clear' past this point is
+      // not a safety claim — see the uncovered branch in tools/news-gate.mjs.
+      coverageUntil: a.coverageUntil || null,
       events: (a.events || []).slice(0, 3).map(e => ({
         title: e.title, country: e.country, minutesAway: e.minutesAway,
         forecast: e.forecast, previous: e.previous,

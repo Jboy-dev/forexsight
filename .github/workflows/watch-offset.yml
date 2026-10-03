@@ -129,6 +129,21 @@ jobs:
       # resolve it when the holding period elapses. Promotion requires the
       # FORWARD record to clear zero on its own, independently of the backtest
       # that suggested it. Nothing is traded on it in the meantime.
+      # The tracker needs data/deep, which is gitignored. Restore it and top it
+      # up first, or the tracker records nothing — which is what it did on every
+      # run until 2026-10-03, while this step reported a crash and failed the job.
+      - name: Restore deep price caches
+        uses: actions/cache@v4
+        with:
+          path: data/deep
+          key: deep-daily-${{ github.run_id }}
+          restore-keys: |
+            deep-daily-
+
+      - name: Top up deep price history
+        run: node tools/fetch-deep-history.mjs
+        continue-on-error: true
+
       - name: Track candidate strategy
         run: node tools/candidate-tracker.mjs
 

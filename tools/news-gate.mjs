@@ -127,7 +127,25 @@ export function assess(pair, events, now = Date.now()) {
     .map(e => ({ ...e, minutesAway: Math.round((e.at - now) / 60000) }))
     .filter(e => Math.abs(e.minutesAway) <= WARN_MIN)
     .sort((a, b) => Math.abs(a.minutesAway) - Math.abs(b.minutesAway));
-  if (!relevant.length) return { verdict: 'clear', events: [] };
+  if (!relevant.length) {
+    // "No events nearby" and "the feed cannot see this far" are different claims.
+    // The upstream source is a THIS-WEEK feed only (ff_calendar_nextweek.json is a
+    // 404, and every open forward source is gone: TradingEconomics guest is 410,
+    // TradingView is 403). So from the last scheduled release of a week until the
+    // feed rolls over, the gate has no forward visibility at all — and was
+    // returning a confident 'clear' for that whole window. Measured on
+    // 2026-10-03: 143 events in the feed, 10 high-impact, 0 of them still ahead.
+    const horizon = events.reduce((m, e) => Math.max(m, e.at), 0);
+    if (horizon && now > horizon) {
+      return {
+        verdict: 'uncovered', events: [], coverageUntil: horizon,
+        note: `the economic calendar only publishes the current week and its last `
+            + `high-impact release was ${Math.round((now - horizon) / 36e5)}h ago `
+            + `— news risk beyond that point is unverified, not confirmed clear`,
+      };
+    }
+    return { verdict: 'clear', events: [], coverageUntil: horizon || null };
+  }
   const nearest = relevant[0];
   const verdict = Math.abs(nearest.minutesAway) <= BLOCK_MIN ? 'block' : 'warn';
   return {

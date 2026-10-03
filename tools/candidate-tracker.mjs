@@ -61,7 +61,24 @@ if (!Array.isArray(book.entries)) book.entries = [];
 const seen = new Set(book.entries.map(e => `${e.pair}|${e.date}`));
 let added = 0, resolved = 0;
 
-for (const f of readdirSync('data/deep').filter(x=>x.endsWith('.json'))) {
+// data/deep is gitignored (5.9MB of daily bars), so in CI it exists only if the
+// cache was restored and the fetcher ran. Without this guard the tracker threw
+// ENOENT and took the whole workflow down with it — which is exactly what had
+// been happening on every scheduled run, so this candidate was recording
+// nothing at all while being reported as "tracked forward".
+if (!existsSync('data/deep')) {
+  console.log('candidate-tracker: data/deep is absent, so no bars to read.');
+  console.log('  Nothing recorded this run. The tracker needs the deep daily caches');
+  console.log('  (tools/fetch-deep-history.mjs, or a restored actions/cache).');
+  process.exit(0);
+}
+const deepFiles = readdirSync('data/deep').filter(x=>x.endsWith('.json'));
+if (!deepFiles.length) {
+  console.log('candidate-tracker: data/deep is empty — nothing recorded this run.');
+  process.exit(0);
+}
+
+for (const f of deepFiles) {
   const pair = f.replace('.json','').replace('-','/');
   const bars = JSON.parse(readFileSync(`data/deep/${f}`,'utf8'));
   if (bars.length < 600) continue;

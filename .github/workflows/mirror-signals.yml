@@ -234,6 +234,30 @@ jobs:
       - name: Self-evaluate
         run: node tools/self-evaluate.mjs
 
+      # ── base II — "what the market is doing" ────────────────────────────
+      # market-voice.mjs reads the deep daily caches, which are gitignored at
+      # 5.9MB. Without a cache CI would re-download every instrument on every
+      # cycle, so the caches are restored here and the fetcher's own freshness
+      # check decides whether anything needs pulling.
+      - name: Restore deep price caches
+        uses: actions/cache@v4
+        with:
+          path: data/deep
+          key: deep-daily-${{ github.run_id }}
+          restore-keys: |
+            deep-daily-
+
+      - name: Top up deep price history
+        run: node tools/fetch-deep-history.mjs
+        continue-on-error: true
+
+      # Publishes data/market-voice.json: the current read, plus the t-stat for
+      # whether each read forecasts anything. Allowed to fail without taking the
+      # cycle down — a missing voice file renders as absent, never as a guess.
+      - name: Build market voice
+        run: node tools/market-voice.mjs
+        continue-on-error: true
+
       - name: Commit + push if changed
         run: |
           cd $GITHUB_WORKSPACE
