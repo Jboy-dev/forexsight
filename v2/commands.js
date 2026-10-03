@@ -31,6 +31,9 @@ const FS_DEFAULTS = {
   density: 'normal',    // normal | compact
   newsStrict: false,    // hide anything whose news verdict is not 'clear'
   tab: 'signals',       // which pane is open
+  balance: 1000,        // account size, for the money figures
+  riskPct: 1,           // percent of balance risked per trade
+  currency: 'GBP',      // account currency
   alerts: false,        // notify when a NEW signal passes the standing orders
   alertMinConf: null,   // optional extra bar that applies to alerts only
 };
@@ -125,8 +128,8 @@ const FS_COMMANDS = [
     },
   },
   {
-    name: 'risk', aliases: ['minr', 'rr', 'reward'],
-    help: 'risk 1.5 — require TP1 to pay at least that many R',
+    name: 'minr', aliases: ['rr', 'reward', 'minreward'],
+    help: 'minr 1.5 — require TP1 to pay at least that many R',
     run(cfg, rest) {
       const n = fsNum(rest);
       if (n === null) return null;
@@ -220,6 +223,40 @@ const FS_COMMANDS = [
     run() { if (typeof cycle === 'function') cycle(); return 'Pulling the feed again.'; },
   },
   {
+    name: 'balance', aliases: ['account', 'capital', 'deposit', 'funds', 'bankroll'],
+    help: 'balance 5000 — set your account size for the money figures',
+    run(cfg, rest) {
+      const n = fsNum(String(rest).replace(/,/g, ''));
+      if (n === null || n <= 0) return null;
+      cfg.balance = n;
+      return `Account set to ${n.toLocaleString()} ${cfg.currency}. Every money figure now uses it.`;
+    },
+  },
+  {
+    name: 'risk', aliases: ['riskpct', 'risking', 'perTrade'],
+    help: 'risk 2% — percent of the account risked per trade',
+    run(cfg, rest) {
+      const n = fsNum(rest);
+      if (n === null || n <= 0 || n > 100) return null;
+      cfg.riskPct = n;
+      const amt = cfg.balance * n / 100;
+      return `Risking ${n}% per trade — ${amt.toLocaleString(undefined,{maximumFractionDigits:2})} ${cfg.currency}, which is your 1R.`;
+    },
+  },
+  {
+    name: 'currency', aliases: ['ccy', 'money', 'gbp', 'usd', 'eur', 'pounds', 'dollars', 'euros'],
+    help: 'currency gbp · currency usd · currency eur',
+    run(cfg, rest, matched) {
+      const all = ((rest || '') + ' ' + (matched || '')).toLowerCase();
+      const c = /gbp|pound|sterling|£/.test(all) ? 'GBP'
+              : /usd|dollar|\$/.test(all) ? 'USD'
+              : /eur|euro|€/.test(all) ? 'EUR' : null;
+      if (!c) return null;
+      cfg.currency = c;
+      return `Showing money in ${c}.`;
+    },
+  },
+  {
     name: 'tab', aliases: ['open', 'go', 'view', 'switch'],
     help: 'ledger · market · tested · signals — switch pane',
     run(cfg, rest, matched) {
@@ -227,6 +264,7 @@ const FS_COMMANDS = [
       const all = ((rest || '') + ' ' + (matched || '')).toLowerCase();
       const want = /ledger|record|history|result/.test(all) ? 'ledger'
                  : /market|voice|context|condition/.test(all) ? 'market'
+                 : /calc|maths|math|money/.test(all) ? 'calc'
                  : /test|trial|strateg|search/.test(all) ? 'tested'
                  : /signal|setup|live|trade/.test(all) ? 'signals' : null;
       if (!want) return null;
@@ -268,7 +306,7 @@ function fsParse(input) {
   // ambiguous — nothing else on this site is called "ledger" — and resolving
   // them first stops "open market" matching expand's 'open' alias and
   // "show me the ledger" matching only's 'show'.
-  const PANE_RE = /\b(ledger|market|tested|signals?|trials?|record|history)\b/;
+  const PANE_RE = /\b(ledger|market|tested|signals?|trials?|record|history|calculator|calc|maths|math)\b/;
   const paneHit = text.match(PANE_RE);
   if (paneHit) {
     const tabCmd = FS_COMMANDS.find(c => c.name === 'tab');
@@ -322,6 +360,8 @@ function fsActiveChips(cfg) {
   if (cfg.sort !== 'newest')  out.push(['by ' + cfg.sort, 'sort']);
   if (cfg.expand)             out.push(['expanded', 'expand']);
   if (cfg.density !== 'normal') out.push([cfg.density, 'density']);
+  if (cfg.balance !== FS_DEFAULTS.balance || cfg.riskPct !== FS_DEFAULTS.riskPct || cfg.currency !== FS_DEFAULTS.currency)
+    out.push([`${cfg.riskPct}% of ${Number(cfg.balance).toLocaleString()} ${cfg.currency}`, 'balance']);
   if (cfg.alerts) out.push(['alerts' + (cfg.alertMinConf != null ? ' ≥ ' + cfg.alertMinConf : ''), 'alerts']);
   return out;
 }

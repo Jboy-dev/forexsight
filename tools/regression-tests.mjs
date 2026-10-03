@@ -222,7 +222,10 @@ t('order layer: direction, confidence, weak and news orders each bite', () => {
   if (after('confidence 70').out.length !== 3) return 'confidence 70 did not drop the 52';
   if (after('hide weak').out.length !== 3) return 'hide weak did not drop the weak one';
   if (after('news strict').out.length !== 2) return 'news strict did not keep only the two clear ones';
-  if (after('risk 1.3').out.length !== 1) return 'risk 1.3 did not keep only the 1.4R';
+  // 'risk' now means account risk percent, which is what a person typing it
+  // means. The reward filter was renamed to 'minr' to free the word up.
+  if (after('minr 1.3').out.length !== 1) return 'minr 1.3 did not keep only the 1.4R';
+  if (after('risk 2%').out.length !== SIGS.length) return 'risk 2% filtered signals — it should only set account risk';
   return true;
 });
 
@@ -470,6 +473,105 @@ t('the ledger publishes BOTH win-rate definitions', () => {
   if (!L.risk || typeof L.risk.maxDrawdownR !== 'number' || typeof L.risk.longestLossStreak !== 'number') {
     return 'drawdown and losing-streak figures are missing — a record without them flatters itself';
   }
+  return true;
+});
+
+/* ── The calculator. Wrong money maths is the worst failure this site can
+   have, so these check the arithmetic end to end rather than that it runs. ── */
+function loadCALC() {
+  const w = {};
+  new Function('window', readFileSync('v2/calc.js', 'utf8'))(w);
+  return w.FSCALC;
+}
+const CALC = loadCALC();
+const RATES = existsSync('data/fx-rates.json') ? JSON.parse(readFileSync('data/fx-rates.json', 'utf8')) : null;
+
+t('calculator: a stop-out costs EXACTLY the risked amount, in every quote currency', () => {
+  if (!RATES) return 'skipped: no fx-rates.json';
+  const cfg = { balance: 1000, riskPct: 1, currency: 'GBP' };      // 1R = £10
+  const cases = [
+    { pair: 'EUR/USD', entry: 1.10000, sl: 1.09800, tp1: 1.10240, tp2: 1.10400, tp3: 1.10700 },
+    { pair: 'USD/JPY', entry: 157.00,  sl: 156.50,  tp1: 157.60,  tp2: 158.00,  tp3: 158.75  },
+    { pair: 'XAU/USD', entry: 4160,    sl: 4130,    tp1: 4196,    tp2: 4220,    tp3: 4265    },
+    { pair: 'USD/CAD', entry: 1.42000, sl: 1.41500, tp1: 1.42600, tp2: 1.43000, tp3: 1.43750 },
+    { pair: 'BTC/USD', entry: 84000,   sl: 83000,   tp1: 85200,   tp2: 86000,   tp3: 87500   },
+  ];
+  for (const c of cases) {
+    const r = CALC.calcSignal(c, cfg, RATES);
+    if (!r) return `${c.pair} produced no result`;
+    // The whole chain must close: units x price-risk x rate == the risked amount.
+    const realised = r.units * r.priceRisk * r.rate;
+    if (Math.abs(realised - r.riskAmount) > 1e-6) {
+      return `${c.pair}: a stop-out works out to ${realised.toFixed(6)} but ${r.riskAmount} was risked`;
+    }
+    if (Math.abs(r.worst.money + r.riskAmount) > 1e-6) return `${c.pair}: worst case is not −1R`;
+  }
+  return true;
+});
+
+t('calculator: USD/JPY is settled in YEN, not dollars', () => {
+  if (!RATES) return 'skipped: no fx-rates.json';
+  if (CALC.quoteOf(RATES, 'USD/JPY') !== 'JPY') return 'USD/JPY quote currency is wrong';
+  if (CALC.quoteOf(RATES, 'EUR/USD') !== 'USD') return 'EUR/USD quote currency is wrong';
+  if (CALC.quoteOf(RATES, 'USD/CHF') !== 'CHF') return 'USD/CHF quote currency is wrong';
+  // Treating yen as the account currency is ~200x wrong; make sure the rate is tiny.
+  const jpy = CALC.rate(RATES, 'JPY', 'GBP');
+  if (!(jpy > 0 && jpy < 0.02)) return `JPY→GBP rate is ${jpy}, which cannot be right`;
+  return true;
+});
+
+t('calculator: the ladder outcomes match the engine invariants', () => {
+  if (!RATES) return 'skipped: no fx-rates.json';
+  const r = CALC.calcSignal({ pair: 'EUR/USD', entry: 1.1, sl: 1.098, tp1: 1.1024, tp2: 1.104, tp3: 1.107 },
+                            { balance: 1000, riskPct: 1, currency: 'GBP' }, RATES);
+  const full = r.outcomes[r.outcomes.length - 1];
+  if (Math.abs(full.r - 2.2333) > 0.01) return `full run is ${full.r}R, engine invariant says +2.233R`;
+  if (r.outcomes[0].r !== -1) return `full stop-out is ${r.outcomes[0].r}R, must be exactly -1`;
+  // The partial outcomes must sit between the two extremes.
+  for (const o of r.outcomes) {
+    if (o.r < -1 || o.r > full.r + 1e-9) return `outcome "${o.name}" at ${o.r}R is outside the possible range`;
+  }
+  return true;
+});
+
+t('calculator: risk scales linearly and never silently exceeds the stated percent', () => {
+  if (!RATES) return 'skipped: no fx-rates.json';
+  const sig = { pair: 'GBP/USD', entry: 1.32, sl: 1.315, tp1: 1.326, tp2: 1.33, tp3: 1.3375 };
+  const a = CALC.calcSignal(sig, { balance: 1000, riskPct: 1, currency: 'GBP' }, RATES);
+  const b = CALC.calcSignal(sig, { balance: 2000, riskPct: 1, currency: 'GBP' }, RATES);
+  const c = CALC.calcSignal(sig, { balance: 1000, riskPct: 2, currency: 'GBP' }, RATES);
+  if (Math.abs(b.riskAmount - 2 * a.riskAmount) > 1e-9) return 'doubling the balance did not double the risk';
+  if (Math.abs(c.riskAmount - 2 * a.riskAmount) > 1e-9) return 'doubling the percent did not double the risk';
+  if (Math.abs(b.units - 2 * a.units) > 1e-6) return 'position size did not scale with balance';
+  if (a.riskAmount !== 10) return `1% of 1000 should risk exactly 10, got ${a.riskAmount}`;
+  return true;
+});
+
+t('calculator: a missing rate refuses rather than guessing', () => {
+  const noRates = { toAccount: { GBP: {} }, quoteOf: { 'USD/JPY': 'JPY' } };
+  const r = CALC.calcSignal({ pair: 'USD/JPY', entry: 157, sl: 156.5, tp1: 157.6 },
+                            { balance: 1000, riskPct: 1, currency: 'GBP' }, noRates);
+  if (r && r.rateKnown) return 'it claimed to know a rate it does not have';
+  if (r && r.units != null) return 'it produced a position size with no conversion rate';
+  return true;
+});
+
+t('calculator: the typed forms all resolve, and nonsense does not', () => {
+  const ctx = { balance: 5000, riskPct: 2, currency: 'GBP' };
+  const want = ['2% of 5000', '3R', '8 losses in a row', 'lose 8 in a row',
+                'recover from 20%', '20% drawdown', 'size with a 20 pip stop', '45% win 1.5 payoff'];
+  for (const q of want) {
+    const r = CALC.calcDynamic(q, ctx);
+    if (!r) return `"${q}" was not understood`;
+    if (!r.value || !Array.isArray(r.work) || !r.work.length) return `"${q}" produced no worked answer`;
+  }
+  for (const q of ['banana sandwich', '', 'hello there']) {
+    if (CALC.calcDynamic(q, ctx)) return `"${q}" was answered when it should not have been`;
+  }
+  // hand-checked: 5000 x 0.98^8 = 4253.81
+  const streak = CALC.calcDynamic('8 losses in a row', ctx);
+  const n = parseFloat(String(streak.value).replace(/[^\d.]/g, ''));
+  if (Math.abs(n - 5000 * Math.pow(0.98, 8)) > 1) return `8-loss streak gave ${n}, expected ${(5000 * Math.pow(0.98, 8)).toFixed(2)}`;
   return true;
 });
 

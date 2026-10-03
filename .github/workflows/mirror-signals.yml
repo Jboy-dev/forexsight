@@ -245,6 +245,13 @@ jobs:
         run: node tools/build-ledger.mjs
         continue-on-error: true
 
+      # Conversion rates for the money figures. P&L lands in each instrument's
+      # quote currency; without these a USD/JPY result shown as pounds is out by
+      # a factor of about 200.
+      - name: Build FX rates
+        run: node tools/build-rates.mjs
+        continue-on-error: true
+
       - name: Backfill attribution
         run: node tools/backfill-attribution.mjs
 

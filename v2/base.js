@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -305,6 +305,8 @@ function card(s) {
           : 'This ladder does not pay more than it risks on a full run. It should not have been published.'}</p>
       </div></details>
 
+      ${moneyBlock(s)}
+
       <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>Costs, news and the modelled outcome</summary><div class="fold-in">
         <dl class="kv">
           ${cost.spreadPips != null ? `<dt>Spread</dt><dd>${esc(cost.spreadPips)} pips (${esc(cost.spreadAsPctOfRisk ?? '?')}% of risk)</dd>` : ''}
@@ -432,6 +434,120 @@ function histRow(x) {
 
 
 
+
+/* ─────────── what this signal is worth, in your money ───────────
+   Shown on every card, not hidden behind a fold, because "how much do I make
+   and how much do I lose" is the first question and should not need a click.
+   ----------------------------------------------------------------------- */
+function moneyBlock(sig) {
+  if (!window.FSCALC) return '';
+  const cfg = S.cfg || {};
+  const C = window.FSCALC;
+  const r = C.calcSignal(sig, cfg, S.fxRates);
+  if (!r) return '';
+  const M = (v) => C.money(v, r.currency);
+
+  if (!r.rateKnown) {
+    return `<div class="mny"><div class="mny-k">Your money</div>
+      <p class="mny-warn">This pair settles in ${esc(r.quote)}, and I have no ${esc(r.quote)}→${esc(r.currency)} rate right now, so I will not show you a converted figure. It would be a guess.</p></div>`;
+  }
+
+  const best = r.best, worst = r.worst;
+  return `<div class="mny">
+    <div class="mny-k">Your money &middot; ${esc(r.riskPct)}% of ${esc(Number(r.balance).toLocaleString())} ${esc(r.currency)}</div>
+    <div class="mny-two">
+      <div class="mny-win"><span>if it runs to TP3</span><b>${esc(M(best.money))}</b></div>
+      <div class="mny-lose"><span>if the stop is hit</span><b>${esc(M(worst.money))}</b></div>
+    </div>
+    <details class="fold mny-fold" ${cfg.expand ? 'open' : ''}><summary>Every outcome, and the size behind it</summary>
+      <div class="fold-in">
+        <table class="kb-t"><tr><th>what happens</th><th>R</th><th>${esc(r.currency)}</th></tr>
+        ${r.outcomes.map(o => `<tr><td>${esc(o.name)}<br><i class="mny-d">${esc(o.detail)}</i></td>
+          <td>${esc(o.r >= 0 ? '+' : '')}${esc(o.r)}</td>
+          <td class="${o.money >= 0 ? 'pos' : 'neg'}">${esc(M(o.money))}</td></tr>`).join('')}
+        </table>
+        <dl class="kv">
+          <dt>Risking</dt><dd>${esc(M(r.riskAmount))} (1R)</dd>
+          <dt>Stop distance</dt><dd>${esc(r.priceRisk.toPrecision(4))} ${esc(r.quote)}</dd>
+          <dt>Position size</dt><dd>${esc(r.units.toLocaleString(undefined, { maximumFractionDigits: r.units < 10 ? 4 : 1 }))} units</dd>
+          <dt>Settles in</dt><dd>${esc(r.quote)}, converted at ${esc(r.rate.toPrecision(5))}</dd>
+        </dl>
+        <p style="margin-top:9px">These amounts are exact arithmetic from your balance and this setup's own levels. Which outcome happens is not something I can tell you — the middle rows are the realistic ones, not the bottom.</p>
+      </div></details>
+  </div>`;
+}
+
+/* ───────────────────── the calculator pane ───────────────────── */
+function renderCalc() {
+  const box = el('calc');
+  if (!box || !window.FSCALC) return;
+  const C = window.FSCALC, cfg = S.cfg || {};
+  const ctx = { balance: +cfg.balance, riskPct: +cfg.riskPct, currency: cfg.currency };
+  const M = (v) => C.money(v, ctx.currency);
+  const perR = ctx.balance * ctx.riskPct / 100;
+
+  const sigs = (S.latestSignals && S.latestSignals.signals) || [];
+  const rows = sigs.map(sg => {
+    const r = C.calcSignal(sg, cfg, S.fxRates);
+    if (!r) return '';
+    return `<tr><td>${esc(pick(sg, 'pair'))} ${esc(String(pick(sg, 'direction') || '').toUpperCase())}</td>
+      <td class="pos">${esc(M(r.best.money))}</td>
+      <td class="neg">${esc(M(r.worst.money))}</td>
+      <td>${esc(M(r.outcomes[1] ? r.outcomes[1].money : null))}</td></tr>`;
+  }).join('');
+
+  box.innerHTML = `
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:26px">
+        <div class="rec-i"><div class="k">Account</div><div class="v">${esc(C.SYM[ctx.currency] || '')}${esc(Number(ctx.balance).toLocaleString())}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">type <code>balance 5000</code></div></div>
+        <div class="rec-i"><div class="k">Risk per trade</div><div class="v">${esc(ctx.riskPct)}%</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">type <code>risk 2%</code></div></div>
+        <div class="rec-i"><div class="k">That is your 1R</div><div class="v" style="color:var(--accent)">${esc(M(perR))}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">what one stop-out costs</div></div>
+      </div>
+    </div>
+
+    <div class="cmd" style="margin-top:14px">
+      <form id="calc-form" autocomplete="off">
+        <span class="cmd-caret">=</span>
+        <input id="calc-in" type="text" spellcheck="false" placeholder="type a calculation — 2% of 5000 · 3R · 8 losses in a row · recover from 20% · size with a 20 pip stop" aria-label="Calculate">
+        <button type="submit" class="cmd-go">Work it out</button>
+      </form>
+      <div id="calc-out"></div>
+    </div>
+
+    ${rows ? `<h2 class="sec">Every live signal, in ${esc(ctx.currency)}</h2>
+    <div class="record" style="margin-top:0">
+      <table class="kb-t"><tr><th>signal</th><th>runs to TP3</th><th>stopped out</th><th>TP1 then flat</th></tr>${rows}</table>
+      <div class="rec-note">At ${esc(ctx.riskPct)}% of ${esc(M(ctx.balance))}, every stop-out costs the same ${esc(M(perR))} — that is the point of sizing from the stop. What differs is the upside.</div>
+    </div>` : `<div class="empty" style="margin-top:14px"><strong>No live signals to price</strong>The calculator above still works on any numbers you type.</div>`}
+
+    <h2 class="sec">What you can type</h2>
+    <div class="record" style="margin-top:0"><ul class="kb-l">
+      ${C.RULES.map(r => `<li><code>${esc(r.help.split('—')[0].trim())}</code> — ${esc(r.help.split('—')[1] || '')}</li>`).join('')}
+    </ul></div>`;
+
+  const form = el('calc-form'), input = el('calc-in');
+  if (form) form.addEventListener('submit', (e) => { e.preventDefault(); runCalc(input.value, ctx); });
+  if (input) input.addEventListener('input', () => runCalc(input.value, ctx));
+}
+
+function runCalc(text, ctx) {
+  const out = el('calc-out'); if (!out) return;
+  if (!String(text || '').trim()) { out.innerHTML = ''; return; }
+  const r = window.FSCALC.calcDynamic(text, ctx);
+  if (!r) {
+    out.innerHTML = `<pre class="cmd-msg bad">I cannot work that one out. Try one of the forms listed below — or ask Research for the arithmetic behind it.</pre>`;
+    return;
+  }
+  out.innerHTML = `<div class="calc-ans">
+    <div class="calc-t">${esc(r.title)}</div>
+    <div class="calc-v">${esc(r.value)}</div>
+    <ol class="calc-w">${r.work.map(w => `<li>${esc(w)}</li>`).join('')}</ol>
+  </div>`;
+}
+
 /* ─────────────────────────── tabs ───────────────────────────
    Four panes instead of one long scroll. The active pane is part of the
    persisted config, so it survives a reload and a reopen — and it is an order
@@ -441,7 +557,7 @@ function histRow(x) {
    mean re-rendering on every switch and would throw away the open/closed state
    of every <details> inside — which is the same mistake the old base made.
    ----------------------------------------------------------------------- */
-const PANES = ['signals', 'market', 'ledger', 'tested'];
+const PANES = ['signals', 'market', 'calc', 'ledger', 'tested'];
 
 function applyTab() {
   const want = PANES.includes(S.cfg && S.cfg.tab) ? S.cfg.tab : 'signals';
@@ -910,7 +1026,7 @@ function renderChrome() {
 function render() {
   const steps = [
     ['command', renderCommand], ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
-    ['record', renderRecord], ['ledger', renderLedger], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts],
+    ['record', renderRecord], ['ledger', renderLedger], ['calc', renderCalc], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts],
   ];
   for (const [name, fn] of steps) {
     // One failing panel must not blank the page — the old base learned this the
