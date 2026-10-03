@@ -35,6 +35,8 @@ const FS_DEFAULTS = {
   riskPct: 1,           // percent of balance risked per trade
   currency: 'GBP',      // account currency
   perSignal: {},        // per-signal balance overrides, keyed by signal
+  tabOrder: null,       // user-dragged tab order
+  segOrder: {},         // user-dragged section order, per pane
   alerts: false,        // notify when a NEW signal passes the standing orders
   alertMinConf: null,   // optional extra bar that applies to alerts only
 };

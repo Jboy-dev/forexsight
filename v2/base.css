@@ -916,3 +916,37 @@ a, button, summary, .lvl.copyable, .tab, .cmd-chip, .rs-chip, .c-chart { touch-a
   .card, .tile, .voice, .record { animation: none !important; }
   * { transition-duration: 0.01ms !important; }
 }
+
+/* ─────────────────── drag to rearrange ─────────────────── */
+.seg { position: relative; }
+.seg-grip {
+  display: inline-flex; align-items: center; justify-content: center;
+  cursor: grab; color: var(--text-faint); font-size: 13px; line-height: 1;
+  margin-right: 9px; padding: 4px 3px; border-radius: 4px;
+  letter-spacing: -2px; user-select: none; -webkit-user-select: none;
+  transition: color .14s ease, background .14s ease;
+}
+.seg-grip:hover { color: var(--accent); background: var(--accent-soft); }
+.seg-grip:active { cursor: grabbing; }
+h2.sec { cursor: grab; }
+h2.sec:active { cursor: grabbing; }
+
+.ro-dragging { cursor: grabbing; }
+.ro-dragging * { user-select: none !important; -webkit-user-select: none !important; }
+.ro-item-drag {
+  opacity: .92;
+  box-shadow: 0 2px 10px #0008, 0 30px 70px -18px #000e !important;
+  transform: scale(1.012);
+  border-radius: var(--r) !important;
+  transition: none !important;
+}
+.ro-placeholder {
+  border: 1px dashed #6b8cff55; border-radius: var(--r);
+  background: var(--accent-soft); margin: 0 0 var(--gap);
+}
+.tabs-in .ro-placeholder { margin: 0; border-radius: 6px; }
+
+/* the grip needs to be a real target on a phone */
+@media (pointer: coarse) {
+  .seg-grip { padding: 10px 8px; margin-right: 6px; font-size: 15px; }
+}

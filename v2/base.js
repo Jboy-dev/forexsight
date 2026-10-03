@@ -827,6 +827,63 @@ function runCalc(text, ctx) {
   armCalcDismiss();
 }
 
+
+/* ─────────────────── drag to rearrange ───────────────────
+   Tabs reorder along the bar; sections reorder within their pane. Both persist.
+   Bound once: the panes are shown and hidden rather than rebuilt, so the
+   handlers survive — and renderCards() only ever replaces the INSIDE of a
+   segment, never the segment itself, so the drag targets are stable.
+   ----------------------------------------------------------------------- */
+function installReorder() {
+  if (window._fsRoInstalled || !window.FSREORDER) return;
+  window._fsRoInstalled = true;
+
+  const tabsIn = document.getElementById('tabs-in');
+  if (tabsIn) {
+    window.FSREORDER.make(tabsIn, {
+      itemSelector: '.tab',
+      axis: 'x',
+      onSave: (ids) => {
+        S.cfg.tabOrder = ids;
+        if (window.FS) window.FS.save(S.cfg);
+        S.lastMsg = { ok: true, msg: 'Tab order saved: ' + ids.join(' · ') };
+        render();
+      },
+    });
+  }
+
+  for (const segs of document.querySelectorAll('.segs')) {
+    const pane = segs.dataset.segs;
+    window.FSREORDER.make(segs, {
+      itemSelector: '.seg',
+      handleSelector: '.seg-grip, h2.sec',   // drag by the heading, not the content
+      axis: 'y',
+      onSave: (ids) => {
+        S.cfg.segOrder = S.cfg.segOrder || {};
+        S.cfg.segOrder[pane] = ids;
+        if (window.FS) window.FS.save(S.cfg);
+        S.lastMsg = { ok: true, msg: `Layout saved for ${pane}: ` + ids.join(' · ') };
+        render();
+      },
+    });
+  }
+}
+
+/** Re-applies saved orders. Safe to call on every render — appendChild of an
+    element already in position is a no-op, so this does not thrash layout. */
+function applySavedOrder() {
+  if (!window.FSREORDER) return;
+  const tabsIn = document.getElementById('tabs-in');
+  if (tabsIn && Array.isArray(S.cfg && S.cfg.tabOrder)) {
+    window.FSREORDER.apply(tabsIn, '.tab', S.cfg.tabOrder);
+  }
+  const so = (S.cfg && S.cfg.segOrder) || {};
+  for (const segs of document.querySelectorAll('.segs')) {
+    const order = so[segs.dataset.segs];
+    if (Array.isArray(order)) window.FSREORDER.apply(segs, '.seg', order);
+  }
+}
+
 /* ─────────────────────────── tabs ───────────────────────────
    Four panes instead of one long scroll. The active pane is part of the
    persisted config, so it survives a reload and a reopen — and it is an order
@@ -856,6 +913,8 @@ function installTabs() {
   document.addEventListener('click', (e) => {
     const b = e.target.closest('.tab');
     if (!b) return;
+    // A click synthesised at the end of a drag must not also switch pane.
+    if (document.querySelector('.ro-dragging')) return;
     S.cfg.tab = b.dataset.tab;
     if (window.FS) window.FS.save(S.cfg);
     applyTab();
@@ -1336,7 +1395,7 @@ function renderChrome() {
 function render() {
   const steps = [
     ['command', renderCommand], ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
-    ['record', renderRecord], ['ledger', renderLedger], ['calc', renderCalc], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts],
+    ['record', renderRecord], ['ledger', renderLedger], ['calc', renderCalc], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts], ['order', applySavedOrder],
   ];
   for (const [name, fn] of steps) {
     // One failing panel must not blank the page — the old base learned this the
@@ -1357,6 +1416,7 @@ function bootConfig() {
   installSignalBalance();
   installUpdates();
   installChart();
+  installReorder();
   installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
 
 async function cycle() {

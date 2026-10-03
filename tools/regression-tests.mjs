@@ -789,5 +789,64 @@ t('the chart is cached and prefetched, so opening it does not wait on the networ
   return true;
 });
 
+/* ── Drag to rearrange. The failure that matters is not "drag does not work" —
+   it is a drag implementation that eats ordinary taps, or one built on an API
+   that silently does nothing on a phone. ──────────────────────────────── */
+/** Strips comments and strings so a test examines CODE, not prose. The first
+    version of the check below matched the words "after the drop" in a comment
+    and failed a file that was entirely correct. */
+const codeOnly = (src) => src
+  .replace(/\/\*[\s\S]*?\*\//g, ' ')
+  .replace(/(^|[^:])\/\/.*$/gm, '$1 ')
+  .replace(/'[^'\n]*'|"[^"\n]*"|`[^`]*`/g, "''");
+
+t('reorder uses pointer events, not HTML5 drag-and-drop', () => {
+  const js = codeOnly(readFileSync('v2/reorder.js', 'utf8'));
+  if (/addEventListener\(\s*'?(dragstart|dragover|dragend|drop)|draggable\s*=/.test(js)) {
+    return 'HTML5 drag-and-drop is in use — it does not fire on iOS at all, so this would work on '
+         + 'a desktop and silently do nothing on the phone, which is where it is most wanted';
+  }
+  const raw = readFileSync('v2/reorder.js', 'utf8');
+  if (!/pointerdown/.test(raw) || !/pointermove/.test(raw)) return 'no pointer handlers';
+  return true;
+});
+
+t('a press is not a drag until it passes a threshold, so taps still work', () => {
+  const js = readFileSync('v2/reorder.js', 'utf8');
+  if (!/RO_THRESHOLD/.test(js)) return 'no movement threshold — every tap would start a drag';
+  if (!/other > moved/.test(js)) return 'cross-axis movement is not treated as a scroll, so scrolling would be hijacked';
+  const base = readFileSync('v2/base.js', 'utf8');
+  if (!/ro-dragging.*\)\s*return|querySelector\('\.ro-dragging'\)/.test(base)) {
+    return 'a click synthesised at the end of a drag is not suppressed — dropping a tab would also switch pane';
+  }
+  return true;
+});
+
+t('every tab and section carries a stable id, and the order is persisted', () => {
+  for (const shell of ['index.html', 'v2/index.html']) {
+    const html = readFileSync(shell, 'utf8');
+    const ids = [...html.matchAll(/data-roid="([^"]+)"/g)].map(m => m[1]);
+    if (ids.length < 10) return `${shell} has only ${ids.length} draggable ids`;
+    // Tabs and panes must line up, or a reordered tab would point at nothing.
+    const tabs = [...html.matchAll(/data-tab="([^"]+)"/g)].map(m => m[1]);
+    const panes = [...html.matchAll(/data-pane="([^"]+)"/g)].map(m => m[1]);
+    for (const t2 of tabs) if (!panes.includes(t2)) return `${shell}: tab "${t2}" has no matching pane`;
+    for (const p2 of panes) if (!tabs.includes(p2)) return `${shell}: pane "${p2}" has no tab`;
+  }
+  const cmd = readFileSync('v2/commands.js', 'utf8');
+  if (!/tabOrder/.test(cmd) || !/segOrder/.test(cmd)) return 'the order is not in the persisted defaults, so it would not survive a reload';
+  return true;
+});
+
+t('an unknown section is kept, not dropped, when a saved order is applied', () => {
+  const js = readFileSync('v2/reorder.js', 'utf8');
+  // Adding a new section later must not make it vanish for anyone with a saved order.
+  if (!/if \(!order\.includes\(it\.dataset\.roid\)\)/.test(js)) {
+    return 'applyOrder drops items the saved order does not mention — a newly added section '
+         + 'would disappear for every existing user';
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
