@@ -30,6 +30,8 @@ const FS_DEFAULTS = {
   expand: false,        // open every collapsible section
   density: 'normal',    // normal | compact
   newsStrict: false,    // hide anything whose news verdict is not 'clear'
+  alerts: false,        // notify when a NEW signal passes the standing orders
+  alertMinConf: null,   // optional extra bar that applies to alerts only
 };
 
 const FS_STORE = 'fs.orders.v1';
@@ -184,6 +186,29 @@ const FS_COMMANDS = [
     run(cfg) { cfg.density = 'normal'; return 'Normal spacing.'; },
   },
   {
+    name: 'alerts', aliases: ['alert', 'notify', 'notifications', 'ping'],
+    help: 'alerts on · alerts off · alerts 80 — notify me when a new setup passes my orders',
+    run(cfg, rest) {
+      const r = rest.trim().toLowerCase();
+      const n = fsNum(r);
+      if (/off|stop|no|none|disable/.test(r)) { cfg.alerts = false; return 'Alerts off.'; }
+      if (n !== null) {
+        cfg.alerts = true; cfg.alertMinConf = n;
+        return `Alerts on for new setups scored ${n} or better that also pass your other orders.`
+             + (typeof Notification !== 'undefined' && Notification.permission !== 'granted'
+                ? ' Your browser will ask permission.' : '');
+      }
+      if (/on|yes|enable|/.test(r)) {
+        cfg.alerts = true;
+        return 'Alerts on. You will be told when a NEW setup passes your standing orders —'
+             + ' the same filters you see, so an alert always matches what is on screen.'
+             + (typeof Notification !== 'undefined' && Notification.permission !== 'granted'
+                ? ' Your browser will ask permission.' : '');
+      }
+      return null;
+    },
+  },
+  {
     name: 'reset', aliases: ['clear', 'default', 'everything', 'all'],
     help: 'reset — forget every order and show everything again',
     run(cfg) { Object.assign(cfg, FS_DEFAULTS); return 'Cleared every order. Showing everything.'; },
@@ -255,6 +280,7 @@ function fsActiveChips(cfg) {
   if (cfg.sort !== 'newest')  out.push(['by ' + cfg.sort, 'sort']);
   if (cfg.expand)             out.push(['expanded', 'expand']);
   if (cfg.density !== 'normal') out.push([cfg.density, 'density']);
+  if (cfg.alerts) out.push(['alerts' + (cfg.alertMinConf != null ? ' ≥ ' + cfg.alertMinConf : ''), 'alerts']);
   return out;
 }
 

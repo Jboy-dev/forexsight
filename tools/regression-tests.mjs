@@ -278,5 +278,54 @@ t('ensure-signals never republishes a feed older than the one it replaces, when 
   return true;
 });
 
+t('alerts respect the same filters the page shows', () => {
+  const cfg = { ...FS.DEFAULTS };
+  FS.run('alerts on', cfg);
+  if (!cfg.alerts) return 'the alerts order did not take';
+  FS.run('only buy', cfg);
+  const shown = FS.apply(SIGS, cfg, RD).map(x => x.pair);
+  if (shown.length !== 3) return 'alerts path does not reuse the same filter as the page';
+  FS.run('alerts off', cfg);
+  if (cfg.alerts) return 'alerts off did not take';
+  return true;
+});
+
+t('tap-to-copy is bound on document, not on cards that get replaced', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (!/document\.addEventListener\('click'/.test(js)) return 'copy is not delegated from document';
+  if (/\.lvl\.copyable'\)\.forEach\(.*addEventListener/.test(js)) {
+    return 'listeners are attached per-card — renderCards replaces innerHTML, so they die every cycle';
+  }
+  if (!/_fsCopyInstalled/.test(js)) return 'no install guard — listeners would stack on every render';
+  return true;
+});
+
+t('every level on a card is copyable, entry included', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  for (const k of ["'Entry'", "'Stop'", "'TP1'", "'TP2'", "'TP3'"]) {
+    if (!js.includes(`lvl(${k}`)) return `${k} is not rendered as a level, so it cannot be copied`;
+  }
+  if (!/data-copy=/.test(js)) return 'levels carry no data-copy attribute';
+  return true;
+});
+
+t('the intraday search excludes session filters, per the artefact finding', () => {
+  const src = readFileSync('tools/strategy-trials.mjs', 'utf8');
+  if (/'session'|hourOfDay|getUTCHours/.test(src)) {
+    return 'a session or hour-of-day filter is present — the triangular control found '
+         + 'systematic residual structure at 4 hours, so any such result is a feed artefact';
+  }
+  return true;
+});
+
+t('intraday verification ran and its spread-artefact control is recorded', () => {
+  if (!existsSync('data/intraday-verification.json')) return 'skipped: no verification file';
+  const v = JSON.parse(readFileSync('data/intraday-verification.json', 'utf8'));
+  if (!v.checks || !v.checks.spreadArtefact) return 'the spread-artefact control is missing from the report';
+  const a = v.checks.spreadArtefact;
+  if (!Array.isArray(a.rows) || a.rows.length !== 24) return 'the hour-of-day residual table is incomplete';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

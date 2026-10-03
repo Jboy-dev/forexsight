@@ -374,3 +374,109 @@ body[data-density="compact"] .cards { grid-template-columns: repeat(auto-fill, m
 }
 .copy-tip.show { opacity: 1; transform: translate(-50%, 0); }
 .copy-tip.bad { border-color: var(--warn); }
+
+/* five levels across: entry, stop and all three targets, each tap-to-copy */
+.c-levels.five { grid-template-columns: repeat(5, 1fr); }
+.c-levels.five .lvl { padding: 11px 4px; }
+.c-levels.five .lvl-v { font-size: 11.5px; letter-spacing: -.03em; }
+.c-levels.five .lvl-k { font-size: 8.5px; }
+@media (max-width: 460px) {
+  .c-levels.five { grid-template-columns: repeat(3, 1fr); }
+  .c-levels.five .lvl:nth-child(1), .c-levels.five .lvl:nth-child(2) { border-bottom: 1px solid var(--line-soft); }
+  .c-levels.five .lvl:nth-child(2) { grid-column: span 2; }
+  .c-levels.five .lvl-v { font-size: 13px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   PREMIUM PASS
+   Depth, hierarchy and restraint rather than more colour. Everything here is
+   additive, so if a rule is dropped the layout still holds — and nothing
+   animates on a loop, because a page that never settles reads as cheap and
+   was the original glitch complaint.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --glass: linear-gradient(160deg, #161d33cc, #0f1526e8);
+  --hair:  linear-gradient(90deg, transparent, #2b3a5e, transparent);
+}
+
+body {
+  background:
+    radial-gradient(1200px 620px at 10% -12%, #19244422 0%, transparent 60%),
+    radial-gradient(1000px 520px at 95% 0%,  #1d183a22 0%, transparent 56%),
+    radial-gradient(760px 420px at 50% 108%, #10203a1a 0%, transparent 60%),
+    var(--ink);
+}
+
+/* refined typography */
+.voice-head { font-weight: 620; letter-spacing: -.028em; }
+.c-pair, .rec-i .v, .tile-v { font-feature-settings: 'tnum' 1, 'cv01' 1; }
+.lvl-v, .h-r, .rec-i .v, .vr-v { font-variant-numeric: tabular-nums; }
+
+/* cards: real depth, and a hairline that reads as craft */
+.card {
+  background: var(--glass);
+  border-color: #1d2742;
+  box-shadow: 0 1px 1px #0005, 0 10px 30px -14px #000b, inset 0 1px 0 #ffffff07;
+}
+.card:hover { box-shadow: 0 1px 1px #0006, 0 18px 44px -16px #000d, inset 0 1px 0 #ffffff0b; }
+.card.buy  { border-top-color: transparent; background-image: linear-gradient(var(--up), var(--up)), var(--glass); }
+.card.sell { border-top-color: transparent; background-image: linear-gradient(var(--down), var(--down)), var(--glass); }
+.card.buy, .card.sell { background-repeat: no-repeat; background-size: 100% 2px, auto; background-position: top left, center; }
+
+.c-head { position: relative; }
+.c-head::after { content: ''; position: absolute; left: var(--pad); right: var(--pad); bottom: 0; height: 1px; background: var(--hair); }
+
+/* direction badge: quieter, more deliberate */
+.c-dir { box-shadow: inset 0 1px 0 #ffffff12; letter-spacing: .12em; }
+
+/* levels read as a precision instrument */
+.c-levels { background: #080c1680; }
+.lvl-k { color: #5c6884; }
+.lvl-v { font-weight: 620; }
+
+/* the voice panel earns its place at the top */
+.voice { background: var(--glass); box-shadow: 0 1px 1px #0005, 0 20px 56px -22px #000c, inset 0 1px 0 #ffffff08; }
+.vr { background: #080c1670; box-shadow: inset 0 1px 0 #ffffff05; }
+
+/* tiles and record match the card language */
+.tile, .record, #cmd-form {
+  background: var(--glass);
+  box-shadow: 0 1px 1px #0005, 0 10px 28px -16px #000a, inset 0 1px 0 #ffffff06;
+}
+
+/* section rules: finer */
+h2.sec::after { background: var(--hair); }
+
+/* chips: less shouty, better aligned */
+.chip { box-shadow: inset 0 1px 0 #ffffff07; letter-spacing: .055em; }
+
+/* history rows gain the same depth */
+.hrow { background: var(--glass); box-shadow: 0 1px 1px #0004, inset 0 1px 0 #ffffff05; }
+
+/* header: a touch more presence */
+header.top { box-shadow: 0 1px 0 #ffffff06, 0 6px 24px -12px #000a; }
+.brand .ii { box-shadow: inset 0 1px 0 #ffffff14; }
+
+/* a single, one-shot entrance — it settles and then stops */
+@media (prefers-reduced-motion: no-preference) {
+  .card, .tile, .voice, .record { animation: rise .42s cubic-bezier(.22,.9,.3,1) both; }
+  .cards .card:nth-child(2) { animation-delay: .05s; }
+  .cards .card:nth-child(3) { animation-delay: .1s; }
+  .cards .card:nth-child(n+4) { animation-delay: .14s; }
+  @keyframes rise { from { opacity: 0; transform: translateY(7px); } to { opacity: 1; transform: none; } }
+}
+
+/* focus states worth having */
+:where(button, [role="button"], input, summary):focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 5px;
+}
+
+/* selection */
+::selection { background: #6b8cff35; color: var(--text); }
+
+/* scrollbar, where it is drawn by the page */
+* { scrollbar-width: thin; scrollbar-color: #2b3a5e transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: #223052; border-radius: 10px; border: 3px solid transparent; background-clip: content-box; }
+*::-webkit-scrollbar-thumb:hover { background: #2d3e68; background-clip: content-box; }

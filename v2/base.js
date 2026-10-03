@@ -281,10 +281,11 @@ function card(s) {
       </div>
       <span class="c-dir ${buy ? 'buy' : 'sell'}">${esc(dir || '?')}</span>
     </div>
-    <div class="c-levels">
+    <div class="c-levels five">
       ${lvl('Entry', entry, null, '')}
       ${lvl('Stop', sl, risk ? -1 : null, 'sl')}
       ${lvl('TP1', tp1, r1, 'tp')}
+      ${lvl('TP2', tp2, r2v, 'tp')}
       ${lvl('TP3', tp3, r3, 'tp')}
     </div>
     <div class="c-body">
@@ -529,6 +530,75 @@ function renderCommand() {
 }
 
 
+
+/* ───────────────────────── alerts ─────────────────────────
+   Notifies on a NEW setup that passes the SAME standing orders the page is
+   filtered by. That equivalence is the point: an alert you cannot reproduce on
+   screen is an alert you stop trusting. Signals already seen never re-fire, so
+   a two-minute refresh cycle does not become a two-minute alarm.
+   ----------------------------------------------------------------------- */
+const SEEN_KEY = 'fs.seen.v1';
+function loadSeen() {
+  try { const a = JSON.parse(localStorage.getItem(SEEN_KEY)); return new Set(Array.isArray(a) ? a : []); }
+  catch (_) { return new Set(); }
+}
+function saveSeen(set) {
+  // Keep the list bounded or it grows forever in storage.
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...set].slice(-400))); } catch (_) {}
+}
+function signalKey(s) {
+  return [pick(s, 'pair'), pick(s, 'direction'), pick(s, 'detectedAt') || '', num(pick(s, 'entry')) ?? ''].join('|');
+}
+
+async function maybeAlert() {
+  const cfg = S.cfg || {};
+  if (!cfg.alerts) return;
+  if (typeof Notification === 'undefined') return;
+
+  const all = (S.latestSignals && S.latestSignals.signals) || [];
+  let passing = window.FS ? window.FS.apply(all, cfg, READ) : all;
+  if (cfg.alertMinConf != null) {
+    passing = passing.filter(s => { const c = READ.conf(s); return c != null && c >= cfg.alertMinConf; });
+  }
+
+  const seen = loadSeen();
+  const fresh = passing.filter(s => !seen.has(signalKey(s)));
+
+  // First run after switching alerts on: record what is already there rather
+  // than firing a notification for every setup that was published hours ago.
+  if (!S.alertsPrimed) {
+    for (const s of all) seen.add(signalKey(s));
+    saveSeen(seen); S.alertsPrimed = true;
+    return;
+  }
+  if (!fresh.length) return;
+
+  if (Notification.permission === 'default') {
+    try { await Notification.requestPermission(); } catch (_) { return; }
+  }
+  if (Notification.permission !== 'granted') return;
+
+  for (const s of fresh.slice(0, 3)) {
+    const pair = pick(s, 'pair'), dir = String(pick(s, 'direction') || '').toUpperCase();
+    const r1 = READ.r1(s), conf = READ.conf(s);
+    const body = [
+      `Entry ${price(num(pick(s, 'entry')), pair)}`,
+      `Stop ${price(num(pick(s, 'sl')), pair)}`,
+      r1 != null ? `TP1 ${price(num(pick(s, 'tp1')), pair)} (${r1.toFixed(2)}R)` : null,
+      conf != null ? `confidence ${conf}` : null,
+    ].filter(Boolean).join(' · ');
+    try {
+      const n = new Notification(`${pair} ${dir}`, {
+        body, tag: signalKey(s), icon: '/icon-192.png', badge: '/icon-192.png',
+      });
+      n.onclick = () => { window.focus(); n.close(); };
+    } catch (_) { /* some browsers refuse outside a gesture; silence is correct */ }
+    seen.add(signalKey(s));
+  }
+  for (const s of all) seen.add(signalKey(s));
+  saveSeen(seen);
+}
+
 /* ─────────────────────── tap a level to copy it ───────────────────────
    Bound ONCE on document, not on the cards. renderCards() replaces innerHTML
    every cycle, so any listener attached to a card is destroyed two minutes
@@ -640,6 +710,7 @@ async function cycle() {
   bootConfig();
   try { await load(); } catch (e) { console.error('[base II] load failed', e); }
   render();
+  try { await maybeAlert(); } catch (e) { console.error('[base II] alert check failed', e); }
 }
 
 cycle();

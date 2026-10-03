@@ -32,12 +32,25 @@
  */
 import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 
-const DEEP = 'data/deep';
+// --tf=1h runs the search on the verified intraday foundation instead of daily
+// bars. This matters: the site signals on H1, so every daily-bar result so far
+// tested something the site does not do.
+const TF = (process.argv.find(a => a.startsWith('--tf=')) || '--tf=daily').slice(5);
+const DEEP = TF === 'daily' ? 'data/deep' : 'data/intraday';
+const SUFFIX = TF === 'daily' ? '.json' : `.${TF}.json`;
+const OUTFILE = TF === 'daily' ? 'data/strategy-trials.json' : `data/strategy-trials.${TF}.json`;
 const COST_R = 0.02;          // round-trip cost as a share of risk
 const MIN_TRADES = 40;        // below this a slice says nothing
 
+// NOTE ON FILTERS: tools/verify-intraday.mjs found systematic residual
+// structure at 02:00, 19:00, 21:00 and 22:00 UTC (worst t=5.55) in the
+// triangular control, which is the signature of bid-only data at the rollover.
+// So NO session or hour-of-day filter appears in this search. Any such result
+// on this data would be an artefact of the feed, not an effect in the market.
+
 // ── the managed ladder the site actually uses, so a result transfers ──────
 const SL_ATR = 1.5, TP1 = 1.2, TP2 = 2.0, TP3 = 3.5;
+const HOLD_CAP = TF === 'daily' ? 120 : 240;   // bars before a trade is closed out
 
 const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
@@ -119,7 +132,7 @@ function runTrade(d, i, dir) {
   const t1 = entry + sign * slDist * TP1, t2 = entry + sign * slDist * TP2, t3 = entry + sign * slDist * TP3;
 
   let banked = 0, left = 1, stop = sl, hit = 0;
-  for (let j = i + 1; j < Math.min(d.b.length, i + 1 + 120); j++) {
+  for (let j = i + 1; j < Math.min(d.b.length, i + 1 + HOLD_CAP); j++) {
     const bar = d.b[j];
     // stop is checked first: within one daily bar the adverse touch cannot be
     // ruled out, and assuming the favourable one came first is how a backtest
@@ -134,9 +147,9 @@ function runTrade(d, i, dir) {
     if (hit < 3 && reach(t3)) { banked += left * TP3;    left = 0;                           hit = 3;
       return { r: banked - COST_R, bars: j - i, hit }; }
   }
-  const last = d.b[Math.min(d.b.length - 1, i + 120)];
+  const last = d.b[Math.min(d.b.length - 1, i + HOLD_CAP)];
   banked += left * ((last.c - entry) * sign / slDist);
-  return { r: banked - COST_R, bars: 120, hit };
+  return { r: banked - COST_R, bars: HOLD_CAP, hit };
 }
 
 /** Non-overlapping: no new entry until the open one resolves. */
@@ -181,16 +194,16 @@ function randomNull(sets, lo, hi, nTrades, draws = 200) {
 /* ── load ───────────────────────────────────────────────────────────────── */
 if (!existsSync(DEEP)) { console.error('strategy-trials: no data/deep'); process.exit(1); }
 const sets = [];
-for (const f of readdirSync(DEEP).filter(x => x.endsWith('.json'))) {
+for (const f of readdirSync(DEEP).filter(x => x.endsWith(SUFFIX))) {
   const b = JSON.parse(readFileSync(`${DEEP}/${f}`, 'utf8'))
     .filter(x => x && [x.o, x.h, x.l, x.c].every(v => typeof v === 'number' && isFinite(v) && v > 0));
   if (b.length < 900) continue;
   const c = b.map(x => x.c);
-  sets.push({ pair: f.replace('.json', '').replace('-', '/'), b, c,
+  sets.push({ pair: f.replace(SUFFIX, '').replace('-', '/'), b, c,
               atr: atrSeries(b), rsi: rsi(c), ma20: sma(c, 20), ma50: sma(c, 50), ma200: sma(c, 200) });
 }
 const totalBars = sets.reduce((s, d) => s + d.b.length, 0);
-console.log(`strategy-trials: ${sets.length} instruments, ${totalBars.toLocaleString()} daily bars`);
+console.log(`strategy-trials [${TF}]: ${sets.length} instruments, ${totalBars.toLocaleString()} ${TF === 'daily' ? 'daily' : TF} bars`);
 console.log(`  split: train 0-50%, validate 50-75%, SEALED 75-100% (opened once, for survivors only)\n`);
 
 /* ── 1. TRAIN ───────────────────────────────────────────────────────────── */
@@ -277,6 +290,7 @@ const out = {
     : `Nothing cleared. ${trained.length} combinations tested, ${survivors.length} repeated on validation, `
       + `${sealed.length} reached the sealed set, 0 passed it. On this evidence no combination here earns a place in the signal path.`,
 };
-writeFileSync('data/strategy-trials.json', JSON.stringify(out, null, 2));
+out.timeframe = TF;
+writeFileSync(OUTFILE, JSON.stringify(out, null, 2));
 console.log(`\n  ${out.verdict}`);
-console.log(`\n  wrote data/strategy-trials.json`);
+console.log(`\n  wrote ${OUTFILE}`);
