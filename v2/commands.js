@@ -219,6 +219,14 @@ const FS_COMMANDS = [
     run() { if (typeof cycle === 'function') cycle(); return 'Pulling the feed again.'; },
   },
   {
+    name: 'research', aliases: ['ask', 'explain', 'why', 'learn', 'teach'],
+    help: 'research <question> — ask anything about this site or about trading',
+    run(cfg, rest) {
+      if (typeof openResearch === 'function') { openResearch(rest || ''); return 'Opening Research.'; }
+      return null;
+    },
+  },
+  {
     name: 'help', aliases: ['commands', 'orders', '?', 'what'],
     help: 'help — list everything you can tell it to do',
     run() {

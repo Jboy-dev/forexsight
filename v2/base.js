@@ -479,6 +479,80 @@ function renderTrials() {
     <p style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">${esc(t.method || '')}</p>`;
 }
 
+
+/* ─────────────────────── Research ───────────────────────
+   Ask anything about this site or about trading. Answers come from
+   v2/knowledge.js: measured ones are computed from the files already loaded
+   and carry their source; mechanical ones are true by construction. Anything
+   requiring a forecast is refused explicitly rather than invented.
+   ----------------------------------------------------------------------- */
+function openResearch(prefill) {
+  let el0 = document.getElementById('research');
+  if (!el0) {
+    el0 = document.createElement('div');
+    el0.id = 'research'; el0.className = 'rs';
+    el0.innerHTML = `
+      <div class="rs-back" data-close="1"></div>
+      <div class="rs-panel" role="dialog" aria-modal="true" aria-label="Research">
+        <div class="rs-top">
+          <input id="rs-q" type="text" spellcheck="false" placeholder="Ask anything — is this profitable? what is an R-multiple? why is this weak?" aria-label="Ask a question">
+          <button class="rs-x" data-close="1" aria-label="Close">&times;</button>
+        </div>
+        <div class="rs-body" id="rs-body"></div>
+      </div>`;
+    document.body.appendChild(el0);
+    el0.addEventListener('click', (e) => {
+      if (e.target.dataset.close) closeResearch();
+      const chip = e.target.closest('[data-topic]');
+      if (chip) { const q = document.getElementById('rs-q'); q.value = chip.dataset.topic; answerResearch(chip.dataset.topic); }
+    });
+    document.getElementById('rs-q').addEventListener('input', (e) => answerResearch(e.target.value));
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeResearch(); });
+  }
+  el0.classList.add('open');
+  const q = document.getElementById('rs-q');
+  q.value = prefill || '';
+  answerResearch(q.value);
+  setTimeout(() => q.focus(), 60);
+}
+function closeResearch() { const e = document.getElementById('research'); if (e) e.classList.remove('open'); }
+
+function answerResearch(query) {
+  const body = document.getElementById('rs-body');
+  if (!body || !window.FSKB) return;
+  const KB = window.FSKB;
+  const hits = KB.search(query);
+
+  if (!String(query || '').trim()) {
+    body.innerHTML = `<p class="rs-lead">Ask in your own words. Everything below is answered from this site's own measured data, or from arithmetic that is true by construction — never from a guess.</p>
+      <div class="rs-chips">${KB.TOPICS.map(t => `<button class="rs-chip" data-topic="${KB.esc(t.q)}">${KB.esc(t.q)}</button>`).join('')}</div>`;
+    return;
+  }
+  if (!hits.length) {
+    body.innerHTML = `<div class="rs-ans"><h3>I do not know that one</h3>
+      <p>I answer questions about this site and about trading mechanics. I will not guess at something outside that, because a confident wrong answer in a trading tool is worse than no answer.</p>
+      <p>Try one of these:</p>
+      <div class="rs-chips">${KB.TOPICS.slice(0, 8).map(t => `<button class="rs-chip" data-topic="${KB.esc(t.q)}">${KB.esc(t.q)}</button>`).join('')}</div></div>`;
+    return;
+  }
+  const top = hits[0];
+  let a;
+  try { a = top.answer(S); }
+  catch (e) { body.innerHTML = `<div class="rs-ans"><h3>That answer failed to build</h3><p>${KB.esc(e.message)}</p></div>`; return; }
+
+  const badge = top.kind === 'measured' ? 'measured from live data'
+              : top.kind === 'refusal' ? 'this is a refusal' : 'mechanical — true by construction';
+  body.innerHTML = `
+    <div class="rs-ans">
+      <div class="rs-kind rs-${KB.esc(top.kind)}">${KB.esc(badge)}</div>
+      <h3>${KB.esc(top.q)}</h3>
+      ${a.body}
+      <div class="rs-src">Source: ${KB.esc(a.source)}</div>
+    </div>
+    ${hits.length > 1 ? `<div class="rs-more"><span>Related</span>
+      <div class="rs-chips">${hits.slice(1, 5).map(t => `<button class="rs-chip" data-topic="${KB.esc(t.q)}">${KB.esc(t.q)}</button>`).join('')}</div></div>` : ''}`;
+}
+
 /* ─────────────────────── the order bar ───────────────────────
    One line you talk to. Rendered once like everything else; the input keeps
    its own value across re-renders because it is only written when absent.
@@ -665,6 +739,9 @@ function renderChrome() {
   const mins = ts ? (Date.now() - ts) / 60000 : Infinity;
   const pulse = el('pulse');
   pulse.className = 'dot ' + (mins < 90 ? 'live' : mins < 600 ? 'stale' : 'dead');
+
+  const rb = document.getElementById('research-btn');
+  if (rb && !rb._wired) { rb._wired = true; rb.addEventListener('click', () => openResearch('')); }
 
   el('meta').innerHTML = ts
     ? `feed ${esc(ago(ts))} · ${esc((feed.signals || []).length)} published${feed._src ? ` · ${esc(feed._src)}` : ''}`

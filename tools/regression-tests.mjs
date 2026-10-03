@@ -327,5 +327,94 @@ t('intraday verification ran and its spread-artefact control is recorded', () =>
   return true;
 });
 
+/* ── Research. The failure mode here is not a crash, it is a confident wrong
+   answer — which in a trading tool is worse than no answer at all. ──────── */
+function loadKB() {
+  const code = readFileSync('v2/knowledge.js', 'utf8');
+  const w = { FS: { COMMANDS: [{ help: 'only gold' }] } };
+  new Function('window', code)(w);
+  return w.FSKB;
+}
+const KB = loadKB();
+const KBS = {
+  learningBrain:  existsSync('data/learning-brain.json')  ? JSON.parse(readFileSync('data/learning-brain.json', 'utf8')) : null,
+  strategyTrials: existsSync('data/strategy-trials.json') ? JSON.parse(readFileSync('data/strategy-trials.json', 'utf8')) : null,
+  activeStrategy: existsSync('data/active-strategy.json') ? JSON.parse(readFileSync('data/active-strategy.json', 'utf8')) : null,
+  marketVoice:    existsSync('data/market-voice.json')    ? JSON.parse(readFileSync('data/market-voice.json', 'utf8')) : null,
+};
+
+t('research: every topic renders without undefined or NaN leaking out', () => {
+  for (const topic of KB.TOPICS) {
+    let a;
+    try { a = topic.answer(KBS); } catch (e) { return `${topic.id} threw: ${e.message}`; }
+    if (!a || typeof a.body !== 'string' || a.body.length < 120) return `${topic.id} produced no usable answer`;
+    if (/undefined|NaN|\[object Object\]/.test(a.body)) return `${topic.id} leaked undefined/NaN into the answer`;
+    if (!a.source) return `${topic.id} has no source attribution`;
+  }
+  return true;
+});
+
+t('research: off-topic questions return nothing rather than a wrong answer', () => {
+  for (const q of ['what is the weather in paris', 'who won the football', 'tell me a joke',
+                   'asdfghjkl', 'my cat is ill', 'book me a flight']) {
+    const r = KB.search(q);
+    if (r.length) return `"${q}" matched ${r[0].id} — a confident answer to a question it cannot answer`;
+  }
+  return true;
+});
+
+t('research: questions route to the right topic', () => {
+  const want = {
+    'is this website profitable': 'record', 'what is your win rate': 'record',
+    'what strategies have you tested': 'strategies', 'explain tp1 tp2 tp3': 'ladder',
+    'why is this signal weak': 'weak', 'what is an r multiple': 'r-multiple',
+    'why can a 70% win rate lose money': 'expectancy', 'how much should i risk per trade': 'sizing',
+    'what is adx': 'atr', 'how do i handle nfp': 'news',
+    'why do backtests look better than live': 'overfitting',
+  };
+  const misses = [];
+  for (const [q, id] of Object.entries(want)) {
+    const top = KB.search(q)[0];
+    if (!top || top.id !== id) misses.push(`"${q}" -> ${top ? top.id : 'none'} (wanted ${id})`);
+  }
+  return misses.length ? `${misses.length} misrouted: ${misses.join('; ')}` : true;
+});
+
+t('research: prediction questions are REFUSED, never answered', () => {
+  for (const q of ['will this trade win', 'should i buy gold', 'what should i trade today',
+                   'can you guarantee profit', 'will price go up']) {
+    const top = KB.search(q)[0];
+    if (!top) return `"${q}" matched nothing — it must reach the refusal, not fall through`;
+    if (top.kind !== 'refusal') return `"${q}" routed to ${top.id} (${top.kind}) instead of a refusal`;
+  }
+  return true;
+});
+
+t('research: no topic claims a guaranteed or predicted result', () => {
+  const banned = /\b(guarantee[ds]?|will win|sure thing|risk[- ]free|100% accurate|cannot lose|always profit)\b/i;
+  for (const topic of KB.TOPICS) {
+    const a = topic.answer(KBS);
+    // The refusal topic quotes these words in order to reject them.
+    if (topic.kind === 'refusal') continue;
+    if (banned.test(a.body.replace(/<[^>]+>/g, ' '))) return `${topic.id} contains a guarantee-style claim`;
+  }
+  return true;
+});
+
+t('the app icon set is complete, including a separate maskable', () => {
+  for (const f of ['icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png']) {
+    if (!existsSync(f)) return `${f} is missing`;
+  }
+  const m = JSON.parse(readFileSync('manifest.json', 'utf8'));
+  const purposes = (m.icons || []).map(i => i.purpose);
+  if (!purposes.includes('maskable')) return 'no maskable icon declared — Android will crop the mark itself';
+  if (!purposes.includes('any')) return 'no "any" purpose icon declared';
+  // A single icon serving both purposes gets cropped on Android; they must differ.
+  const mask = (m.icons || []).find(i => i.purpose === 'maskable');
+  const any = (m.icons || []).find(i => i.purpose === 'any' && i.sizes === '512x512');
+  if (mask && any && mask.src === any.src) return 'the maskable and standard icons are the same file — the mark will be cropped';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
