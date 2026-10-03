@@ -91,7 +91,16 @@ function chDraw() {
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   CH.dpr = dpr;
   const W = cv.clientWidth, H = cv.clientHeight;
-  cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+  const needW = Math.round(W * dpr), needH = Math.round(H * dpr);
+  // ONLY resize when the size actually changed.
+  //
+  // Assigning cv.width unconditionally re-allocated the backing store on every
+  // single redraw, and that RELEASES POINTER CAPTURE — which fires
+  // pointercancel, which aborted the gesture in progress. A pinch therefore
+  // died the moment the first frame rendered, so it worked in a tight loop with
+  // no frames and failed on a real phone where frames obviously do render.
+  // That is why the chart kept snapping back to where it started.
+  if (cv.width !== needW || cv.height !== needH) { cv.width = needW; cv.height = needH; }
   const g = cv.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, W, H);
@@ -383,6 +392,126 @@ function chInstallInteraction(cv) {
   const PAD_R = 72, PAD_L = 6;
   const plotW = () => Math.max(1, cv.clientWidth - PAD_R - PAD_L);
 
+  // ONE pointer state machine, not two listeners racing.
+  //
+  // The previous version had a pan handler and a pinch handler as separate
+  // listeners, both mutating the same variables. Whether a pinch registered
+  // depended on the order the two fired in, so the same gesture worked
+  // sometimes and did nothing other times — which on a phone looked like the
+  // chart ignoring you and snapping back. Everything below runs in one place
+  // and the mode is decided explicitly.
+  const live = new Map();              // pointerId -> {x, y}
+  let mode = null;                     // null | 'pan' | 'axis' | 'pinch'
+  let anchor = null;
+  let pointersThisGesture = 0;         // how many fingers took part in this gesture
+
+  const dist = () => {
+    const [a, b] = [...live.values()];
+    return Math.hypot(a.x - b.x, a.y - b.y);
+  };
+
+  cv.addEventListener('pointerdown', (e) => {
+    if (!CH.bars.length) return;
+    if (live.size === 0) pointersThisGesture = 0;       // a fresh gesture
+    live.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    pointersThisGesture = Math.max(pointersThisGesture, live.size);
+    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
+
+    if (live.size === 2) {
+      // Two fingers always means pinch, whatever was happening before.
+      mode = 'pinch';
+      anchor = { dist: dist() || 1, view: { ...CH.view } };
+      return;
+    }
+    if (live.size === 1) {
+      const r = cv.getBoundingClientRect();
+      const onAxis = (e.clientX - r.left) > cv.clientWidth - PAD_R;
+      mode = onAxis ? 'axis' : 'pan';
+      anchor = { x: e.clientX, y: e.clientY, view: { ...CH.view },
+                 yZoom: CH.yZoom, yCenter: CH.yCenter, moved: false };
+    }
+  });
+
+  cv.addEventListener('pointermove', (e) => {
+    if (live.has(e.pointerId)) live.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Crosshair follows a hovering pointer when nothing is being dragged.
+    if (!mode) {
+      const r = cv.getBoundingClientRect();
+      CH.hover = { x: e.clientX - r.left, y: e.clientY - r.top };
+      chRequestDraw();
+      return;
+    }
+
+    if (mode === 'pinch') {
+      if (live.size < 2) return;
+      e.preventDefault();
+      const factor = dist() / anchor.dist;
+      const w = anchor.view.to - anchor.view.from;
+      const nw = w / Math.max(0.05, factor);
+      const mid = (anchor.view.from + anchor.view.to) / 2;
+      CH.view = chClampView(mid - nw / 2, mid + nw / 2);
+      chSavePrefSoon();
+      chRequestDraw();
+      return;
+    }
+
+    const dx = e.clientX - anchor.x, dy = e.clientY - anchor.y;
+    if (!anchor.moved && Math.abs(dx) + Math.abs(dy) < 4) return;   // still a tap
+    anchor.moved = true;
+    e.preventDefault();
+
+    if (mode === 'axis') {
+      chSetYZoom(anchor.yZoom * (1 + dy / 220), null, null, anchor.yCenter);
+    } else {
+      const w = anchor.view.to - anchor.view.from;
+      const barsMoved = (dx / plotW()) * w;
+      CH.view = chClampView(anchor.view.from - barsMoved, anchor.view.to - barsMoved);
+      chSavePrefSoon();
+      chRequestDraw();
+    }
+  }, { passive: false });
+
+  let lastCleanTap = 0;
+  const release = (e) => {
+    live.delete(e.pointerId);
+    try { cv.releasePointerCapture(e.pointerId); } catch (_) {}
+    if (live.size === 0) {
+      if (mode) chSavePref();           // commit the final position immediately
+      // Decide the tap here, where the whole gesture is still known: one finger
+      // only, and nothing moved. Lifting two fingers off a pinch is NOT a tap,
+      // which is what used to throw the zoom away.
+      const cleanTap = e.pointerType === 'touch'
+        && pointersThisGesture === 1
+        && !(anchor && anchor.moved);
+      mode = null; anchor = null;
+      if (cleanTap) {
+        const now = Date.now();
+        if (now - lastCleanTap < 320) { lastCleanTap = 0; chResetView(); }
+        else lastCleanTap = now;
+      } else {
+        lastCleanTap = 0;               // a real gesture clears the tap clock
+      }
+      cv.style.cursor = '';
+      for (const b of document.querySelectorAll('.ch-z')) b.classList.remove('on');
+    } else if (live.size === 1 && mode === 'pinch') {
+      // One finger lifted mid-pinch: carry on as a pan from where it is.
+      const [only] = [...live.values()];
+      mode = 'pan';
+      anchor = { x: only.x, y: only.y, view: { ...CH.view },
+                 yZoom: CH.yZoom, yCenter: CH.yCenter, moved: true };
+    }
+  };
+  cv.addEventListener('pointerup', release);
+  // A cancel during an active gesture is usually the browser taking the pointer
+  // away (a scroll starting, or a capture being lost). Keep whatever the user
+  // had reached rather than discarding it.
+  cv.addEventListener('pointercancel', release);
+  cv.addEventListener('pointerleave', (e) => {
+    if (!mode) { CH.hover = null; chRequestDraw();
+      const rd = document.getElementById('chart-readout'); if (rd) rd.innerHTML = ''; }
+  });
+
   // ── wheel: zoom the time window around the pointer
   cv.addEventListener('wheel', (e) => {
     if (!CH.bars.length) return;
@@ -390,90 +519,21 @@ function chInstallInteraction(cv) {
     const r = cv.getBoundingClientRect();
     const overAxis = (e.clientX - r.left) > cv.clientWidth - PAD_R;
     const factor = e.deltaY < 0 ? 1.18 : 1 / 1.18;
-    if (overAxis || e.shiftKey) {
-      // Over the price axis, the wheel scales vertically instead.
-      chSetYZoom(CH.yZoom * factor, r, e.clientY - r.top);
-    } else {
-      const ratio = Math.max(0, Math.min(1, (e.clientX - r.left - PAD_L) / plotW()));
-      chZoomAt(factor, ratio);
-    }
+    if (overAxis || e.shiftKey) chSetYZoom(CH.yZoom * factor, r, e.clientY - r.top);
+    else chZoomAt(factor, Math.max(0, Math.min(1, (e.clientX - r.left - PAD_L) / plotW())));
   }, { passive: false });
-
-  // ── drag: pan. Horizontal over the plot, vertical over the price axis.
-  let pan = null;
-  cv.addEventListener('pointerdown', (e) => {
-    if (!CH.bars.length) return;
-    const r = cv.getBoundingClientRect();
-    const onAxis = (e.clientX - r.left) > cv.clientWidth - PAD_R;
-    pan = { x: e.clientX, y: e.clientY, view: { ...CH.view }, onAxis,
-            yZoom: CH.yZoom, yCenter: CH.yCenter, moved: false, id: e.pointerId };
-    try { cv.setPointerCapture(e.pointerId); } catch (_) {}
-  });
-  cv.addEventListener('pointermove', (e) => {
-    if (!pan) return;
-    const dx = e.clientX - pan.x, dy = e.clientY - pan.y;
-    if (!pan.moved && Math.abs(dx) + Math.abs(dy) < 4) return;    // still a click
-    pan.moved = true;
-    cv.style.cursor = 'grabbing';
-    if (pan.onAxis) {
-      chSetYZoom(pan.yZoom * (1 + dy / 220), cv.getBoundingClientRect(), null, pan.yCenter);
-    } else {
-      const w = pan.view.to - pan.view.from;
-      const barsMoved = (dx / plotW()) * w;
-      CH.view = chClampView(pan.view.from - barsMoved, pan.view.to - barsMoved);
-      chRequestDraw();
-    }
-  });
-  const endPan = (e) => {
-    if (!pan) return;
-    const wasDrag = pan.moved;
-    try { cv.releasePointerCapture(pan.id); } catch (_) {}
-    pan = null;
-    cv.style.cursor = '';
-    if (wasDrag) { for (const b of document.querySelectorAll('.ch-z')) b.classList.remove('on'); }
-  };
-  cv.addEventListener('pointerup', endPan);
-  cv.addEventListener('pointercancel', endPan);
-
-  // ── pinch to zoom, two fingers
-  const touches = new Map();
-  let pinchStart = null;
-  cv.addEventListener('pointerdown', (e) => {
-    if (e.pointerType !== 'touch') return;
-    touches.set(e.pointerId, e);
-    if (touches.size === 2) {
-      const [a, b] = [...touches.values()];
-      pinchStart = { dist: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), view: { ...CH.view } };
-      pan = null;                                   // a pinch is not a pan
-    }
-  });
-  cv.addEventListener('pointermove', (e) => {
-    if (e.pointerType !== 'touch' || !touches.has(e.pointerId)) return;
-    touches.set(e.pointerId, e);
-    if (touches.size !== 2 || !pinchStart) return;
-    e.preventDefault();
-    const [a, b] = [...touches.values()];
-    const d = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-    const factor = d / (pinchStart.dist || 1);
-    const w = pinchStart.view.to - pinchStart.view.from;
-    const nw = w / factor;
-    const mid = (pinchStart.view.from + pinchStart.view.to) / 2;
-    CH.view = chClampView(mid - nw / 2, mid + nw / 2);
-    chRequestDraw();
-  }, { passive: false });
-  const dropTouch = (e) => { touches.delete(e.pointerId); if (touches.size < 2) pinchStart = null; };
-  cv.addEventListener('pointerup', dropTouch);
-  cv.addEventListener('pointercancel', dropTouch);
 
   // ── double-click / double-tap: back to auto
+  //
+  // THIS IS WHAT RESET THE CHART ON EVERY PINCH. Lifting two fingers fires two
+  // pointerup events milliseconds apart, which is indistinguishable from a
+  // double-tap unless you check. So every pinch zoomed correctly — the trace
+  // showed 120 -> 80 -> 60 -> 40 -> 30 bars — and was then thrown away by
+  // chResetView() the instant the fingers came off. On a phone that looks
+  // exactly like the zoom "not working", which is what you reported.
+  //
+  // A double-tap now has to be two SINGLE-finger taps that moved nothing.
   cv.addEventListener('dblclick', (e) => { e.preventDefault(); chResetView(); });
-  let lastTap = 0;
-  cv.addEventListener('pointerup', (e) => {
-    if (e.pointerType !== 'touch') return;
-    const now = Date.now();
-    if (now - lastTap < 300) chResetView();
-    lastTap = now;
-  });
 }
 
 function chSetYZoom(z, rect, pointerY, keepCentre) {
@@ -543,18 +603,6 @@ async function chOpen(sig, pickFn) {
       if (m) chSetView(m.dataset.mode);
     });
     const cv = el0.querySelector('#chart-canvas');
-    let rafPending = false;
-    cv.addEventListener('pointermove', (e) => {
-      const r = cv.getBoundingClientRect();
-      CH.hover = { x: e.clientX - r.left, y: e.clientY - r.top };
-      // Coalesce to one redraw per frame. A 120Hz pointer can fire faster than
-      // the display refreshes, and redrawing more often than that is work the
-      // screen throws away.
-      if (rafPending) return;
-      rafPending = true;
-      requestAnimationFrame(() => { rafPending = false; chDraw(); });
-    }, { passive: true });
-    cv.addEventListener('pointerleave', () => { CH.hover = null; chDraw(); const rd = document.getElementById('chart-readout'); if (rd) rd.innerHTML = ''; });
     chInstallInteraction(cv);
     window.addEventListener('resize', () => chRequestDraw());
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') chClose(); });
@@ -602,10 +650,17 @@ async function chOpen(sig, pickFn) {
 
 /** Where the chosen view is kept between charts and between sessions. */
 const CH_PREF = 'fs.chart.view.v1';
+let _prefTimer = null;
+/** Saves after the gesture settles rather than on every frame of it. */
+function chSavePrefSoon() {
+  clearTimeout(_prefTimer);
+  _prefTimer = setTimeout(chSavePref, 250);
+}
+
 function chSavePref() {
   try {
     localStorage.setItem(CH_PREF, JSON.stringify({
-      bars: CH.view.to - CH.view.from, yZoom: CH.yZoom,
+      bars: CH.view.to - CH.view.from, yZoom: CH.yZoom, yCenter: CH.yCenter,
     }));
   } catch (_) {}
 }
@@ -654,10 +709,17 @@ async function chTick() {
   if (!bars || !bars.length) return;
   const grew = bars.length - CH.bars.length;
   const windowSize = CH.view.to - CH.view.from;
+  // Only follow the right edge if the view was ALREADY at it. If you have
+  // panned back into history, a refresh that snaps you forward every 30 seconds
+  // is the chart fighting you.
+  const wasAtRightEdge = CH.view.to >= CH.bars.length - 1;
   CH.bars = bars;
-  // Keep the same window width anchored to the right edge, so a new bar slides
-  // in rather than the chart jumping.
-  CH.view = { from: Math.max(0, bars.length - windowSize), to: bars.length };
+  if (wasAtRightEdge) {
+    CH.view = { from: Math.max(0, bars.length - windowSize), to: bars.length };
+  } else {
+    // Hold the same bars in view; new bars simply extend the series to the right.
+    CH.view = chClampView(CH.view.from, CH.view.from + windowSize);
+  }
   CH.lastFetch = Date.now();
   chRefreshMeta();
   chDraw();
