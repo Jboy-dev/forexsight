@@ -778,8 +778,13 @@ t('the chart is cached and prefetched, so opening it does not wait on the networ
   const js = readFileSync('v2/chart.js', 'utf8');
   if (!/CH_CACHE/.test(js)) return 'no bar cache — every open would re-fetch';
   if (!/function chPrefetch/.test(js)) return 'no prefetch — the first open would always be slow';
-  if (!/requestAnimationFrame\(\(\) => \{ rafPending = false/.test(js)) {
-    return 'the crosshair is not frame-coalesced; a 120Hz pointer would redraw faster than the screen refreshes';
+  // Redraws must be coalesced to one per frame: a 120Hz pointer fires faster
+  // than the display refreshes, and the extra draws are thrown away.
+  if (!/function chRequestDraw\(\)[\s\S]{0,200}requestAnimationFrame/.test(js)) {
+    return 'redraws are not frame-coalesced; a 120Hz pointer would redraw faster than the screen refreshes';
+  }
+  if (/chDraw\(\);\s*\n\s*return;\s*\n\s*\}\s*\n\s*if \(mode === 'pinch'/.test(js)) {
+    return 'a gesture path calls chDraw directly instead of chRequestDraw';
   }
   if (!/Math\.min\(window\.devicePixelRatio \|\| 1, 3\)/.test(js)) {
     return 'device pixel ratio is not capped — the buffer grows quadratically on a high-density screen';
@@ -889,8 +894,8 @@ t('our chart supports zoom, pan, pinch and reset', () => {
   const js = readFileSync('v2/chart.js', 'utf8');
   const need = {
     "wheel zoom": /addEventListener\('wheel'/,
-    "drag to pan": /chClampView\(pan\.view\.from - barsMoved/,
-    "pinch": /pinchStart/,
+    "drag to pan": /chClampView\(anchor\.view\.from - barsMoved/,
+    "pinch": /mode === 'pinch'/,
     "vertical scale": /function chSetYZoom/,
     "double-click reset": /addEventListener\('dblclick'/,
     "frame-coalesced redraw": /function chRequestDraw/,
@@ -967,6 +972,42 @@ t('the chart keeps the zoom you chose', () => {
     return 'opening a chart snaps back to a default instead of honouring the saved zoom';
   }
   if (!/chSavePref\(\)/.test(js)) return 'zooming never saves the preference';
+  return true;
+});
+
+t('lifting a pinch cannot be mistaken for a double-tap', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  // Two fingers coming off fire two pointerups milliseconds apart. Treating
+  // that as a double-tap threw away every pinch the instant it finished.
+  if (!/pointersThisGesture/.test(js)) {
+    return 'the number of fingers in a gesture is not tracked, so a two-finger release can read as a double-tap';
+  }
+  if (!/const cleanTap = [\s\S]{0,200}pointersThisGesture === 1/.test(js)) {
+    return 'a tap is not required to be single-finger';
+  }
+  if (!/!\(anchor && anchor\.moved\)/.test(js)) return 'a tap is not required to have moved nothing';
+  return true;
+});
+
+t('pan and pinch both persist the view, not just wheel zoom', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  // A wheel event never fires on touch. If only wheel-zoom saved, a phone would
+  // always reopen at the default width however far it had been zoomed.
+  // Greedy to the closing brace: a non-greedy match stopped at the first
+  // `return` two lines in, before the save, and failed correct code.
+  const pinchBlock = (js.match(/if \(mode === 'pinch'\) \{[\s\S]*?\n    \}/) || [''])[0];
+  if (!/chSavePref/.test(pinchBlock)) return 'pinch does not persist the view — the phone would reset every time';
+  const panBlock = (js.match(/const barsMoved[\s\S]{0,300}/) || [''])[0];
+  if (!/chSavePref/.test(panBlock)) return 'pan does not persist the view';
+  return true;
+});
+
+t('a live refresh does not yank the view back to the right edge', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  if (!/wasAtRightEdge/.test(js)) {
+    return 'the 30-second refresh re-anchors the view unconditionally, so panning back into history '
+         + 'is undone every half minute';
+  }
   return true;
 });
 
