@@ -261,10 +261,17 @@ function card(s) {
   else if (num(pick(s, 'eliteBrainWR')) != null) why.push(`Measured win rate for this combination: ${Math.round(num(pick(s, 'eliteBrainWR')) * 100)}%.`);
   else why.push('No measured win rate exists for this combination yet, so none is shown.');
 
-  const lvl = (k, v, rr, cls) => `<div class="lvl ${cls}">
-    <div class="lvl-k">${esc(k)}</div>
-    <div class="lvl-v">${esc(price(v, pair))}</div>
-    <div class="lvl-d">${rr != null ? esc(rr.toFixed(2) + 'R') : '&nbsp;'}</div></div>`;
+  // Levels are tap-to-copy. The copied text is the plain number with no
+  // thousands separators or currency marks, because it is going straight into a
+  // broker ticket where anything else is a rejected order.
+  const lvl = (k, v, rr, cls) => {
+    const shown = price(v, pair);
+    const copyable = shown !== '—';
+    return `<div class="lvl ${cls}${copyable ? ' copyable' : ''}"${copyable ? ` data-copy="${esc(shown)}" data-label="${esc(k)}" role="button" tabindex="0" title="Tap to copy ${esc(k)}"` : ''}>
+      <div class="lvl-k">${esc(k)}</div>
+      <div class="lvl-v">${esc(shown)}</div>
+      <div class="lvl-d">${rr != null ? esc(rr.toFixed(2) + 'R') : '&nbsp;'}</div></div>`;
+  };
 
   return `<article class="card ${buy ? 'buy' : 'sell'}">
     <div class="c-head">
@@ -521,6 +528,66 @@ function renderCommand() {
   }));
 }
 
+
+/* ─────────────────────── tap a level to copy it ───────────────────────
+   Bound ONCE on document, not on the cards. renderCards() replaces innerHTML
+   every cycle, so any listener attached to a card is destroyed two minutes
+   later and the feature silently stops working — the kind of bug that looks
+   like "it worked when you tested it".
+   ----------------------------------------------------------------------- */
+let _copyTimer = null;
+async function copyLevel(node) {
+  const val = node.dataset.copy, label = node.dataset.label || 'level';
+  if (!val) return;
+  let ok = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(val); ok = true; }
+  } catch (_) { /* denied or unavailable — fall through */ }
+  if (!ok) {
+    // Fallback for non-secure contexts and older iOS Safari, where
+    // navigator.clipboard is simply absent.
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = val; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0';
+      document.body.appendChild(ta);
+      ta.select(); ta.setSelectionRange(0, val.length);
+      ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (_) { ok = false; }
+  }
+  node.classList.remove('copied', 'copyfail');
+  void node.offsetWidth;                       // restart the animation
+  node.classList.add(ok ? 'copied' : 'copyfail');
+  const tip = document.getElementById('copy-tip');
+  if (tip) {
+    tip.textContent = ok ? `${label} ${val} copied` : `could not copy — select ${val} manually`;
+    tip.className = 'copy-tip show' + (ok ? '' : ' bad');
+    clearTimeout(_copyTimer);
+    _copyTimer = setTimeout(() => { tip.className = 'copy-tip'; }, 1800);
+  }
+  setTimeout(() => node.classList.remove('copied', 'copyfail'), 900);
+}
+function installCopy() {
+  if (window._fsCopyInstalled) return;
+  window._fsCopyInstalled = true;
+  document.addEventListener('click', (e) => {
+    const n = e.target.closest('.lvl.copyable');
+    if (n) { e.preventDefault(); copyLevel(n); }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const n = e.target.closest && e.target.closest('.lvl.copyable');
+    if (n) { e.preventDefault(); copyLevel(n); }
+  });
+  if (!document.getElementById('copy-tip')) {
+    const t = document.createElement('div');
+    t.id = 'copy-tip'; t.className = 'copy-tip';
+    t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite');
+    document.body.appendChild(t);
+  }
+}
+
 /* ─────────────────────────── chrome ─────────────────────────── */
 function renderChrome() {
   const feed = S.latestSignals;
@@ -566,7 +633,8 @@ function render() {
   }
 }
 
-function bootConfig() { if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
+function bootConfig() {
+  installCopy(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
 
 async function cycle() {
   bootConfig();
