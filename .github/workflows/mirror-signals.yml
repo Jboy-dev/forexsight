@@ -47,6 +47,16 @@ jobs:
         with:
           node-version: '20'
 
+      # Known bugs, each with a test that goes red if its fix is reverted. This
+      # runs BEFORE anything is published, because every item in it is a defect
+      # that reached users once already: a regime detector reading a stand-in
+      # zero, a news gate reporting 'clear' with no forward visibility, a ladder
+      # that paid less on a full run than it lost on a stop. Tests that cannot
+      # run (data/deep is gitignored) skip rather than fail, so a fresh checkout
+      # does not block the feed.
+      - name: Regression tests
+        run: node tools/regression-tests.mjs
+
       - name: Fetch each endpoint from whichever URL is healthy
         run: |
           set +e

@@ -816,11 +816,27 @@ function _detectRegime(ohlc) {
   const highs = ohlc.map(b => b.h);
   const lows = ohlc.map(b => b.l);
   // ADX for trend strength
-  let adxVal = 0;
+  // adx() returns { adx: [...] }, not a bare array. This read was adxSer[n],
+  // which is undefined on an object, so `|| 0` pinned adxVal at 0 on every
+  // call since the function was written. The consequences were not cosmetic:
+  // the TRENDING branch below requires adx >= 30 and was therefore unreachable,
+  // while the RANGING and QUIET branches had their adx term satisfied for free.
+  // Every regime label, and every per-strategy weight set chosen from it, was
+  // decided with a zero standing in for a real reading. Measured on EUR/USD
+  // daily bars the same day this was found: true adx 43.18, value used 0.
+  let adxVal = null;
   try {
     const adxSer = adx(highs, lows, closes, 14);
-    adxVal = adxSer[n] || 0;
-  } catch { adxVal = 0; }
+    const series = Array.isArray(adxSer) ? adxSer : (adxSer && adxSer.adx);
+    const v = Array.isArray(series) ? series[n] : null;
+    adxVal = (typeof v === 'number' && isFinite(v)) ? v : null;
+  } catch { adxVal = null; }
+  // An unreadable ADX is not a reading of zero. Where it is genuinely missing
+  // the regime is reported as unknown rather than silently classified as quiet.
+  if (adxVal === null) {
+    return { regime: 'unknown', weights: {}, adx: null, atrRatio: null, compression: null,
+             note: 'ADX could not be computed on these bars, so no regime is claimed' };
+  }
   // ATR ratio: recent 5 bars vs 20 bars average
   let atr5 = 0, atr20 = 0;
   for (let i = n - 4; i <= n; i++) {
