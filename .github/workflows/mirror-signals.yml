@@ -54,6 +54,14 @@ jobs:
       # that paid less on a full run than it lost on a stop. Tests that cannot
       # run (data/deep is gitignored) skip rather than fail, so a fresh checkout
       # does not block the feed.
+      - name: Restore deep price caches
+        uses: actions/cache@v4
+        with:
+          path: data/deep
+          key: deep-daily-${{ github.run_id }}
+          restore-keys: |
+            deep-daily-
+
       - name: Regression tests
         run: node tools/regression-tests.mjs
 
@@ -249,14 +257,6 @@ jobs:
       # 5.9MB. Without a cache CI would re-download every instrument on every
       # cycle, so the caches are restored here and the fetcher's own freshness
       # check decides whether anything needs pulling.
-      - name: Restore deep price caches
-        uses: actions/cache@v4
-        with:
-          path: data/deep
-          key: deep-daily-${{ github.run_id }}
-          restore-keys: |
-            deep-daily-
-
       - name: Top up deep price history
         run: node tools/fetch-deep-history.mjs
         continue-on-error: true
