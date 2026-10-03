@@ -811,10 +811,16 @@ t('reorder uses pointer events, not HTML5 drag-and-drop', () => {
   return true;
 });
 
-t('a press is not a drag until it passes a threshold, so taps still work', () => {
+t('a drag requires a deliberate hold, so brushing past does not pick things up', () => {
   const js = readFileSync('v2/reorder.js', 'utf8');
-  if (!/RO_THRESHOLD/.test(js)) return 'no movement threshold — every tap would start a drag';
-  if (!/other > moved/.test(js)) return 'cross-axis movement is not treated as a scroll, so scrolling would be hijacked';
+  // Movement alone used to start a drag, so scrolling past a heading could lift
+  // a section — it read as the page glitching rather than responding.
+  if (!/RO_HOLD_MS\s*=\s*2000/.test(js)) return 'the hold is not 2 seconds';
+  if (!/if \(!drag\.armed\)/.test(js)) return 'a drag can still begin without the hold completing';
+  if (!/Math\.abs\(dx\) > RO_SLOP \|\| Math\.abs\(dy\) > RO_SLOP\) cleanup\(\)/.test(js)) {
+    return 'movement during the hold does not cancel it, so a scroll would still arm a drag';
+  }
+  if (!/ro-holding/.test(js)) return 'no visible feedback while holding — a 2s wait with no indication reads as broken';
   const base = readFileSync('v2/base.js', 'utf8');
   if (!/ro-dragging.*\)\s*return|querySelector\('\.ro-dragging'\)/.test(base)) {
     return 'a click synthesised at the end of a drag is not suppressed — dropping a tab would also switch pane';
@@ -910,6 +916,57 @@ t('no source file is broken by a comment that closes itself early', () => {
     try { new Function(readFileSync(f, 'utf8')); }
     catch (e) { return `${f} does not parse: ${e.message}`; }
   }
+  return true;
+});
+
+/* ── Backend. Every check here is one that reported a healthy system as broken,
+   or a broken one as healthy. ─────────────────────────────────────────── */
+t('asset classification is by pattern, not a list that goes stale', () => {
+  const src = readFileSync('tools/verify-data.mjs', 'utf8');
+  if (/\['BTC\/USD', 'ETH\/USD', 'SOL\/USD'\]\.includes/.test(src)) {
+    return 'crypto is matched against a hard-coded list — XRP was missing from it and 27 good '
+         + 'bars were reported as a feed splice';
+  }
+  if (!/\^\(BTC\|ETH\|SOL\|XRP/.test(src)) return 'no pattern-based crypto classification';
+  if (!/overnightOnIndex/.test(src)) {
+    return 'an index trades one session a day, so every night is a gap — without this US30 and '
+         + 'NAS100 are reported with 16 unexplained gaps each while being intact';
+  }
+  return true;
+});
+
+t('price staleness knows the market can be closed', () => {
+  const src = readFileSync('functions/api/prices.js', 'utf8');
+  if (!/_staleAllowance/.test(src)) {
+    return 'a flat staleness threshold is in use — it rejected FX as "stale 1593min" on a Saturday, '
+         + 'and 1593 minutes was exactly the time since Friday\'s close';
+  }
+  if (!/day === 6 \|\| \(day === 0 && hour < 21\)/.test(src)) return 'the weekend is not detected';
+  return true;
+});
+
+t('every instrument has enough bars for the strategies that read them', () => {
+  if (!existsSync('data/ohlc')) return 'skipped: no published OHLC';
+  const thin = [];
+  for (const f of readdirSync('data/ohlc').filter(x => x.endsWith('.json'))) {
+    try {
+      const d = JSON.parse(readFileSync(`data/ohlc/${f}`, 'utf8'));
+      const bars = d.ohlc || d.bars || (Array.isArray(d) ? d : []);
+      // Several strategies need 200 bars before they will run at all.
+      if (bars.length < 200) thin.push(`${f.replace('.json', '')} (${bars.length})`);
+    } catch (_) {}
+  }
+  if (thin.length) return `${thin.length} instrument(s) have under 200 bars: ${thin.join(', ')}`;
+  return true;
+});
+
+t('the chart keeps the zoom you chose', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  if (!/fs\.chart\.view/.test(js)) return 'the chosen view is not persisted';
+  if (!/chSetBars\(wantBars, \{ remember: false \}\)/.test(js)) {
+    return 'opening a chart snaps back to a default instead of honouring the saved zoom';
+  }
+  if (!/chSavePref\(\)/.test(js)) return 'zooming never saves the preference';
   return true;
 });
 

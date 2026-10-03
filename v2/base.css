@@ -987,3 +987,20 @@ h2.sec:active { cursor: grabbing; }
 #chart-canvas:active { cursor: grabbing; }
 .ch-hint { font-size: 10.5px; color: var(--text-faint); padding: 0 16px 8px; line-height: 1.5; }
 .meta-stale { color: var(--warn); font-weight: 650; }
+
+/* hold-to-drag: the wait has to be visible, or it reads as unresponsive */
+.seg.ro-holding, .tab.ro-holding { position: relative; }
+.seg.ro-holding::after, .tab.ro-holding::after {
+  content: ''; position: absolute; left: 0; bottom: 0; height: 2px; width: 0;
+  background: linear-gradient(90deg, var(--accent), #2fd98a);
+  border-radius: 2px; pointer-events: none;
+  animation: ro-fill var(--ro-hold, 2000ms) linear forwards;
+}
+@keyframes ro-fill { from { width: 0; } to { width: 100%; } }
+
+.seg.ro-armed, .tab.ro-armed {
+  outline: 2px solid var(--accent); outline-offset: 2px; border-radius: var(--r-sm);
+}
+@media (prefers-reduced-motion: reduce) {
+  .seg.ro-holding::after, .tab.ro-holding::after { animation: none; width: 100%; opacity: .4; }
+}

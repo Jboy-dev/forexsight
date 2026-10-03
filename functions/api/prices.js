@@ -152,6 +152,34 @@ async function coingeckoBtcFetch(days = 90) {
 // v319 — Detect stale price data. If the last bar is > `maxAgeMinutes` old,
 // return true so we try a different source. Yahoo BTC-USD was returning
 // data 2500+ minutes (42h) stale intermittently — this catches it.
+
+/**
+ * How old the newest bar may be before it counts as stale, given that the
+ * market may simply be closed.
+ *
+ * Crypto trades continuously, so a short allowance is right. Everything else
+ * stops: FX from Friday 21:00 UTC to Sunday 21:00 UTC, and metals and indices
+ * also halt for an hour each day. Applying a flat 240-minute rule to a shut
+ * market reports an outage every single weekend.
+ */
+function _staleAllowance(symbol) {
+  const crypto = /BTC|ETH|SOL|XRP|-USD$/.test(String(symbol)) && !/=X|=F/.test(String(symbol));
+  if (crypto) return 90;
+
+  const now = new Date();
+  const day = now.getUTCDay(), hour = now.getUTCHours();
+  // Saturday, Sunday before the 21:00 open, or after Friday's 21:00 close.
+  const shut = day === 6 || (day === 0 && hour < 21) || (day === 5 && hour >= 21);
+  if (shut) {
+    // Allow the whole closure plus a margin: from Friday's close to Sunday's
+    // open is 48 hours.
+    return 48 * 60 + 120;
+  }
+  // Metals and index futures halt an hour a day; give them room for that.
+  if (/GC=F|SI=F|\^/.test(String(symbol))) return 300;
+  return 240;
+}
+
 function _isDataStale(ohlc, maxAgeMinutes) {
   if (!ohlc || !ohlc.length) return true;
   const lastMs = ohlc[ohlc.length - 1].t;
@@ -237,7 +265,12 @@ export async function onRequest(context) {
       const ohlc = await yahooFetch(symbol, interval, range);
       // v319 — Reject stale Yahoo data. If BTC is >60 min stale we prefer no
       // data over wrong data (downstream will use whatever it can).
-      const staleThreshold = isBTC ? 60 : (symbol === 'GC=F' ? 240 : 240);
+      // The threshold must know the market is SHUT, or every weekend looks like
+      // an outage. Measured on a Saturday: this rejected FX data as "stale
+      // 1593min > 240min" — and 1593 minutes was exactly the time since Friday's
+      // 21:00 UTC close. The data was perfect; the clock was the problem, and
+      // the endpoint returned zero bars for the whole weekend as a result.
+      const staleThreshold = isBTC ? 60 : _staleAllowance(symbol);
       if (!_isDataStale(ohlc, staleThreshold)) {
         result = { symbol, interval, range, ohlc, count: ohlc.length, source: 'yahoo' };
       } else {

@@ -46,6 +46,10 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   const median = spacings[Math.floor(spacings.length / 2)] || 0;
   // A gap is a spacing well beyond the normal cadence. Weekends are expected
   // on FX, so only flag gaps that are not weekend-shaped.
+  // Classified by PATTERN rather than an explicit list, because a list goes out
+  // of date the moment the universe grows — which is exactly how XRP ended up
+  // judged against the FX threshold.
+  const isIndex = /^(US30|NAS100|SPX500|UK100|GER40|JP225)$/.test(pair);
   let gaps = 0;
   for (let i = 1; i < bars.length; i++) {
     const dt = bars[i].t - bars[i - 1].t;
@@ -65,7 +69,13 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
       // a Friday is the market closing; allow up to four days of it.
       const startsAtWeekend = (d === 5 || d === 6 || d === 0);
       const weekendish = startsAtWeekend && dt <= median * 96;
-      if (!weekendish) gaps++;
+      // FIFTH false alarm, same shape: an index trades ONE session a day. US30
+      // and NAS100 run 13:00-20:00 UTC, so every single night is a gap by
+      // construction — both were reported with 16 "unexplained gaps" while
+      // being perfectly intact. An overnight close on an index is the market
+      // shutting, exactly like a weekend on FX.
+      const overnightOnIndex = isIndex && dt <= median * 20;
+      if (!weekendish && !overnightOnIndex) gaps++;
     }
   }
 
@@ -109,9 +119,16 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   //
   // Crypto routinely gaps a percent between hourly opens; FX majors almost
   // never move that far mid-session, so the same number cannot serve both.
-  const cryptoPair = ['BTC/USD', 'ETH/USD', 'SOL/USD'].includes(pair);
-  const goldPair = ['XAU/USD', 'XAG/USD'].includes(pair);
-  const jumpFloor = cryptoPair ? 0.025 : goldPair ? 0.010 : 0.004;
+  // Classified by PATTERN, not by an explicit list. The list version went out of
+  // date the moment instruments were added: XRP/USD was missing from it, so it
+  // was judged against the FX threshold of 0.4% when crypto routinely gaps more
+  // than that between hourly opens — 27 perfectly good bars were reported as a
+  // feed splice. A rule that has to be edited every time the universe grows
+  // will be wrong again, so this derives from the symbol itself.
+  const cryptoPair = /^(BTC|ETH|SOL|XRP|ADA|DOGE|LTC|BNB)\//.test(pair);
+  const goldPair = /^(XAU|XAG|XPT|XPD)\//.test(pair);
+  const indexPair = isIndex;
+  const jumpFloor = cryptoPair ? 0.025 : goldPair ? 0.010 : indexPair ? 0.012 : 0.004;
   const spikes = gapsFromClose.filter(g => g > Math.max(jumpFloor, medGap * 50)).length;
 
   const last = bars[bars.length - 1];
@@ -135,7 +152,9 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   //
   // FX and metals trade roughly 22:00 Sunday to 22:00 Friday UTC. Crypto never
   // closes, so it is held to the live standard at all times.
-  const isCrypto = ['BTC/USD', 'ETH/USD', 'SOL/USD'].includes(pair);
+  // Same pattern test as above — a second hard-coded list here is how XRP
+  // slipped through the first fix.
+  const isCrypto = /^(BTC|ETH|SOL|XRP|ADA|DOGE|LTC|BNB)\//.test(pair);
   const nowD = new Date();
   const dow = nowD.getUTCDay();            // 0=Sun .. 6=Sat
   const hourUTC = nowD.getUTCHours();

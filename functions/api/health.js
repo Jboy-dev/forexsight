@@ -59,7 +59,9 @@ export async function onRequest(context) {
       ])
     : [{ status: 'skipped' }, { status: 'skipped' }];
 
-  // 2) Live scan smoke test — for gold-only mode, 0 signals is valid
+  // 2) Live scan smoke test. 0 signals is a valid outcome: the engine scans the
+  // full universe and the gates often reject all of it. (The gold-only
+  // restriction this comment used to describe was removed in v355.)
   // (nothing meeting criteria right now). Only failure if HTTP not OK.
   if (scanRes.status === 'skipped') {
     checks.scan = { ok: true, skipped: true, msg: 'deep scan not run — add ?deep=1 (avoids ~94 Function invocations per call)' };
@@ -72,7 +74,7 @@ export async function onRequest(context) {
       count: data.count || 0,
       withStrategies2plus: withStrats,
       pushSent: data.pushSent || 0,
-      msg: data.count > 0 ? 'signals firing' : 'no qualifying signals right now (normal in gold-only mode)',
+      msg: data.count > 0 ? 'signals firing' : 'no qualifying signals right now — the gates rejected everything scanned, which is a result, not a fault',
     };
     if (!r.ok) allGreen = false;
   } else {

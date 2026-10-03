@@ -366,6 +366,7 @@ function chZoomAt(factor, anchorRatio) {
   const nw = w / factor;
   const a = from + w * anchorRatio;                 // keep this bar under the cursor
   CH.view = chClampView(a - nw * anchorRatio, a - nw * anchorRatio + nw);
+  chSavePref();
   chRequestDraw();
 }
 
@@ -477,6 +478,7 @@ function chInstallInteraction(cv) {
 
 function chSetYZoom(z, rect, pointerY, keepCentre) {
   CH.yZoom = Math.max(0.25, Math.min(12, z));
+  chSavePref();
   if (CH.yCenter == null && keepCentre == null) {
     // Lock the centre to whatever is on screen the first time it is used, so
     // the chart does not jump when manual scaling begins.
@@ -492,7 +494,7 @@ function chSetYZoom(z, rect, pointerY, keepCentre) {
 
 function chResetView() {
   CH.yZoom = 1; CH.yCenter = null;
-  chSetBars(120);
+  chSetBars(120);                           // an explicit reset DOES become the new preference
 }
 
 /* ── open / refresh ─────────────────────────────────────────────────────── */
@@ -569,10 +571,13 @@ async function chOpen(sig, pickFn) {
   // Paint whatever is cached on this frame, however old, then reconcile. A
   // chart that appears instantly and corrects itself a moment later is far
   // better than a blank panel that waits for the network.
+  const pref = chLoadPref();
+  const wantBars = pref && pref.bars > 0 ? pref.bars : 120;
   const cached = CH_CACHE.get(CH.pair);
   if (cached && cached.bars.length) {
     CH.bars = cached.bars;
-    chSetBars(120);
+    chSetBars(wantBars, { remember: false });
+    if (pref && pref.yZoom && pref.yZoom !== 1) CH.yZoom = pref.yZoom;
     chRefreshMeta();
   }
 
@@ -583,7 +588,10 @@ async function chOpen(sig, pickFn) {
   }
   CH.bars = bars;
   CH.lastFetch = Date.now();
-  chSetBars(120);
+  // Keep whatever zoom was last chosen rather than snapping back to a default
+  // every time a chart opens.
+  chSetBars(wantBars, { remember: false });
+  if (pref && pref.yZoom && pref.yZoom !== 1) CH.yZoom = pref.yZoom;
   chRefreshMeta();
 
   clearInterval(CH.timer);
@@ -592,11 +600,29 @@ async function chOpen(sig, pickFn) {
   CH.timer = setInterval(chTick, 30000);
 }
 
-function chSetBars(n) {
+/** Where the chosen view is kept between charts and between sessions. */
+const CH_PREF = 'fs.chart.view.v1';
+function chSavePref() {
+  try {
+    localStorage.setItem(CH_PREF, JSON.stringify({
+      bars: CH.view.to - CH.view.from, yZoom: CH.yZoom,
+    }));
+  } catch (_) {}
+}
+function chLoadPref() {
+  try {
+    const p = JSON.parse(localStorage.getItem(CH_PREF));
+    if (p && p.bars > 0) return p;
+  } catch (_) {}
+  return null;
+}
+
+function chSetBars(n, { remember = true } = {}) {
   CH.yZoom = 1; CH.yCenter = null;          // a preset window implies auto-fit
   const total = CH.bars.length;
   CH.view = { from: Math.max(0, total - n), to: total };
   for (const b of document.querySelectorAll('.ch-z')) b.classList.toggle('on', +b.dataset.bars === n);
+  if (remember) chSavePref();
   chDraw();
 }
 

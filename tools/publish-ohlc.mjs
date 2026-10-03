@@ -19,6 +19,18 @@
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync } from 'fs';
 
+
+/**
+ * An index trades one session a day — US cash is 13:00-20:00 UTC, so about 7
+ * hourly bars per day against 24 for FX and crypto. Over the default window
+ * that yielded only 148 bars, and several strategies need 200 before they will
+ * run at all. Indices get a longer window so they arrive with enough history
+ * to be analysed rather than silently skipped.
+ */
+function rangeFor(pair) {
+  return /^(US30|NAS100|SPX500|UK100|GER40|JP225)$/.test(pair) ? '90d' : RANGE;
+}
+
 const PAIRS = {
   'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X', 'USD/JPY': 'USDJPY=X',
   'AUD/USD': 'AUDUSD=X', 'USD/CAD': 'USDCAD=X', 'NZD/USD': 'NZDUSD=X',
@@ -49,9 +61,9 @@ const DRY = process.argv.includes('--dry-run');
 
 export const slugFor = (pair) => pair.replace('/', '-');
 
-async function fetchBars(symbol) {
+async function fetchBars(symbol, pair) {
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
-            + `?interval=1h&range=${RANGE}`;
+            + `?interval=1h&range=${rangeFor(pair || symbol)}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
     signal: AbortSignal.timeout(20000),
@@ -78,7 +90,7 @@ if (!DRY) mkdirSync('data/ohlc', { recursive: true });
 
 await Promise.all(Object.entries(PAIRS).map(async ([pair, sym]) => {
   try {
-    const bars = await fetchBars(sym);
+    const bars = await fetchBars(sym, pair);
     if (bars.length < 24) { summary.push(`${pair}: only ${bars.length} bars — skipped`); return; }
     const ageMin = Math.round((Date.now() - bars[bars.length - 1].t) / 60000);
     const payload = {

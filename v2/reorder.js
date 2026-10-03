@@ -15,9 +15,14 @@
    ========================================================================== */
 'use strict';
 
-const RO_THRESHOLD = 8;        // px before a press becomes a drag
-const RO_HOLD_MS = 180;        // on touch, a brief hold also starts it
-
+/* A drag must be DELIBERATE. The first version started one as soon as the
+   pointer moved 8px, which meant brushing past a heading while scrolling or
+   reading could pick a section up — it felt like the page was glitching rather
+   than responding. Now nothing moves until you have held still for two full
+   seconds, with a visible fill showing the hold building, and any real movement
+   during that time cancels it as a scroll. */
+const RO_HOLD_MS = 2000;       // how long to hold before a drag arms
+const RO_SLOP = 10;            // movement during the hold that cancels it
 /**
  * makeReorderable(container, { itemSelector, handleSelector, axis, onSave })
  *   onSave(idsInNewOrder) is called once, after the drop.
@@ -41,18 +46,27 @@ function makeReorderable(container, opts) {
     if (!item || !container.contains(item)) return;
     if (handleSel && !e.target.closest(handleSel)) return;
     // Never hijack a press on something the person is trying to use.
-    if (e.target.closest('input, select, textarea, a')) return;
+    if (e.target.closest('input, select, textarea, a, .lvl, details, .cmd-chip')) return;
 
     drag = {
       item, startX: e.clientX, startY: e.clientY, active: false,
-      pointerId: e.pointerId, holdTimer: null,
+      pointerId: e.pointerId, holdTimer: null, armed: false,
       rect: item.getBoundingClientRect(),
     };
-    // On touch a deliberate hold starts the drag even without movement, which
-    // is how a one-finger rearrange is meant to feel.
-    if (e.pointerType === 'touch') {
-      drag.holdTimer = setTimeout(() => { if (drag && !drag.active) begin(e); }, RO_HOLD_MS);
-    }
+
+    // Show the hold building, so a press that is going somewhere looks like it
+    // is going somewhere, and a press that is not can simply be released.
+    item.classList.add('ro-holding');
+    item.style.setProperty('--ro-hold', RO_HOLD_MS + 'ms');
+    drag.holdTimer = setTimeout(() => {
+      if (!drag) return;
+      drag.armed = true;
+      drag.item.classList.remove('ro-holding');
+      drag.item.classList.add('ro-armed');
+      try { navigator.vibrate && navigator.vibrate(12); } catch (_) {}
+      begin(e);
+    }, RO_HOLD_MS);
+
     document.addEventListener('pointermove', move, { passive: false });
     document.addEventListener('pointerup', end);
     document.addEventListener('pointercancel', end);
@@ -84,16 +98,15 @@ function makeReorderable(container, opts) {
   const move = (e) => {
     if (!drag) return;
     const dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
-    if (!drag.active) {
-      const moved = axis === 'x' ? Math.abs(dx) : Math.abs(dy);
-      const other = axis === 'x' ? Math.abs(dy) : Math.abs(dx);
-      // Movement along the OTHER axis is a scroll, not a drag — let it through.
-      if (moved < RO_THRESHOLD || other > moved) {
-        if (other > RO_THRESHOLD) { clearTimeout(drag.holdTimer); cleanup(); }
-        return;
-      }
-      begin(e);
+
+    if (!drag.armed) {
+      // Moving before the hold completes means this was a scroll or a swipe,
+      // not an attempt to rearrange. Abandon quietly.
+      if (Math.abs(dx) > RO_SLOP || Math.abs(dy) > RO_SLOP) cleanup();
+      return;
     }
+
+    if (!drag.active) begin(e);
     e.preventDefault();                                       // stop the page scrolling
     drag.item.style.left = (drag.rect.left + dx) + 'px';
     drag.item.style.top = (drag.rect.top + dy) + 'px';
@@ -120,7 +133,7 @@ function makeReorderable(container, opts) {
       const it = drag.item;
       drag.ph.parentNode.insertBefore(it, drag.ph);
       drag.ph.remove();
-      it.classList.remove('ro-item-drag');
+      it.classList.remove('ro-item-drag', 'ro-holding', 'ro-armed');
       for (const k of ['position', 'zIndex', 'width', 'left', 'top', 'pointerEvents']) it.style[k] = '';
       container.classList.remove('ro-dragging');
       try { it.releasePointerCapture(drag.pointerId); } catch (_) {}
@@ -134,6 +147,10 @@ function makeReorderable(container, opts) {
   };
 
   const cleanup = () => {
+    if (drag && drag.item) {
+      drag.item.classList.remove('ro-holding', 'ro-armed');
+      drag.item.style.removeProperty('--ro-hold');
+    }
     document.removeEventListener('pointermove', move);
     document.removeEventListener('pointerup', end);
     document.removeEventListener('pointercancel', end);
