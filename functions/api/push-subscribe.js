@@ -29,6 +29,30 @@ export async function onRequest(context) {
 
   // GET = return public VAPID key so client can subscribe
   if (request.method === 'GET') {
+    const url = new URL(request.url);
+    // ?stats=1 answers the only question that matters when someone says
+    // "did it reach my phone?": which push services are registered, and when.
+    // It deliberately exposes NO endpoint and NO keys — only the service host,
+    // which identifies the platform, and the dates.
+    if (url.searchParams.get('stats')) {
+      const list = await env.TRADES_KV.list({ prefix: 'pushsub:' });
+      const rows = [];
+      for (const k of list.keys) {
+        try {
+          const v = await env.TRADES_KV.get(k.name, 'json');
+          const ep = v?.subscription?.endpoint || '';
+          const host = ep ? new URL(ep).host : 'unknown';
+          const platform = /apple/i.test(host) ? 'Apple (iPhone/iPad/Safari)'
+                         : /google|fcm/i.test(host) ? 'Google (Chrome/Android)'
+                         : /mozilla/i.test(host) ? 'Mozilla (Firefox)'
+                         : /windows|microsoft/i.test(host) ? 'Microsoft (Edge)' : host;
+          rows.push({ platform, host, created: v?.created || v?.createdAt || null,
+                      updated: v?.updated || v?.updatedAt || null,
+                      userAgent: (v?.userAgent || '').slice(0, 60) || null });
+        } catch (_) {}
+      }
+      return ok({ count: rows.length, subscriptions: rows });
+    }
     return ok({ vapidPublic: VAPID_PUBLIC });
   }
 
