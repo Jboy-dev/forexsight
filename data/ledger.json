@@ -1,50 +1,50 @@
 {
-  "ts": 1791072280905,
-  "isoTime": "2026-10-04T00:04:40.905Z",
+  "ts": 1791082237856,
+  "isoTime": "2026-10-04T02:50:37.856Z",
   "builtBy": "tools/build-ledger.mjs",
   "coverage": {
-    "total": 402,
-    "resolved": 385,
-    "open": 17,
+    "total": 403,
+    "resolved": 389,
+    "open": 14,
     "from": "2026-09-17T11:59:29.472Z",
-    "to": "2026-10-03T23:34:15.596Z",
+    "to": "2026-10-04T00:29:13.099Z",
     "archived": 385,
     "note": "Working book plus archive, deduplicated by key. The archive exists because the book used to delete everything beyond the newest 400 outright."
   },
   "winRates": {
     "byOutcome": {
       "wins": 181,
-      "losses": 204,
-      "rate": 47,
+      "losses": 208,
+      "rate": 46.5,
       "definition": "closed with a positive R, including setups that timed out while ahead"
     },
     "byTarget": {
       "hit": 128,
-      "missed": 257,
-      "rate": 33.2,
+      "missed": 261,
+      "rate": 32.9,
       "definition": "actually reached TP1 or beyond"
     },
     "note": "These differ because a setup can time out slightly positive without ever reaching a target. Both are shown; quoting only the higher one would overstate the hit rate."
   },
   "returns": {
-    "avgR": 0.0755,
-    "totalR": 29.08,
+    "avgR": 0.0645,
+    "totalR": 25.08,
     "ci95": [
-      -0.031,
-      0.182
+      -0.042,
+      0.171
     ],
     "stdDev": 1.07,
     "avgWin": 1.036,
-    "avgLoss": -0.777,
+    "avgLoss": -0.781,
     "payoff": 1.33,
-    "expectancy": 0.0753
+    "expectancy": 0.0639
   },
   "episodes": {
-    "count": 103,
-    "avgR": 0.1507,
+    "count": 104,
+    "avgR": 0.1397,
     "ci95": [
-      -0.048,
-      0.349
+      -0.058,
+      0.337
     ],
     "inflation": 3.74,
     "note": "Republications of the same move collapsed to one observation. This is the independent unit."
@@ -83,6 +83,19 @@
       ]
     },
     {
+      "key": "ETH/USD",
+      "n": 43,
+      "wins": 15,
+      "losses": 28,
+      "winRate": 34.9,
+      "avgR": -0.082,
+      "totalR": -3.53,
+      "ci": [
+        -0.446,
+        0.282
+      ]
+    },
+    {
       "key": "AUD/USD",
       "n": 42,
       "wins": 19,
@@ -93,19 +106,6 @@
       "ci": [
         -0.206,
         0.581
-      ]
-    },
-    {
-      "key": "ETH/USD",
-      "n": 39,
-      "wins": 15,
-      "losses": 24,
-      "winRate": 38.5,
-      "avgR": 0.012,
-      "totalR": 0.47,
-      "ci": [
-        -0.378,
-        0.402
       ]
     },
     {
@@ -190,15 +190,15 @@
   "byDirection": [
     {
       "key": "SELL",
-      "n": 252,
+      "n": 256,
       "wins": 113,
-      "losses": 139,
-      "winRate": 44.8,
-      "avgR": 0.001,
-      "totalR": 0.22,
+      "losses": 143,
+      "winRate": 44.1,
+      "avgR": -0.015,
+      "totalR": -3.78,
       "ci": [
-        -0.125,
-        0.127
+        -0.14,
+        0.11
       ]
     },
     {
@@ -244,15 +244,15 @@
     },
     {
       "key": "under 60",
-      "n": 98,
+      "n": 102,
       "wins": 48,
-      "losses": 50,
-      "winRate": 49,
-      "avgR": -0.027,
-      "totalR": -2.6,
+      "losses": 54,
+      "winRate": 47.1,
+      "avgR": -0.065,
+      "totalR": -6.6,
       "ci": [
-        -0.236,
-        0.183
+        -0.269,
+        0.14
       ]
     },
     {
@@ -285,28 +285,28 @@
   "byRegime": [
     {
       "key": "RANGING",
-      "n": 170,
+      "n": 172,
       "wins": 85,
-      "losses": 85,
-      "winRate": 50,
-      "avgR": 0.094,
-      "totalR": 15.91,
+      "losses": 87,
+      "winRate": 49.4,
+      "avgR": 0.081,
+      "totalR": 13.91,
       "ci": [
-        -0.062,
-        0.25
+        -0.074,
+        0.236
       ]
     },
     {
       "key": "MIXED",
-      "n": 149,
+      "n": 151,
       "wins": 65,
-      "losses": 84,
-      "winRate": 43.6,
-      "avgR": 0.026,
-      "totalR": 3.81,
+      "losses": 86,
+      "winRate": 43,
+      "avgR": 0.012,
+      "totalR": 1.81,
       "ci": [
-        -0.152,
-        0.204
+        -0.165,
+        0.189
       ]
     },
     {
@@ -339,12 +339,12 @@
     },
     {
       "key": "lost",
-      "n": 141,
+      "n": 145,
       "wins": 0,
-      "losses": 141,
+      "losses": 145,
       "winRate": 0,
       "avgR": -1,
-      "totalR": -141,
+      "totalR": -145,
       "ci": [
         -1,
         -1
@@ -557,16 +557,36 @@
     28.5,
     29.3,
     29.68,
-    29.08
+    29.08,
+    27.08,
+    25.08
   ],
   "recent": [
+    {
+      "key": "SOL/USD_BUY_2026-10-04T00",
+      "pair": "SOL/USD",
+      "direction": "BUY",
+      "firedAt": "2026-10-04T00:29:13.099Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 97,
+      "entry": 119.8,
+      "sl": 119.3208,
+      "tp1": 120.37504,
+      "tp2": 120.7584,
+      "tp3": 121.4772,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "RANGING"
+    },
     {
       "key": "ETH/USD_SELL_2026-10-03T23",
       "pair": "ETH/USD",
       "direction": "SELL",
       "firedAt": "2026-10-03T23:34:15.596Z",
-      "status": "open",
-      "resultR": null,
+      "status": "lost",
+      "resultR": -1,
       "tpReached": 0,
       "confidence": 47,
       "entry": 2686.15991,
@@ -574,7 +594,7 @@
       "tp1": 2674.92339,
       "tp2": 2667.43237,
       "tp3": 2653.38672,
-      "maeR": 0.16,
+      "maeR": 1.06,
       "mfeR": 0,
       "regime": "RANGING"
     },
@@ -592,8 +612,8 @@
       "tp1": 85101.31233,
       "tp2": 85331.56222,
       "tp3": 85763.28076,
-      "maeR": 0.04,
-      "mfeR": 0.24,
+      "maeR": 0.19,
+      "mfeR": 0.37,
       "regime": "MIXED"
     },
     {
@@ -610,8 +630,8 @@
       "tp1": 85015.24531,
       "tp2": 85219.69531,
       "tp3": 85603.03906,
-      "maeR": 0,
-      "mfeR": 0.46,
+      "maeR": 0.02,
+      "mfeR": 0.6,
       "regime": "BREAKOUT"
     },
     {
@@ -619,8 +639,8 @@
       "pair": "ETH/USD",
       "direction": "SELL",
       "firedAt": "2026-10-03T22:04:00.659Z",
-      "status": "open",
-      "resultR": null,
+      "status": "lost",
+      "resultR": -1,
       "tpReached": 0,
       "confidence": 47,
       "entry": 2685.03003,
@@ -628,8 +648,8 @@
       "tp1": 2673.7021,
       "tp2": 2666.15015,
       "tp3": 2651.99023,
-      "maeR": 0.28,
-      "mfeR": 0,
+      "maeR": 1.01,
+      "mfeR": 0.05,
       "regime": "MIXED"
     },
     {
@@ -646,8 +666,8 @@
       "tp1": 85061.68705,
       "tp2": 85276.67634,
       "tp3": 85679.78125,
-      "maeR": 0.19,
-      "mfeR": 0.32,
+      "maeR": 0.17,
+      "mfeR": 0.46,
       "regime": "MIXED"
     },
     {
@@ -655,8 +675,8 @@
       "pair": "ETH/USD",
       "direction": "SELL",
       "firedAt": "2026-10-03T21:09:06.967Z",
-      "status": "open",
-      "resultR": null,
+      "status": "lost",
+      "resultR": -1,
       "tpReached": 0,
       "confidence": 47,
       "entry": 2686.44995,
@@ -664,8 +684,8 @@
       "tp1": 2674.95093,
       "tp2": 2667.28491,
       "tp3": 2652.91113,
-      "maeR": 0.28,
-      "mfeR": 0.23,
+      "maeR": 1.01,
+      "mfeR": 0.29,
       "regime": "MIXED"
     },
     {
@@ -691,8 +711,8 @@
       "pair": "ETH/USD",
       "direction": "SELL",
       "firedAt": "2026-10-03T14:44:25.875Z",
-      "status": "open",
-      "resultR": null,
+      "status": "lost",
+      "resultR": -1,
       "tpReached": 0,
       "confidence": 55,
       "entry": 2681.53003,
@@ -700,7 +720,7 @@
       "tp1": 2667.08802,
       "tp2": 2657.46002,
       "tp3": 2639.40752,
-      "maeR": 0.68,
+      "maeR": 1.09,
       "mfeR": 0.29,
       "regime": "RANGING"
     },
@@ -736,7 +756,7 @@
       "tp1": 2587.50413,
       "tp2": 2534.15353,
       "tp3": 2434.12115,
-      "maeR": 0.33,
+      "maeR": 0.43,
       "mfeR": 0.04,
       "regime": "RANGING"
     },
@@ -2701,25 +2721,7 @@
       "maeR": 1.32,
       "mfeR": 0.32,
       "regime": "RANGING"
-    },
-    {
-      "key": "XAU/USD_SELL_2026-09-25T00",
-      "pair": "XAU/USD",
-      "direction": "SELL",
-      "firedAt": "2026-09-25T00:22:40.806Z",
-      "status": "lost",
-      "resultR": -1,
-      "tpReached": 0,
-      "confidence": 85,
-      "entry": 4300.1,
-      "sl": 4334.5,
-      "tp1": 4258.82,
-      "tp2": 4231.3,
-      "tp3": 4179.7,
-      "maeR": 1.28,
-      "mfeR": 0.28,
-      "regime": "RANGING"
     }
   ],
-  "verdict": "0.0755R per signal with interval [-0.031, 0.182], which includes zero — the record does not establish an edge in either direction. Collapsed to 103 independent episodes it reads 0.1507R."
+  "verdict": "0.0645R per signal with interval [-0.042, 0.171], which includes zero — the record does not establish an edge in either direction. Collapsed to 104 independent episodes it reads 0.1397R."
 }
