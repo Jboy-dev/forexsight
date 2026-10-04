@@ -1444,5 +1444,29 @@ t('the research answer on costs reports the measurement, not just the lesson', (
 });
 
 
+
+t('the deploy stamps scripts and styles but never the manifest or icons', () => {
+  const sh = readFileSync('tools/deploy.sh', 'utf8');
+  if (!/\?v=/.test(sh)) return 'deploy.sh no longer stamps asset urls at all';
+  // The manifest key is part of the installed app's identity. Rewriting it per
+  // deploy invites iOS to treat the home-screen app as a different app, and an
+  // unkeyed manifest link has already killed it once.
+  if (!/\(\\\.\(\?:js\|css\)\)/.test(sh) && !/js\|css/.test(sh))
+    return 'the stamp is not restricted to .js and .css';
+  // Restore must be byte-exact, not a rewrite to a guessed literal.
+  if (/\.replace\('\?v=' \+ build, '\?v=8'\)/.test(sh))
+    return 'the restore rewrites every key to a literal 8, which flattens the manifest key';
+  if (!/cp "\$f"|mv "\$b" "\$f"/.test(sh)) return 'the originals are not copied aside and moved back';
+  // And the committed html must keep a real manifest key, never a build id.
+  for (const f of ['index.html', 'v2/index.html']) {
+    if (!existsSync(f)) continue;
+    const m = readFileSync(f, 'utf8').match(/manifest\.json\?v=([A-Za-z0-9._-]+)/);
+    if (m && /^\d{8}-\d{6}-/.test(m[1]))
+      return `${f} has a build id as its manifest key — the stamp was committed`;
+  }
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

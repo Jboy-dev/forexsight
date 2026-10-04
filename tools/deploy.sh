@@ -24,15 +24,31 @@ PY
 # Asset URLs carry ?v=N. The service worker gets a fresh cache on every deploy,
 # but the BROWSER's own HTTP cache is keyed on the URL, so an unchanged ?v=N can
 # still serve yesterday's knowledge.js from disk. Bumping it by hand was going to
-# be forgotten, so the build id is stamped into it here and restored afterwards.
+# be forgotten, so the build id is stamped in here.
+#
+# ONLY .js and .css are stamped. The manifest and the icons carry their own
+# deliberate key, bumped by hand when the icon actually changes, and that key is
+# part of the installed app's identity — rewriting it on every deploy invites iOS
+# to treat the home-screen app as a different app. An unkeyed manifest link has
+# already killed it once.
+#
+# The originals are copied aside and restored BYTE FOR BYTE afterwards. An
+# earlier version rewrote every ?v= to a single literal on the way back and
+# silently flattened manifest.json?v=610 and base.css?v=3 to ?v=8.
+for f in index.html v2/index.html; do
+  [ -f "$f" ] && cp "$f" "/tmp/fs-deploy-$(echo "$f" | tr / _).orig"
+done
 python3 - "$BUILD" <<'PY2'
-import re, sys, glob
+import re, sys
 build = sys.argv[1]
 n = 0
 for p in ('index.html', 'v2/index.html'):
     try: s = open(p).read()
     except FileNotFoundError: continue
-    s2, k = re.subn(r'\?v=[A-Za-z0-9._-]+', '?v=' + build, s)
+    # Only the files whose CONTENT changes per deploy. Matches href/src ending
+    # .js or .css immediately before the query, so manifest.json and the pngs
+    # are left exactly as they are.
+    s2, k = re.subn(r'(\.(?:js|css))\?v=[A-Za-z0-9._-]+', r'\1?v=' + build, s)
     if k: open(p, 'w').write(s2); n += k
 print(f'  stamped {n} asset urls')
 PY2
@@ -46,12 +62,8 @@ import re
 p='service-worker.js'; s=open(p).read()
 s=re.sub(r\"const BUILD = '[^']*';\", \"const BUILD = '__BUILD__';\", s, count=1)
 open(p,'w').write(s)"
-python3 - "$BUILD" <<'PY3'
-import re, sys
-build = sys.argv[1]
-for p in ('index.html', 'v2/index.html'):
-    try: s = open(p).read()
-    except FileNotFoundError: continue
-    open(p, 'w').write(s.replace('?v=' + build, '?v=8'))
-PY3
+for f in index.html v2/index.html; do
+  b="/tmp/fs-deploy-$(echo "$f" | tr / _).orig"
+  [ -f "$b" ] && mv "$b" "$f"
+done
 echo "  build id: $BUILD  (placeholder restored in the working tree)"
