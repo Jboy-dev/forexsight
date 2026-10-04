@@ -1412,5 +1412,37 @@ t('the cost finding reaches the screen', () => {
 });
 
 
+
+t('knowledge.js never reaches across to base.js helpers', () => {
+  // knowledge.js is loaded BEFORE base.js in index.html, so any helper it
+  // borrows works only because answers run later. That is a timing accident,
+  // not a contract, and it breaks silently the moment an answer is called
+  // during parse or the load order changes.
+  const src = readFileSync('v2/knowledge.js', 'utf8');
+  const base = readFileSync('v2/base.js', 'utf8');
+  const helpers = [...base.matchAll(/^(?:const|function)\s+(sign|esc|num|r2|price|ago|pick)\b/gm)].map(m => m[1]);
+  const own = new Set([...src.matchAll(/(?:const|function|let)\s+(\w+)\s*[=(]/g)].map(m => m[1]));
+  for (const h of helpers) {
+    if (own.has(h)) continue;
+    if (new RegExp(`(?<![\\w.])${h}\\s*\\(`).test(src))
+      return `knowledge.js calls ${h}() but it is defined only in base.js, which loads after it`;
+  }
+  return true;
+});
+
+t('the research answer on costs reports the measurement, not just the lesson', () => {
+  const src = readFileSync('v2/knowledge.js', 'utf8');
+  const i = src.indexOf("id: 'spread'");
+  if (i < 0) return 'the cost answer is gone';
+  const block = src.slice(i, src.indexOf("id: 'drawdown'"));
+  if (!/S\.costAudit/.test(block)) return 'the cost answer does not read the cost audit';
+  // It must degrade to the general lesson rather than printing a blank or a
+  // stand-in number when the audit has not been published.
+  if (!/\bp \?/.test(block)) return 'no fallback when the audit is absent — it would render an empty answer';
+  if (/91\.6|0\.032|0\.0027/.test(block)) return 'a measured figure is hard-coded instead of read from the data';
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

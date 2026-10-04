@@ -209,16 +209,50 @@ const TOPICS = [
     },
   },
   {
-    id: 'spread', kind: 'mechanical',
+    id: 'spread', kind: 'measured',
     q: 'How much do spread and costs actually matter?',
     keys: ['spread', 'cost', 'commission', 'slippage', 'swap', 'overnight', 'fees', 'broker'],
-    answer() {
+    answer(S) {
+      // This used to be a general lesson about costs. It is now the single most
+      // important measured fact on this site, so it leads with the measurement
+      // and falls back to the lesson only if the audit has not been published.
+      // knowledge.js loads before base.js and deliberately borrows nothing from
+      // it, so the sign is formatted here rather than reaching across files.
+      const sgn = (n) => (typeof n === 'number' && n > 0 ? '+' : '');
+      const c = S && S.costAudit;
+      const p = c && c.pooled && c.pooled.sealed;
+      const rows = (c && c.perInstrument) || [];
+      const cheapest = rows.filter(r => r.costAsPctOfGross != null)
+        .sort((a, b) => a.costAsPctOfGross - b.costAsPctOfGross).slice(0, 2);
+      const dearest = rows.filter(r => r.costAsPctOfGross != null)
+        .sort((a, b) => b.costAsPctOfGross - a.costAsPctOfGross).slice(0, 2);
+      const measured = p ? `
+        <p class="kb-warn"><strong>On this site's own strategy they matter more than anything else measured.</strong>
+        Replayed over data it had never seen, it makes <strong>${sgn(p.gross.avgR) + p.gross.avgR}R</strong> per
+        trade before costs and keeps <strong>${sgn(p.net.avgR) + p.net.avgR}R</strong> after them. The spread
+        takes ${c.sealedCostShareOfGrossPct != null ? `<strong>${c.sealedCostShareOfGrossPct}%</strong> of it`
+        : 'almost all of it'}.</p>
+        <p>That is the finding that explains every other result here. The edge is real and it is too small to
+        survive being charged for. It is not that the entries are worthless — it is that what they earn is
+        roughly what it costs to act on them.</p>
+        ${cheapest.length && dearest.length ? `<p>It is not spread alone, it is spread <em>relative to the stop</em>.
+        ${cheapest.map(r => r.pair).join(' and ')} keep ${cheapest.map(r => (100 - r.costAsPctOfGross).toFixed(0) + '%').join(' and ')}
+        of what they make, because their spread is a small fraction of a wide stop.
+        ${dearest.map(r => r.pair).join(' and ')} keep only ${dearest.map(r => (100 - r.costAsPctOfGross).toFixed(0) + '%').join(' and ')}.</p>` : ''}
+        <p>Three attempts to recover it were tested and all three were refused — refusing the dear trades,
+        trading only with the long trend, and trading only when the market is moving. Each had its falsifier
+        written down before it was run, and each failed it. The full working is under <em>Tested</em>.</p>` : '';
       return { body: `
-        <p>They matter most where people notice them least: the tighter your stop, the larger your cost as a share of risk.</p>
-        <p>A 1-pip spread on a 20-pip stop is <strong>5% of your risk, gone before the trade starts</strong>. On a 5-pip stop it is 20%. Scalping does not reduce cost; it multiplies it, because cost is per trade and your edge per trade is smaller.</p>
-        <p>Every backtest on this site charges cost on every trade, and each card shows spread as a percentage of risk for exactly this reason. A strategy that is profitable before costs and unprofitable after is not a strategy.</p>
+        ${measured}
+        <p>The general rule behind it: the tighter your stop, the larger your cost as a share of risk.</p>
+        <p>A 1-pip spread on a 20-pip stop is <strong>5% of your risk, gone before the trade starts</strong>. On a
+        5-pip stop it is 20%. Scalping does not reduce cost; it multiplies it, because cost is charged per trade
+        while your edge per trade is smaller.</p>
+        <p>Every backtest on this site charges cost on every trade, and each card shows spread as a percentage of
+        risk for exactly this reason. A strategy that is profitable before costs and unprofitable after is not a
+        strategy.</p>
         <p>Holding overnight adds financing (swap), which can run either way and compounds on multi-day positions.</p>`,
-        source: 'arithmetic; costProfile on each signal' };
+        source: p ? 'measured — tools/cost-audit.mjs, sealed quarter' : 'arithmetic; costProfile on each signal' };
     },
   },
   {
