@@ -31,6 +31,7 @@ const FS_DEFAULTS = {
   density: 'normal',    // normal | compact
   newsStrict: false,    // hide anything whose news verdict is not 'clear'
   tab: 'signals',       // which pane is open
+  histFilter: 'all',    // History pane: all | won | lost | target | open
   balance: 1000,        // account size, for the money figures
   riskPct: 1,           // percent of balance risked per trade
   currency: 'GBP',      // account currency
@@ -268,7 +269,8 @@ const FS_COMMANDS = [
     run(cfg, rest, matched) {
       // "ledger" on its own is both the verb and the target.
       const all = ((rest || '') + ' ' + (matched || '')).toLowerCase();
-      const want = /ledger|record|history|result/.test(all) ? 'ledger'
+      const want = /history|past|won|lost/.test(all) ? 'history'
+                 : /ledger|record|result/.test(all) ? 'ledger'
                  : /market|voice|context|condition/.test(all) ? 'market'
                  : /calc|maths|math|money/.test(all) ? 'calc'
                  : /test|trial|strateg|search/.test(all) ? 'tested'
@@ -312,7 +314,7 @@ function fsParse(input) {
   // ambiguous — nothing else on this site is called "ledger" — and resolving
   // them first stops "open market" matching expand's 'open' alias and
   // "show me the ledger" matching only's 'show'.
-  const PANE_RE = /\b(ledger|market|tested|signals?|trials?|record|history|calculator|calc|maths|math)\b/;
+  const PANE_RE = /\b(ledger|market|tested|signals?|trials?|record|history|past|results?|calculator|calc|maths|math)\b/;
   const paneHit = text.match(PANE_RE);
   if (paneHit) {
     const tabCmd = FS_COMMANDS.find(c => c.name === 'tab');

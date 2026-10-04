@@ -1035,3 +1035,23 @@ h2.sec:active { cursor: grabbing; }
   .trk-near .trk-now { animation: trk-pulse 1.4s ease-in-out infinite; }
   @keyframes trk-pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
 }
+
+/* ─────────────── History filters ─────────────── */
+.hfilters { display: flex; flex-wrap: wrap; gap: 7px; margin: 14px 0 4px; }
+.hf { cursor: pointer; font: 620 11.5px/1 var(--sans); color: var(--text-faint);
+  background: #0a0e1a; border: 1px solid var(--line-soft); border-radius: 8px;
+  padding: 11px 13px; display: inline-flex; align-items: center; gap: 7px; }
+.hf span { font: 650 10px/1 var(--mono); padding: 4px 6px; border-radius: 4px;
+  background: #0f1526; border: 1px solid var(--line-soft); color: var(--text-faint); }
+.hf:hover { color: var(--text-dim); border-color: #2b3a5e; }
+.hf.on { color: var(--text); background: var(--accent-soft); border-color: #6b8cff45; }
+.hf.on span { color: var(--accent); background: #0a0e1a; }
+.hf.win.on { background: var(--up-soft); border-color: #2fd98a45; }
+.hf.win.on span { color: var(--up); }
+.hf.loss.on { background: var(--down-soft); border-color: #ff5f6d45; }
+.hf.loss.on span { color: var(--down); }
+.hf.open.on { background: var(--warn-soft); border-color: #ffb63d45; }
+.hf.open.on span { color: var(--warn); }
+.h-res.win { color: var(--up); background: var(--up-soft); border: 1px solid #2fd98a40; }
+#history .hist { margin-top: 12px; max-height: none; }
+@media (max-width: 620px) { .hf { padding: 10px 11px; font-size: 11px; } }

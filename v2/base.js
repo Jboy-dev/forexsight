@@ -672,6 +672,10 @@ function installChart() {
   if (window._fsChartInstalled || !window.FSCHART) return;
   window._fsChartInstalled = true;
 
+  // When prefetched bars land, redraw so the live tracker on each card shows a
+  // real price instead of the "not loaded" placeholder it rendered with.
+  window.addEventListener('fs-bars-ready', () => { try { render(); } catch (_) {} });
+
   const openFor = (card) => {
     const key = card.dataset.sigkey;
     const all = (S.latestSignals && S.latestSignals.signals) || [];
@@ -1048,7 +1052,7 @@ function applySavedOrder() {
    mean re-rendering on every switch and would throw away the open/closed state
    of every <details> inside — which is the same mistake the old base made.
    ----------------------------------------------------------------------- */
-const PANES = ['signals', 'market', 'calc', 'ledger', 'tested'];
+const PANES = ['signals', 'market', 'calc', 'history', 'ledger', 'tested'];
 
 function applyTab() {
   const want = PANES.includes(S.cfg && S.cfg.tab) ? S.cfg.tab : 'signals';
@@ -1085,7 +1089,140 @@ function renderTabCounts() {
   const L = S.ledger;
   const b = el('tab-n-ledger');
   if (b) b.textContent = L && L.coverage ? String(L.coverage.total) : '';
+  const h = el('tab-n-history');
+  if (h) h.textContent = L && Array.isArray(L.history) ? String(L.history.length) : '';
   applyTab();
+}
+
+
+/* ─────────────────────── History ───────────────────────
+   Every signal this site has ever published and what became of it, filterable
+   by outcome. Not a window of the most recent few — the whole book, which is
+   why the archive exists.
+   ----------------------------------------------------------------------- */
+function renderHistory() {
+  const L = S.ledger, box = el('history');
+  if (!box) return;
+  if (!L || !Array.isArray(L.history)) {
+    box.innerHTML = `<div class="empty"><strong>History not published yet</strong>The ledger has not been built with a full history.</div>`;
+    return;
+  }
+
+  const rows = L.history;
+  const cfg = S.cfg || {};
+  const filter = cfg.histFilter || 'all';
+
+  const isWin = (x) => typeof x.resultR === 'number' && x.resultR > 0;
+  const isLoss = (x) => typeof x.resultR === 'number' && x.resultR <= 0;
+  const isOpen = (x) => x.resultR == null;
+
+  const counts = {
+    all: rows.length,
+    won: rows.filter(isWin).length,
+    lost: rows.filter(isLoss).length,
+    open: rows.filter(isOpen).length,
+    target: rows.filter(x => (x.tpReached || 0) >= 1).length,
+  };
+
+  let shown = rows;
+  if (filter === 'won') shown = rows.filter(isWin);
+  else if (filter === 'lost') shown = rows.filter(isLoss);
+  else if (filter === 'open') shown = rows.filter(isOpen);
+  else if (filter === 'target') shown = rows.filter(x => (x.tpReached || 0) >= 1);
+
+  // Respect the pair/direction orders already in force, so "only gold" narrows
+  // the history too rather than the page disagreeing with itself.
+  if (cfg.pairs && cfg.pairs.length) {
+    shown = shown.filter(x => {
+      const p = String(x.pair || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+      return cfg.pairs.some(t => p.includes(String(t).toUpperCase().replace(/[^A-Z0-9]/g, '')));
+    });
+  }
+  if (cfg.direction) shown = shown.filter(x => String(x.direction || '').toUpperCase().startsWith(cfg.direction[0]));
+
+  const resolved = shown.filter(x => typeof x.resultR === 'number');
+  const sumR = resolved.reduce((a, b) => a + b.resultR, 0);
+  const wins = resolved.filter(x => x.resultR > 0).length;
+
+  const chip = (k, label, n, cls) =>
+    `<button class="hf${filter === k ? ' on' : ''}${cls ? ' ' + cls : ''}" data-hfilter="${k}">${esc(label)} <span>${esc(n)}</span></button>`;
+
+  box.innerHTML = `
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:26px">
+        <div class="rec-i"><div class="k">Signals in view</div><div class="v">${esc(shown.length)}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">of ${esc(rows.length)} ever published</div></div>
+        <div class="rec-i"><div class="k">Won / lost</div>
+          <div class="v" style="font-size:22px"><span style="color:var(--up)">${esc(wins)}</span> / <span style="color:var(--down)">${esc(resolved.length - wins)}</span></div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">${resolved.length ? esc(Math.round((wins / resolved.length) * 100)) + '% of resolved' : 'none resolved'}</div></div>
+        <div class="rec-i"><div class="k">Total</div>
+          <div class="v" style="color:${sumR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(sumR) + sumR.toFixed(1))}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">sum of every resolved result</div></div>
+      </div>
+    </div>
+
+    <div class="hfilters">
+      ${chip('all', 'Everything', counts.all)}
+      ${chip('won', 'Won', counts.won, 'win')}
+      ${chip('lost', 'Lost', counts.lost, 'loss')}
+      ${chip('target', 'Hit a target', counts.target)}
+      ${chip('open', 'Still open', counts.open, 'open')}
+    </div>
+
+    ${shown.length ? `<div class="hist">${shown.map(historyRow).join('')}</div>`
+      : `<div class="empty"><strong>Nothing matches</strong>No signals in this view. Try Everything, or clear your orders.</div>`}
+
+    <p style="font-size:11.5px;color:var(--text-faint);margin-top:14px;line-height:1.6">
+      Covering ${esc(String(L.coverage.from).slice(0, 10))} to ${esc(String(L.coverage.to).slice(0, 10))}.
+      A signal counts as <strong>won</strong> if it closed positive — which includes setups that timed out
+      slightly ahead without reaching a target. ${esc(counts.target)} of ${esc(counts.all)} actually reached TP1 or better.</p>`;
+
+  for (const b of box.querySelectorAll('[data-hfilter]')) {
+    b.addEventListener('click', () => {
+      S.cfg.histFilter = b.dataset.hfilter;
+      if (window.FS) window.FS.save(S.cfg);
+      renderHistory();
+    });
+  }
+}
+
+function historyRow(x) {
+  const R = num(x.resultR);
+  const open = R == null;
+  const cls = open ? 'open' : R > 0 ? 'win' : 'loss';
+  const label = open ? 'OPEN' : R > 0 ? 'WON' : 'LOST';
+  const mae = num(x.maeR), mfe = num(x.mfeR);
+
+  return `<details class="hrow">
+    <summary>
+      <span class="h-caret">&#9656;</span>
+      <span class="h-res ${cls}">${esc(label)}</span>
+      <span>
+        <span class="h-pair">${esc(x.pair || '—')}</span>
+        <span class="h-when"> ${esc(String(x.direction || '').toUpperCase())} &middot; ${esc(x.firedAt ? ago(Date.parse(x.firedAt)) : '—')}${x.tpReached ? ' &middot; TP' + esc(x.tpReached) : ''}</span>
+      </span>
+      <span class="h-r ${open ? '' : R > 0 ? 'pos' : 'neg'}">${open ? 'running' : esc(sign(R) + R.toFixed(2)) + 'R'}</span>
+    </summary>
+    <div class="h-body">
+      <dl class="kv">
+        <dt>Entry</dt><dd>${esc(price(x.entry, x.pair))}</dd>
+        <dt>Stop</dt><dd>${esc(price(x.sl, x.pair))}</dd>
+        <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} &middot; ${esc(price(x.tp2, x.pair))} &middot; ${esc(price(x.tp3, x.pair))}</dd>
+        <dt>Furthest reached</dt><dd>${x.tpReached ? 'TP' + esc(x.tpReached) : 'no target reached'}</dd>
+        ${mfe != null ? `<dt>Best it went</dt><dd>${esc(sign(mfe) + mfe.toFixed(2))}R</dd>` : ''}
+        ${mae != null ? `<dt>Worst it went</dt><dd>${esc(sign(mae) + mae.toFixed(2))}R</dd>` : ''}
+        ${x.confidence != null ? `<dt>Confidence</dt><dd>${esc(x.confidence)}</dd>` : ''}
+        ${x.regime ? `<dt>Regime</dt><dd>${esc(x.regime)}</dd>` : ''}
+        ${x.firedAt ? `<dt>Fired</dt><dd>${esc(new Date(x.firedAt).toUTCString().slice(5, 22))} UTC</dd>` : ''}
+        ${x.resolvedAt ? `<dt>Resolved</dt><dd>${esc(new Date(x.resolvedAt).toUTCString().slice(5, 22))} UTC</dd>` : ''}
+      </dl>
+      <p style="margin-top:10px">${open
+        ? 'Still running, so it counts for nothing yet.'
+        : R > 0
+          ? `Closed ${esc(sign(R) + R.toFixed(2))}R.${!x.tpReached ? ' It never reached a target — it timed out while ahead, which is why the two win rates on the Ledger differ.' : ''}${mae != null && mae < -0.5 ? ` It first went ${esc(mae.toFixed(2))}R against you.` : ''}`
+          : `Closed ${esc(sign(R) + R.toFixed(2))}R.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : ''}`}</p>
+    </div>
+  </details>`;
 }
 
 /* ───────────────────── the signal ledger ─────────────────────
@@ -1551,7 +1688,7 @@ function renderChrome() {
 function render() {
   const steps = [
     ['command', renderCommand], ['voice', renderVoice], ['context', renderContext], ['cards', renderCards],
-    ['record', renderRecord], ['ledger', renderLedger], ['calc', renderCalc], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts], ['order', applySavedOrder],
+    ['record', renderRecord], ['ledger', renderLedger], ['history', renderHistory], ['calc', renderCalc], ['trials', renderTrials], ['hist', renderHist], ['chrome', renderChrome], ['tabs', renderTabCounts], ['order', applySavedOrder],
   ];
   for (const [name, fn] of steps) {
     // One failing panel must not blank the page — the old base learned this the

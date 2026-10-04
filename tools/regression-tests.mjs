@@ -1025,5 +1025,37 @@ t('the live tracker reads price from the same bars the chart and engine use', ()
   return true;
 });
 
+t('History publishes the WHOLE book, not a recent window', () => {
+  if (!existsSync('data/ledger.json')) return 'skipped: no ledger';
+  const L = JSON.parse(readFileSync('data/ledger.json', 'utf8'));
+  if (!Array.isArray(L.history)) return 'no history array is published';
+  if (L.history.length !== L.coverage.total) {
+    return `history has ${L.history.length} rows but ${L.coverage.total} signals exist — a History `
+         + 'segment that silently stops is not a history';
+  }
+  // The three outcome buckets must account for every row, or a filter hides something.
+  const won = L.history.filter(x => typeof x.resultR === 'number' && x.resultR > 0).length;
+  const lost = L.history.filter(x => typeof x.resultR === 'number' && x.resultR <= 0).length;
+  const open = L.history.filter(x => x.resultR == null).length;
+  if (won + lost + open !== L.history.length) {
+    return `buckets do not reconcile: ${won} + ${lost} + ${open} != ${L.history.length}`;
+  }
+  if (won !== L.winRates.byOutcome.wins) {
+    return `History counts ${won} wins but the ledger headline says ${L.winRates.byOutcome.wins}`;
+  }
+  return true;
+});
+
+t('the live tracker redraws when prefetched bars arrive', () => {
+  const ch = readFileSync('v2/chart.js', 'utf8');
+  const base = readFileSync('v2/base.js', 'utf8');
+  // Cards render before any fetch completes. Without an event the tracker drew
+  // "live price not loaded" once and stayed that way for a full cycle — which on
+  // a phone opening cold is all you ever saw.
+  if (!/fs-bars-ready/.test(ch)) return 'the prefetch never announces that bars landed';
+  if (!/addEventListener\('fs-bars-ready'/.test(base)) return 'the page never listens for bars landing';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

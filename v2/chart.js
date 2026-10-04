@@ -72,12 +72,30 @@ async function chFetchBars(pair) {
   return bars;
 }
 
-/** Warm the cache for setups on screen, so the first tap is as fast as the second. */
+/** Warm the cache for setups on screen, so the first tap is as fast as the second.
+ *
+ * It must ALSO announce when bars land. The live tracker on each card reads this
+ * cache, and the cards render before any fetch completes — so without a signal
+ * the tracker drew "live price not loaded" once and stayed that way until the
+ * next two-minute cycle. On a phone opening the app cold that is all you ever
+ * saw, which is exactly the bar going missing. */
 function chPrefetch(pairs) {
-  for (const p of pairs.slice(0, 6)) {
-    if (CH_CACHE.has(p)) continue;
-    chFetchBars(p).catch(() => {});
+  const wanted = pairs.slice(0, 8).filter(p => p && !CH_CACHE.has(p));
+  if (!wanted.length) return;
+  let landed = 0;
+  for (const p of wanted) {
+    chFetchBars(p)
+      .then((bars) => { if (bars && bars.length) landed++; })
+      .catch(() => {})
+      .finally(() => {
+        // Tell the page once the whole batch has settled, so it redraws with
+        // real prices instead of waiting for the next cycle.
+        if (--pending === 0 && landed > 0) {
+          try { window.dispatchEvent(new CustomEvent('fs-bars-ready', { detail: { landed } })); } catch (_) {}
+        }
+      });
   }
+  var pending = wanted.length;
 }
 
 /* ── drawing ────────────────────────────────────────────────────────────── */

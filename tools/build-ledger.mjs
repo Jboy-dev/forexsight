@@ -126,6 +126,20 @@ const out = {
   byRegime:    slice(resolved, s => (s.regime && s.regime.label) || s.regime || null),
   byOutcome:   slice(resolved, s => s.status),
   equityCurve: curve.length > 300 ? curve.filter((_, i) => i % Math.ceil(curve.length / 300) === 0) : curve,
+  // The whole book, not a window. A History segment that silently stops at 120
+  // rows is not a history — and the archive exists precisely so nothing is lost.
+  // 400-odd rows of 16 short fields is well under 100KB, which is cheaper than
+  // the explanation for why older signals vanished.
+  history: all.slice().reverse().map(s => ({
+    key: s.key, pair: s.pair, direction: s.direction, firedAt: s.firedAt,
+    resolvedAt: s.resolvedAt || null, status: s.status,
+    resultR: typeof s.resultR === 'number' ? +s.resultR.toFixed(3) : null,
+    tpReached: s.tpReached || 0, confidence: s.confidence ?? null,
+    entry: s.entry, sl: s.sl, tp1: s.tp1, tp2: s.tp2, tp3: s.tp3,
+    maeR: s.maeR ?? null, mfeR: s.mfeR ?? null,
+    regime: (s.regime && s.regime.label) || s.regime || null,
+    barsWatched: s.barsWatched ?? null,
+  })),
   recent: all.slice(-120).reverse().map(s => ({
     key: s.key, pair: s.pair, direction: s.direction, firedAt: s.firedAt, status: s.status,
     resultR: typeof s.resultR === 'number' ? +s.resultR.toFixed(3) : null,
