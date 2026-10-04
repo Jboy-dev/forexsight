@@ -50,59 +50,38 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
   // of date the moment the universe grows — which is exactly how XRP ended up
   // judged against the FX threshold.
   const isIndex = /^(US30|NAS100|SPX500|UK100|GER40|JP225)$/.test(pair);
-  let gaps = 0;
+
+  // ── WHAT SEPARATES A CLOSURE FROM A HOLE ──────────────────────────────
+  //
+  // Seven false alarms have now come from this one question, each patched with
+  // another special case: weekends, then long weekends, then index overnights,
+  // then Thursday holidays, then 15m weekends. Every patch was a guess about
+  // WHICH markets close WHEN, and the next instrument broke it again.
+  //
+  // The distinguishing property is not the day, the duration, or the asset
+  // class. It is that A CLOSURE RECURS AT THE SAME CLOCK TIME and a fault does
+  // not. Gold halts at 21:00 UTC every day; an index closes at 20:00 every day;
+  // FX stops Friday evening every week. A missing hour in the middle of a
+  // session happens once.
+  //
+  // So the series tells us its own schedule: gaps are grouped by the hour they
+  // begin at, and any hour that accounts for a repeated, regular pattern is
+  // this instrument's closing time. Nothing is hard-coded per market.
+  const gapStarts = [];
   for (let i = 1; i < bars.length; i++) {
     const dt = bars[i].t - bars[i - 1].t;
     if (median > 0 && dt > median * 3) {
-      const d = new Date(bars[i - 1].t).getUTCDay();
-      // v484 — a public holiday extends the weekend, and the market simply
-      // stays shut. Gold ran Fri 4 Sep 20:00 to Tue 8 Sep 04:00 — 80 hours,
-      // because US Labor Day closed COMEX on the Monday. The old ceiling of
-      // 60 bars covered an ordinary weekend and nothing longer, so every long
-      // weekend was reported as a hole in the data.
-      //
-      // This is the fourth distinct false alarm from this file: it has flagged
-      // a genuine USD/JPY selloff as corruption, called every weekend a dead
-      // feed, treated normal crypto volatility as a splice, and now a bank
-      // holiday. The pattern is always the same — the market did something
-      // ordinary that the check had not been told about. A gap that begins on
-      // a Friday is the market closing; allow up to four days of it.
-      const startsAtWeekend = (d === 5 || d === 6 || d === 0);
-      const weekendish = startsAtWeekend && dt <= median * 96;
-      // FIFTH false alarm, same shape: an index trades ONE session a day. US30
-      // and NAS100 run 13:00-20:00 UTC, so every single night is a gap by
-      // construction — both were reported with 16 "unexplained gaps" while
-      // being perfectly intact. An overnight close on an index is the market
-      // shutting, exactly like a weekend on FX.
-      // An overnight gap on an index must actually SPAN THE SESSION BOUNDARY.
-      // A flat "under 20x the spacing" tolerance excused any hole up to twenty
-      // hours, so a genuine 4-hour gap torn out of the middle of a session
-      // passed as clean — a control test with three bars deliberately removed
-      // proved it. Both the overnight and the holiday case now test the same
-      // thing: trading stopped at the close and resumed at the open.
-
-      // SIXTH false alarm, same family. US30 and NAS100 showed two gaps the
-      // weekend rule would not excuse because they START ON A THURSDAY:
-      //   Thu 18 Jun 19:30 -> Mon 22 Jun 13:30  (Juneteenth)
-      //   Thu 02 Jul 19:30 -> Mon 06 Jul 13:30  (Independence Day)
-      // Both are the exchange closing early for a holiday, which is not a hole
-      // in the data. What identifies a closure is not which day it begins on —
-      // it is that trading STOPS at the session close and RESUMES at the normal
-      // session open. So that is what gets tested.
-      const indexClosure = (() => {
-        if (!isIndex || dt > median * 120) return false;        // 5 days is the ceiling
-        const endsAt = new Date(bars[i - 1].t).getUTCHours();
-        const opensAt = new Date(bars[i].t).getUTCHours();
-        const sessionEnd = endsAt >= 19 && endsAt <= 21;        // US cash close
-        const sessionOpen = opensAt >= 13 && opensAt <= 15;     // US cash open
-        return sessionEnd && sessionOpen;
-      })();
-
-      if (!weekendish && !indexClosure) gaps++;
+      gapStarts.push({ i, dt, hour: new Date(bars[i - 1].t).getUTCHours(),
+                       day: new Date(bars[i - 1].t).getUTCDay() });
     }
   }
+  const hourCounts = new Map();
+  for (const g of gapStarts) hourCounts.set(g.hour, (hourCounts.get(g.hour) || 0) + 1);
+  // An hour is a scheduled close if it accounts for several gaps. One-offs are
+  // never scheduled; a daily halt shows up dozens of times.
+  const scheduledHours = new Set([...hourCounts.entries()].filter(([, n]) => n >= 5).map(([h]) => h));
 
-  // Each candle must be internally consistent.
+  // Per-bar integrity: impossible candles, missing fields, non-positive prices.
   let badOHLC = 0, nonFinite = 0, nonPositive = 0;
   for (const b of bars) {
     if (!num(b.o) || !num(b.h) || !num(b.l) || !num(b.c) || !num(b.t)) { nonFinite++; continue; }
@@ -110,16 +89,16 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
     if (b.h < b.l || b.h < Math.max(b.o, b.c) || b.l > Math.min(b.o, b.c)) badOHLC++;
   }
 
-  // Data discontinuity, NOT volatility.
-  //
-  // The first version of this flagged any bar with a large true range, and it
-  // duly flagged five USD/JPY bars from the genuine 163->155 selloff at the end
-  // of July. Those bars were real: each opened within a fraction of the prior
-  // close and trended through. A detector that reports real market moves as
-  // faults teaches you to ignore it, so it now tests the thing that actually
-  // indicates bad data — a bar whose OPEN is disconnected from the previous
-  // CLOSE. Continuous markets do not gap mid-session; a feed splicing two
-  // different series does.
+  let gaps = 0;
+  for (const g of gapStarts) {
+    const gapHours = g.dt / 36e5;
+    // Begins at an hour this instrument regularly stops trading -> a closure.
+    if (scheduledHours.has(g.hour)) continue;
+    // Or it is a weekend, which every market takes.
+    if ((g.day === 5 || g.day === 6 || g.day === 0) && gapHours <= 96) continue;
+    gaps++;
+  }
+
   const gapsFromClose = [];
   for (let i = 1; i < bars.length; i++) {
     const p = bars[i - 1], c = bars[i];

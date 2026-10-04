@@ -1273,5 +1273,45 @@ t('confidence is labelled as non-predictive, since that is what it measured', ()
   return true;
 });
 
+t('closures are detected from the series own schedule, not hard-coded per market', () => {
+  const src = readFileSync('tools/verify-data.mjs', 'utf8');
+  // Seven false alarms came from guessing WHICH markets close WHEN — weekends,
+  // long weekends, index overnights, Thursday holidays, then 15m weekends.
+  // A closure recurs at the same clock time; a fault happens once.
+  if (!/scheduledHours/.test(src)) return 'closures are still identified by hard-coded rules per asset class';
+  if (!/n >= 5/.test(src)) return 'no recurrence threshold — a one-off gap could be mistaken for a schedule';
+  // Tolerances must be in HOURS: a weekend is 48x the spacing on hourly bars
+  // and 192x on 15m, so a multiple-of-spacing rule breaks on a new timeframe.
+  if (/dt <= median \* 96/.test(src)) return 'the weekend tolerance is in bar-multiples, which breaks on 15m data';
+  if (!/gapHours <= 96/.test(src)) return 'the weekend tolerance is not measured in hours';
+  return true;
+});
+
+t('the exit geometry has been searched, not just inherited', () => {
+  if (!existsSync('tools/exit-search.mjs')) return 'the exit scheme has never been searched';
+  if (!existsSync('data/exit-search.json')) return 'skipped: not built yet';
+  const x = JSON.parse(readFileSync('data/exit-search.json', 'utf8'));
+  if (x.schemesTested < 50) return `only ${x.schemesTested} exit schemes tested`;
+  // The entries must be held constant or the comparison measures two things.
+  const src = readFileSync('tools/exit-search.mjs', 'utf8');
+  if (!/free = i \+ 40/.test(src)) return 'entry spacing is not fixed — the entry set would change with the scheme';
+  if (x.bestClearsZero && !x.bestPositiveInAllThree) {
+    return 'an exit is reported as clearing zero without being positive in all three splits';
+  }
+  return true;
+});
+
+t('the engine is benchmarked against doing nothing', () => {
+  if (!existsSync('data/benchmark-vs-holding.json')) return 'skipped: not built yet';
+  const b = JSON.parse(readFileSync('data/benchmark-vs-holding.json', 'utf8'));
+  if (!b.basket || typeof b.basket.cagrPct !== 'number') return 'no buy-and-hold benchmark';
+  if (!b.instruments || b.instruments.length < 10) return 'too few instruments benchmarked';
+  // A strategy that loses while holding gains must never be described as working.
+  if (b.engine && b.engine.atOnePercentRisk.annualPct < b.basket.cagrPct && b.engineBeatsHolding) {
+    return 'engineBeatsHolding is true although the engine returns less than holding';
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

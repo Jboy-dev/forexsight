@@ -196,6 +196,16 @@ jobs:
         run: node tools/engine-sealed-test.mjs
         continue-on-error: true
 
+      # The exit geometry — the one lever never pulled before 2026-10-04.
+      - name: Exit search
+        run: node tools/exit-search.mjs
+        continue-on-error: true
+
+      # The comparison every strategy owes: is it better than doing nothing?
+      - name: Benchmark vs holding
+        run: node tools/benchmark-vs-holding.mjs
+        continue-on-error: true
+
       # The ONLY route a rule can take into the signal path. Promotes on sealed
       # evidence alone; today it promotes nothing, which is the correct output.
       - name: Promote what passed

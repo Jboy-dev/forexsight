@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -1334,6 +1334,50 @@ function renderLedger() {
 
 
 
+
+/** The comparison every strategy owes you: is it better than doing nothing?
+    A strategy that loses while holding gains is not a strategy. */
+function renderBenchmark() {
+  const b = S.benchmarkVsHolding, e = S.engineSealedTest, x = S.exitSearch;
+  if (!b) return '';
+  const bk = b.basket, best = b.instruments && b.instruments[0];
+  return `
+    <h2 class="sec" style="margin-top:4px">Is any of it better than doing nothing?</h2>
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:26px">
+        <div class="rec-i"><div class="k">Hold all ${esc(bk.instruments)} equally</div>
+          <div class="v" style="color:var(--up)">+${esc(bk.cagrPct)}%</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">a year over ${esc(bk.years)} years</div></div>
+        ${b.engine ? `<div class="rec-i"><div class="k">The engine, all history</div>
+          <div class="v" style="color:${b.engine.atOnePercentRisk.annualPct > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(b.engine.atOnePercentRisk.annualPct) + b.engine.atOnePercentRisk.annualPct)}%</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">a year at 1% risk, ${esc(b.engine.atOnePercentRisk.tradesPerYear)} trades</div></div>
+        <div class="rec-i"><div class="k">The engine, sealed quarter</div>
+          <div class="v" style="color:var(--down)">${esc((b.engine.sealedAvgR * b.engine.atOnePercentRisk.tradesPerYear).toFixed(1))}%</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">a year, on data it never saw</div></div>` : ''}
+      </div>
+      <div class="rec-note"><strong>${esc(b.verdict)}</strong></div>
+    </div>
+
+    ${x ? `<div class="voice-honest" style="margin-top:12px">
+      <strong>And the exits cannot rescue it.</strong> ${esc(x.schemesTested)} different stop and target
+      schemes were tested on ${esc(x.entries.toLocaleString())} of the engine's own entries, held constant so
+      only the exit varied. ${esc(x.verdict)}
+    </div>` : ''}
+
+    <details class="fold" style="margin-top:12px;border-top:0"><summary>What simply holding each market returned</summary>
+      <div class="fold-in">
+        <table class="kb-t"><tr><th>market</th><th>years</th><th>a year</th><th>worst fall</th><th>return ÷ risk</th></tr>
+        ${(b.instruments || []).map(r => `<tr>
+          <td>${esc(r.pair)}</td><td>${esc(r.years)}</td>
+          <td class="${r.cagrPct > 0 ? 'pos' : 'neg'}">${esc(sign(r.cagrPct) + r.cagrPct)}%</td>
+          <td class="neg">−${esc(r.maxDrawdownPct)}%</td>
+          <td>${esc(r.sharpe)}</td></tr>`).join('')}</table>
+        <p style="margin-top:10px">Holding is not free money — every one of these fell ${esc(Math.min(...(b.instruments||[{maxDrawdownPct:0}]).map(r => r.maxDrawdownPct)))}% to
+        ${esc(Math.max(...(b.instruments||[{maxDrawdownPct:0}]).map(r => r.maxDrawdownPct)))}% from peak at some point, and five of the FX
+        majors lost money over two decades. The point is narrower: <strong>no strategy tested here beat it.</strong></p>
+      </div></details>`;
+}
+
 /** The single most important measurement here: the ACTUAL engine, replayed over
     years of bars and judged on data it never saw while deciding. */
 function renderEngineTest() {
@@ -1425,6 +1469,7 @@ function renderTrials() {
   const active = a && a.active;
 
   box.innerHTML = `
+    ${renderBenchmark()}
     ${renderEngineTest()}
 
     <h2 class="sec">Textbook strategies, searched</h2>
