@@ -938,15 +938,17 @@ t('asset classification is by pattern, not a list that goes stale', () => {
          + 'bars were reported as a feed splice';
   }
   if (!/\^\(BTC\|ETH\|SOL\|XRP/.test(src)) return 'no pattern-based crypto classification';
-  if (!/indexClosure/.test(src)) {
-    return 'an index trades one session a day, so every night is a gap — without this US30 and '
-         + 'NAS100 are reported with 16 unexplained gaps each while being intact';
+  // Closures are now derived from each series' own schedule rather than from a
+  // per-asset rule. That supersedes the index-specific check this test used to
+  // make, and covers every market without naming any of them.
+  if (!/scheduledHours/.test(src)) {
+    return 'closures are not derived from the series schedule — an index trades one session a day, '
+         + 'so every night is a gap, and US30/NAS100 get reported as broken while being intact';
   }
-  // The closure test must check an actual SESSION BOUNDARY, not just a duration.
-  // A flat "under 20x the spacing" tolerance excused a genuine 4-hour hole torn
-  // out of the middle of a session; a control with three bars removed proved it.
-  if (!/sessionEnd && sessionOpen/.test(src)) {
-    return 'a closure is excused by duration alone — a real mid-session hole would pass as clean';
+  // A closure must RECUR. Excusing a gap by duration alone let a genuine
+  // mid-session hole pass as clean; a control with bars removed proved it.
+  if (!/hourCounts/.test(src) || !/n >= 5/.test(src)) {
+    return 'a gap is excused without requiring it to recur — a one-off hole would pass as a closure';
   }
   return true;
 });
