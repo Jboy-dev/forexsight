@@ -251,6 +251,14 @@ jobs:
         run: node tools/build-ledger.mjs
         continue-on-error: true
 
+      # Actually SEND the notification. Every piece of the push system existed —
+      # VAPID key, subscribe endpoint, fire endpoint, a handler in the service
+      # worker — and nothing ever called it, so subscribers were registered and
+      # then never pushed to. Alerts could not reach a closed app at all.
+      - name: Push new signals
+        run: node tools/push-new-signals.mjs
+        continue-on-error: true
+
       # Conversion rates for the money figures. P&L lands in each instrument's
       # quote currency; without these a USD/JPY result shown as pounds is out by
       # a factor of about 200.

@@ -258,6 +258,58 @@ function chDraw() {
 }
 
 
+
+/* ───────────────── full screen ─────────────────
+   Works for BOTH views: our canvas and the TradingView embed are inside the
+   same panel, so the panel is what goes full screen and whichever view is
+   showing fills it.
+
+   The instrument name stays pinned at the top, because a chart filling a phone
+   screen with no label on it is a chart you can misread — and on a page that
+   can show nineteen instruments, which one you are looking at is not a detail.
+   ----------------------------------------------------------------------- */
+function chIsFull() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+
+async function chToggleFull() {
+  const panel = document.querySelector('.ch-panel');
+  if (!panel) return;
+  try {
+    if (chIsFull()) {
+      await (document.exitFullscreen ? document.exitFullscreen() : document.webkitExitFullscreen());
+    } else if (panel.requestFullscreen) {
+      await panel.requestFullscreen({ navigationUI: 'hide' });
+    } else if (panel.webkitRequestFullscreen) {
+      panel.webkitRequestFullscreen();
+    } else {
+      // iOS Safari refuses the Fullscreen API on a div. Fall back to filling
+      // the viewport ourselves, which gets the same result without the API.
+      panel.classList.toggle('ch-faux-full');
+      chAfterFullChange();
+      return;
+    }
+  } catch (_) {
+    panel.classList.toggle('ch-faux-full');
+  }
+  chAfterFullChange();
+}
+
+function chAfterFullChange() {
+  const panel = document.querySelector('.ch-panel');
+  const btn = document.getElementById('chart-full');
+  const on = chIsFull() || (panel && panel.classList.contains('ch-faux-full'));
+  if (panel) panel.classList.toggle('is-full', !!on);
+  if (btn) btn.innerHTML = on ? '&#10005; Exit full screen' : '&#9974; Full screen';
+  // The canvas must be re-measured: its CSS box just changed size, and the
+  // backing store is only resized when the dimensions differ.
+  requestAnimationFrame(() => { chRequestDraw(); });
+}
+
+for (const ev of ['fullscreenchange', 'webkitfullscreenchange']) {
+  document.addEventListener(ev, chAfterFullChange);
+}
+
 /* ─────────────────── the real TradingView ───────────────────
    Our own chart is drawn from the bars the engine read, so it always agrees
    with the signal. TradingView is the other thing you want: the live market,
@@ -603,6 +655,7 @@ async function chOpen(sig, pickFn) {
         <div class="ch-modes">
           <button class="ch-mode on" data-mode="own">Our chart</button>
           <button class="ch-mode" data-mode="tv">TradingView</button>
+          <button class="ch-full" id="chart-full" title="Full screen">&#9974; Full screen</button>
           <a class="ch-ext" id="chart-ext" target="_blank" rel="noopener noreferrer">Open in TradingView &nearr;</a>
         </div>
         <div class="ch-readout" id="chart-readout"></div>
@@ -619,6 +672,7 @@ async function chOpen(sig, pickFn) {
       if (z) { chSetBars(+z.dataset.bars); }
       const m = e.target.closest('[data-mode]');
       if (m) chSetView(m.dataset.mode);
+      if (e.target.closest('#chart-full')) chToggleFull();
     });
     const cv = el0.querySelector('#chart-canvas');
     chInstallInteraction(cv);
@@ -626,6 +680,7 @@ async function chOpen(sig, pickFn) {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') chClose(); });
   }
   el0.classList.add('open');
+  if (typeof pushOverlayState === 'function') pushOverlayState('chart');
 
   document.getElementById('chart-pair').textContent = `${CH.pair} ${CH.sig.direction}`;
   const ext = document.getElementById('chart-ext');
@@ -743,9 +798,16 @@ async function chTick() {
   chDraw();
 }
 
-function chClose() {
+function chClose(fromBack) {
   const e = document.getElementById('chart');
-  if (e) e.classList.remove('open');
+  if (!e || !e.classList.contains('open')) return;
+  e.classList.remove('open');
+  // Leave full screen with the panel, or the browser is left in a full-screen
+  // state with nothing in it.
+  try { if (document.fullscreenElement) document.exitFullscreen(); } catch (_) {}
+  const panel = document.querySelector('.ch-panel');
+  if (panel) panel.classList.remove('ch-faux-full', 'is-full');
+  if (!fromBack && typeof popOverlayState === 'function') popOverlayState();
   clearInterval(CH.timer);
   CH.timer = null;
 }

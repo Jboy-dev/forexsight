@@ -32,6 +32,30 @@ export async function onRequest(context) {
     return ok({ vapidPublic: VAPID_PUBLIC });
   }
 
+  // DELETE removes a subscription. Without this the client could unsubscribe
+  // locally while the server kept pushing to a dead endpoint forever.
+  if (request.method === 'DELETE') {
+    let body = {};
+    try { body = await request.json(); } catch (_) {}
+    if (!body.endpoint) return bad('endpoint required');
+    // Subscriptions live under individual `pushsub:` keys, not one blob. An
+    // earlier version of this read a single `push-subscriptions` key that does
+    // not exist, so it reported success while removing nothing.
+    try {
+      const list = await env.TRADES_KV.list({ prefix: 'pushsub:' });
+      let removed = 0;
+      for (const k of list.keys) {
+        const v = await env.TRADES_KV.get(k.name, 'json');
+        if (v && v.subscription && v.subscription.endpoint === body.endpoint) {
+          await env.TRADES_KV.delete(k.name);
+          removed++;
+        }
+      }
+      return new Response(JSON.stringify({ ok: true, removed, remaining: list.keys.length - removed }),
+        { headers: { 'Content-Type': 'application/json' } });
+    } catch (e) { return bad('could not remove: ' + e.message, 500); }
+  }
+
   if (request.method !== 'POST') return bad('Method not allowed', 405);
 
   let sub;

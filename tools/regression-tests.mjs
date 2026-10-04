@@ -1057,5 +1057,62 @@ t('the live tracker redraws when prefetched bars arrive', () => {
   return true;
 });
 
+/* ── Push. Every piece existed and nothing called it. ─────────────────── */
+t('something actually SENDS push notifications', () => {
+  if (!existsSync('tools/push-new-signals.mjs')) return 'no sender exists — subscribers would never be pushed to';
+  const wf = readFileSync('.github/workflows/mirror-signals.yml', 'utf8');
+  if (!/push-new-signals/.test(wf)) return 'the sender is never run by CI, so it would never fire';
+  const src = readFileSync('tools/push-new-signals.mjs', 'utf8');
+  if (!/push-sent\.json/.test(src)) return 'no memory of what was sent — a republished setup would buzz every cycle';
+  return true;
+});
+
+t('the client subscribes to real push, not just the page-only API', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  if (!/pushManager\.subscribe/.test(js)) {
+    return 'no pushManager subscription — Notification alone only fires while the page is OPEN, '
+         + 'which is useless on a closed phone app';
+  }
+  if (!/applicationServerKey/.test(js)) return 'no VAPID key is applied';
+  // The server validates sub.endpoint at the top level; wrapping it is rejected.
+  if (/body: JSON\.stringify\(\{ subscription: sub/.test(js)) {
+    return 'the subscription is wrapped in an object — the server validates endpoint/keys at the top level and rejects it';
+  }
+  if (!/standalone/.test(js)) return 'no iOS install check — iOS silently refuses push from an uninstalled site';
+  return true;
+});
+
+t('an overlay can be left without leaving the app', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  // With nothing listening, the phone back gesture exits the whole PWA to
+  // dismiss a dialog, which is the worst possible outcome.
+  if (!/addEventListener\('popstate'/.test(js)) return 'nothing listens for back, so the gesture would exit the app';
+  if (!/pushOverlayState/.test(js)) return 'overlays do not push a history entry for back to pop';
+  const ch = readFileSync('v2/chart.js', 'utf8');
+  if (!/pushOverlayState/.test(ch)) return 'the chart overlay is not on the history stack';
+  return true;
+});
+
+t('both charts can fill the screen with the instrument still labelled', () => {
+  const ch = readFileSync('v2/chart.js', 'utf8');
+  if (!/chToggleFull/.test(ch)) return 'no full-screen control';
+  if (!/ch-faux-full/.test(ch)) return 'no fallback — iOS Safari refuses the Fullscreen API on a div';
+  const css = readFileSync('v2/base.css', 'utf8');
+  if (!/\.ch-panel\.is-full \.ch-top[\s\S]{0,120}sticky/.test(css)) {
+    return 'the instrument name is not pinned in full screen — a full-screen chart with no label can be misread';
+  }
+  return true;
+});
+
+t('grid children can shrink, so nothing is pushed past the right edge', () => {
+  const css = readFileSync('v2/base.css', 'utf8');
+  // A number input has an intrinsic minimum width and a grid track will not go
+  // below its content without this. Measured at 390px it pushed 10 elements off.
+  if (!/\.acct-in input, \.acct-in select \{ min-width: 0/.test(css)) {
+    return 'account inputs have no min-width:0 — the grid overflows on a phone';
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

@@ -74,8 +74,31 @@ for (const f of readdirSync(DIR).filter(x => x.endsWith('.json'))) {
       // construction — both were reported with 16 "unexplained gaps" while
       // being perfectly intact. An overnight close on an index is the market
       // shutting, exactly like a weekend on FX.
-      const overnightOnIndex = isIndex && dt <= median * 20;
-      if (!weekendish && !overnightOnIndex) gaps++;
+      // An overnight gap on an index must actually SPAN THE SESSION BOUNDARY.
+      // A flat "under 20x the spacing" tolerance excused any hole up to twenty
+      // hours, so a genuine 4-hour gap torn out of the middle of a session
+      // passed as clean — a control test with three bars deliberately removed
+      // proved it. Both the overnight and the holiday case now test the same
+      // thing: trading stopped at the close and resumed at the open.
+
+      // SIXTH false alarm, same family. US30 and NAS100 showed two gaps the
+      // weekend rule would not excuse because they START ON A THURSDAY:
+      //   Thu 18 Jun 19:30 -> Mon 22 Jun 13:30  (Juneteenth)
+      //   Thu 02 Jul 19:30 -> Mon 06 Jul 13:30  (Independence Day)
+      // Both are the exchange closing early for a holiday, which is not a hole
+      // in the data. What identifies a closure is not which day it begins on —
+      // it is that trading STOPS at the session close and RESUMES at the normal
+      // session open. So that is what gets tested.
+      const indexClosure = (() => {
+        if (!isIndex || dt > median * 120) return false;        // 5 days is the ceiling
+        const endsAt = new Date(bars[i - 1].t).getUTCHours();
+        const opensAt = new Date(bars[i].t).getUTCHours();
+        const sessionEnd = endsAt >= 19 && endsAt <= 21;        // US cash close
+        const sessionOpen = opensAt >= 13 && opensAt <= 15;     // US cash open
+        return sessionEnd && sessionOpen;
+      })();
+
+      if (!weekendish && !indexClosure) gaps++;
     }
   }
 

@@ -199,7 +199,11 @@ const FS_COMMANDS = [
     run(cfg, rest) {
       const r = rest.trim().toLowerCase();
       const n = fsNum(r);
-      if (/off|stop|no|none|disable/.test(r)) { cfg.alerts = false; return 'Alerts off.'; }
+      if (/off|stop|no|none|disable/.test(r)) {
+        cfg.alerts = false;
+        if (typeof disablePush === 'function') disablePush();
+        return 'Alerts off.';
+      }
       if (n !== null) {
         cfg.alerts = true; cfg.alertMinConf = n;
         return `Alerts on for new setups scored ${n} or better that also pass your other orders.`
@@ -208,10 +212,19 @@ const FS_COMMANDS = [
       }
       if (/on|yes|enable|/.test(r)) {
         cfg.alerts = true;
-        return 'Alerts on. You will be told when a NEW setup passes your standing orders —'
-             + ' the same filters you see, so an alert always matches what is on screen.'
-             + (typeof Notification !== 'undefined' && Notification.permission !== 'granted'
-                ? ' Your browser will ask permission.' : '');
+        // Also subscribe to real push, which is what reaches a closed app. The
+        // page-only Notification API cannot, and relying on it alone is why
+        // alerts did nothing on the installed app.
+        if (typeof enablePush === 'function') {
+          enablePush().then((res) => {
+            if (typeof S !== 'undefined') {
+              S.lastMsg = { ok: res.ok, msg: res.msg };
+              if (typeof render === 'function') render();
+            }
+          });
+          return 'Alerts on — setting up notifications…';
+        }
+        return 'Alerts on. You will be told when a NEW setup passes your standing orders.';
       }
       return null;
     },

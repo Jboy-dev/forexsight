@@ -1055,3 +1055,78 @@ h2.sec:active { cursor: grabbing; }
 .h-res.win { color: var(--up); background: var(--up-soft); border: 1px solid #2fd98a40; }
 #history .hist { margin-top: 12px; max-height: none; }
 @media (max-width: 620px) { .hf { padding: 10px 11px; font-size: 11px; } }
+
+/* ─────────────── full-screen charts ─────────────── */
+.ch-full { cursor: pointer; font: 600 10px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-faint); background: #0a0e1a; border: 1px solid var(--line-soft);
+  border-radius: 7px; padding: 10px 11px; white-space: nowrap; margin-left: auto; }
+.ch-full:hover { color: var(--accent); border-color: #6b8cff40; background: var(--accent-soft); }
+.ch-ext { margin-left: 6px; }
+
+/* real fullscreen, and the iOS fallback, behave identically */
+.ch-panel:fullscreen, .ch-panel.ch-faux-full {
+  width: 100vw; height: 100vh; max-height: none; border-radius: 0;
+  top: 0; left: 0; transform: none; position: fixed; z-index: 200;
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* The name stays pinned and gets bigger — a full-screen chart with no label is
+   a chart you can misread, and there are nineteen instruments on this site. */
+.ch-panel.is-full .ch-top { position: sticky; top: 0; z-index: 3; background: #0b1020f2;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.ch-panel.is-full .ch-pair { font-size: 22px; letter-spacing: -.03em; }
+.ch-panel.is-full .ch-sub { font-size: 12px; }
+.ch-panel.is-full .ch-wrap { padding: 8px 14px 2px; }
+.ch-panel.is-full .ch-legend { padding: 13px 18px; }
+.ch-panel.is-full #tv-widget { min-height: 60vh; }
+@media (max-width: 620px) {
+  .ch-full { margin-left: 0; width: 100%; text-align: center; }
+  .ch-panel.is-full .ch-pair { font-size: 19px; }
+}
+
+/* dismissing an overlay on a phone */
+@media (pointer: coarse) {
+  .rs-x { width: 48px; height: 48px; font-size: 30px; border-radius: 10px;
+    background: #0a0e1a; border: 1px solid var(--line); }
+  .rs-top, .ch-top { touch-action: pan-y; }
+  /* a grab bar, so swiping down to dismiss is discoverable rather than hidden */
+  .rs-panel::before, .ch-panel::before {
+    content: ''; position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+    width: 38px; height: 4px; border-radius: 2px; background: #2b3a5e; z-index: 4;
+  }
+  .rs-top, .ch-top { padding-top: 18px; }
+}
+
+/* ───────── phone/laptop fit, measured at 390px ─────────
+   Two faults found by measuring every pane at 390x844 rather than assuming:
+
+   1. The account grid pushed 10 elements past the right edge. A number input
+      has an intrinsic minimum width, and a grid track will not shrink below
+      its content unless told to — so auto-fit produced 245px + 105px columns
+      inside a 326px container. min-width:0 is the fix, and it has to be on the
+      grid item AND the input.
+
+   2. The per-signal money inputs measured 27px tall. The coarse-pointer rule
+      trimmed their padding to keep the type compact, which made them SMALLER
+      than the 44px target it was supposed to protect. Height belongs on the
+      wrapper, not on the input. */
+.acct { min-width: 0; }
+.acct-f, .acct-r, .acct-in { min-width: 0; }
+.acct-in input, .acct-in select { min-width: 0; width: 100%; }
+
+@media (max-width: 480px) {
+  .acct { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .acct-r { grid-column: 1 / -1; }
+  .acct-in { padding: 0 10px; }
+  .acct-in input, .acct-in select { padding: 11px 0; }
+}
+@media (max-width: 360px) {
+  .acct { grid-template-columns: 1fr; }
+}
+
+/* the money editors must BE the touch target, not sit inside one */
+.mny-edit { min-height: 44px; box-sizing: border-box; }
+.mny-bal, .mny-pct, .mny-amt { min-height: 36px; padding: 6px 0; }
+@media (pointer: coarse) {
+  .mny-edit { min-height: 48px; }
+  .mny-bal, .mny-pct, .mny-amt { min-height: 40px; padding: 8px 0; }
+}

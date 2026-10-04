@@ -1371,6 +1371,68 @@ function renderTrials() {
 }
 
 
+
+/* ─────────────── leaving an overlay ───────────────
+   On a phone the Research and chart panels fill the screen, so the backdrop
+   you would tap on a desktop is not reachable. That leaves the small x, and
+   the back gesture — which, with nothing listening, EXITS THE WHOLE APP
+   instead of closing the panel. On an installed PWA that is the worst possible
+   outcome: you lose the page to dismiss a dialog.
+
+   So each overlay pushes a history entry when it opens. Back then pops that
+   entry and closes the overlay, which is what the gesture means. Swiping down
+   from the header does the same, because that is the other thing people try.
+   ------------------------------------------------------------------- */
+function installDismiss() {
+  if (window._fsDismissInstalled) return;
+  window._fsDismissInstalled = true;
+
+  const openOverlay = () => document.querySelector('#research.open, #chart.open');
+
+  // One history entry per overlay opening, marked so a genuine navigation is
+  // not mistaken for one.
+  window.addEventListener('popstate', (e) => {
+    const o = openOverlay();
+    if (!o) return;
+    if (o.id === 'research') closeResearch(true);
+    else if (window.FSCHART) window.FSCHART.close(true);
+  });
+
+  // Swipe down from the top of an overlay to dismiss it.
+  let sy = null, target = null;
+  document.addEventListener('pointerdown', (e) => {
+    const o = openOverlay();
+    if (!o || e.pointerType !== 'touch') { sy = null; return; }
+    const head = e.target.closest('.rs-top, .ch-top');
+    if (!head) { sy = null; return; }
+    if (e.target.closest('input, button, select, a')) { sy = null; return; }
+    sy = e.clientY; target = o;
+  }, { passive: true });
+  document.addEventListener('pointerup', (e) => {
+    if (sy == null || !target) return;
+    const dy = e.clientY - sy;
+    sy = null;
+    if (dy > 70) {                       // a deliberate downward swipe
+      if (target.id === 'research') closeResearch();
+      else if (window.FSCHART) window.FSCHART.close();
+      history.back();
+    }
+    target = null;
+  });
+}
+
+/** Call when an overlay opens, so Back closes it instead of leaving the app. */
+function pushOverlayState(name) {
+  try {
+    if (history.state && history.state.fsOverlay) return;   // already stacked
+    history.pushState({ fsOverlay: name }, '', location.href);
+  } catch (_) {}
+}
+/** Call when an overlay closes by any other route, to keep history balanced. */
+function popOverlayState() {
+  try { if (history.state && history.state.fsOverlay) history.back(); } catch (_) {}
+}
+
 /* ─────────────────────── Research ───────────────────────
    Ask anything about this site or about trading. Answers come from
    v2/knowledge.js: measured ones are computed from the files already loaded
@@ -1406,12 +1468,18 @@ function openResearch(prefill) {
     document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeResearch(); });
   }
   el0.classList.add('open');
+  pushOverlayState('research');
   const q = document.getElementById('rs-q');
   q.value = prefill || '';
   answerResearch(q.value);
   setTimeout(() => q.focus(), 60);
 }
-function closeResearch() { const e = document.getElementById('research'); if (e) e.classList.remove('open'); }
+function closeResearch(fromBack) {
+  const e = document.getElementById('research');
+  if (!e || !e.classList.contains('open')) return;
+  e.classList.remove('open');
+  if (!fromBack) popOverlayState();
+}
 
 function answerResearch(query) {
   const body = document.getElementById('rs-body');
@@ -1526,6 +1594,98 @@ function renderCommand() {
 }
 
 
+
+
+/* ──────────────────── real push notifications ────────────────────
+   The Notification API alone only fires while the page is OPEN. On a phone
+   with the app closed — which is the entire point of being notified — it does
+   nothing. Base II shipped using only that, so alerts were silently useless on
+   the installed app.
+
+   Web Push works through the service worker and arrives with the app shut.
+   The infrastructure already existed (VAPID key, /api/push-subscribe,
+   /api/push-fire, and a push handler in service-worker.js); base II simply
+   never connected to any of it.
+   ------------------------------------------------------------------- */
+const PUSH_KEY_URL = '/api/push-subscribe';
+
+function b64ToUint8(base64) {
+  const pad = '='.repeat((4 - (base64.length % 4)) % 4);
+  const raw = atob((base64 + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
+async function pushStatus() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return { supported: false, reason: 'this browser has no Push support' };
+  }
+  const reg = await navigator.serviceWorker.getRegistration();
+  if (!reg) return { supported: true, subscribed: false, reason: 'no service worker yet' };
+  const sub = await reg.pushManager.getSubscription();
+  return { supported: true, subscribed: !!sub, permission: Notification.permission, sub };
+}
+
+async function enablePush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return { ok: false, msg: 'This browser cannot do push notifications. On iPhone the site has to be added to the Home Screen first.' };
+  }
+  // iOS only allows push from an INSTALLED app, and says nothing useful if it
+  // is not, so check and explain rather than failing silently.
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (iOS && !standalone) {
+    return { ok: false, msg: 'On iPhone, notifications only work once the site is added to your Home Screen. Share -> Add to Home Screen, open it from there, then turn alerts on again.' };
+  }
+
+  let perm = Notification.permission;
+  if (perm === 'default') {
+    try { perm = await Notification.requestPermission(); } catch (_) { perm = 'denied'; }
+  }
+  if (perm !== 'granted') {
+    return { ok: false, msg: 'Notifications are blocked for this site. Allow them in your browser or iPhone settings, then try again.' };
+  }
+
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) {
+    let key;
+    try {
+      const r = await fetch(PUSH_KEY_URL, { cache: 'no-store' });
+      key = (await r.json()).vapidPublic;
+    } catch (_) { return { ok: false, msg: 'Could not reach the notification server.' }; }
+    if (!key) return { ok: false, msg: 'The notification server has no key configured.' };
+    try {
+      sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToUint8(key) });
+    } catch (e) { return { ok: false, msg: 'Subscribing failed: ' + (e.message || 'unknown') }; }
+  }
+
+  try {
+    // The server validates sub.endpoint and sub.keys at the TOP level, so the
+    // raw subscription is what goes in the body. Wrapping it in an object was
+    // rejected with "Subscription missing endpoint or keys" — silently, because
+    // nothing surfaced the response.
+    const r = await fetch(PUSH_KEY_URL, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(sub),
+    });
+    if (!r.ok) return { ok: false, msg: 'The server refused the subscription (' + r.status + ').' };
+  } catch (_) { return { ok: false, msg: 'Could not register with the notification server.' }; }
+
+  return { ok: true, msg: 'Push notifications on. You will be told about a new setup even with the app closed.' };
+}
+
+async function disablePush() {
+  try {
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && await reg.pushManager.getSubscription();
+    if (sub) {
+      await fetch(PUSH_KEY_URL, { method: 'DELETE', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+      await sub.unsubscribe();
+    }
+  } catch (_) {}
+  return { ok: true, msg: 'Push notifications off.' };
+}
 
 /* ───────────────────────── alerts ─────────────────────────
    Notifies on a NEW setup that passes the SAME standing orders the page is
@@ -1708,6 +1868,7 @@ function bootConfig() {
   installIdle();
   installSignalBalance();
   installUpdates();
+  installDismiss();
   installChart();
   installReorder();
   installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }
