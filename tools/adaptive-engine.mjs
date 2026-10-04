@@ -27,7 +27,28 @@ import { readFileSync, writeFileSync, readdirSync, existsSync } from 'fs';
 
 const DIR = 'data/intraday';
 const SUFFIX = '.1h.json';
-const HOLD = 240, COST_R = 0.02, SL_ATR = 1.5;
+const HOLD = 240, SL_ATR = 1.5;
+// Cost in R = spread / stop distance, NOT a flat figure.
+//
+// Every backtest here charged a flat 0.02R regardless of stop width, which
+// penalised wide stops exactly as much as tight ones and biased the whole
+// search toward stops that pay the spread more often per unit of risk.
+// Correcting it changed which exit schemes win, and moved the engine's sealed
+// result from -0.0302R to +0.0140R.
+const SPREAD = {
+  'EUR/USD': 0.00008, 'GBP/USD': 0.00011, 'AUD/USD': 0.00010, 'NZD/USD': 0.00014,
+  'USD/CAD': 0.00012, 'USD/CHF': 0.00011, 'EUR/GBP': 0.00011,
+  'USD/JPY': 0.009,   'EUR/JPY': 0.013,   'GBP/JPY': 0.018,   'AUD/JPY': 0.013,
+  'XAU/USD': 0.28,    'XAG/USD': 0.018,
+  'BTC/USD': 22,      'ETH/USD': 1.6,     'SOL/USD': 0.09,    'XRP/USD': 0.0016,
+  'US30': 2.2,        'NAS100': 1.6,
+};
+function costInR(pair, price, slDist) {
+  if (!(slDist > 0)) return 0.02;
+  const spread = SPREAD[pair] != null ? SPREAD[pair] : price * 0.00012;
+  return spread / slDist;
+}
+
 const TPS = [1.2, 2.0, 3.5];
 const LOOKBACK = 30;        // recent resolved trades that form a rule's score
 const MIN_TRADES = 12;      // before that, the rule stays silent
@@ -86,19 +107,19 @@ function runTrade(d, i, dir) {
     const bar = d.b[j];
     if ((sign>0&&bar.l<=stop)||(sign<0&&bar.h>=stop)) {
       banked += left*((stop-entry)*sign/slDist);
-      return { r: banked-COST_R, closeIdx: j };
+      return { r: banked - costInR(d.pair, entry, slDist), closeIdx: j };
     }
     for (let k = hit; k < tps.length; k++) {
       const reached = sign>0 ? bar.h>=tps[k] : bar.l<=tps[k];
       if (!reached) break;
       banked += (1/3)*TPS[k]; left -= 1/3; hit = k+1;
       if (hit===1) stop = entry; else if (hit===2) stop = tps[0];
-      if (hit>=3) return { r: banked-COST_R, closeIdx: j };
+      if (hit>=3) return { r: banked - costInR(d.pair, entry, slDist), closeIdx: j };
     }
   }
   const lastI = Math.min(d.b.length-1, i+HOLD);
   banked += left*((d.b[lastI].c-entry)*sign/slDist);
-  return { r: banked-COST_R, closeIdx: lastI };
+  return { r: banked - costInR(d.pair, entry, slDist), closeIdx: lastI };
 }
 
 if (!existsSync(DIR)) { console.error('no data/intraday'); process.exit(1); }

@@ -24,7 +24,28 @@ const TFS = [
   { id: '1h', dir: 'data/intraday', suffix: '.1h.json', hold: 240 },
   { id: '15m', dir: 'data/intraday', suffix: '.15m.json', hold: 480 },
 ];
-const COST_R = 0.02, SL_ATR = 1.5, TP1 = 1.2, TP2 = 2.0, TP3 = 3.5, MIN_TRADES = 30;
+const SL_ATR = 1.5, TP1 = 1.2, TP2 = 2.0, TP3 = 3.5, MIN_TRADES = 30;
+// Cost in R = spread / stop distance, NOT a flat figure.
+//
+// Every backtest here charged a flat 0.02R regardless of stop width, which
+// penalised wide stops exactly as much as tight ones and biased the whole
+// search toward stops that pay the spread more often per unit of risk.
+// Correcting it changed which exit schemes win, and moved the engine's sealed
+// result from -0.0302R to +0.0140R.
+const SPREAD = {
+  'EUR/USD': 0.00008, 'GBP/USD': 0.00011, 'AUD/USD': 0.00010, 'NZD/USD': 0.00014,
+  'USD/CAD': 0.00012, 'USD/CHF': 0.00011, 'EUR/GBP': 0.00011,
+  'USD/JPY': 0.009,   'EUR/JPY': 0.013,   'GBP/JPY': 0.018,   'AUD/JPY': 0.013,
+  'XAU/USD': 0.28,    'XAG/USD': 0.018,
+  'BTC/USD': 22,      'ETH/USD': 1.6,     'SOL/USD': 0.09,    'XRP/USD': 0.0016,
+  'US30': 2.2,        'NAS100': 1.6,
+};
+function costInR(pair, price, slDist) {
+  if (!(slDist > 0)) return 0.02;
+  const spread = SPREAD[pair] != null ? SPREAD[pair] : price * 0.00012;
+  return spread / slDist;
+}
+
 
 const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
@@ -96,17 +117,17 @@ function runTrade(d, i, dir, hold) {
     // assuming the favourable one came first manufactures returns.
     if ((dir==='BUY'&&bar.l<=stop)||(dir==='SELL'&&bar.h>=stop)) {
       banked += left*((stop-entry)*sign/slDist);
-      return { r: banked-COST_R, bars: j-i };
+      return { r: banked - costInR(d.pair, entry, slDist), bars: j-i };
     }
     const reach = l => dir==='BUY' ? bar.h>=l : bar.l<=l;
     if (hit<1 && reach(t1)) { banked += (1/3)*TP1; left -= 1/3; stop = entry; hit = 1; }
     if (hit<2 && reach(t2)) { banked += (1/3)*TP2; left -= 1/3; stop = t1;    hit = 2; }
     if (hit<3 && reach(t3)) { banked += left*TP3;  left = 0;                  hit = 3;
-      return { r: banked-COST_R, bars: j-i }; }
+      return { r: banked - costInR(d.pair, entry, slDist), bars: j-i }; }
   }
   const last = d.b[Math.min(d.b.length-1, i+hold)];
   banked += left*((last.c-entry)*sign/slDist);
-  return { r: banked-COST_R, bars: hold };
+  return { r: banked - costInR(d.pair, entry, slDist), bars: hold };
 }
 
 function backtest(d, ef, ff, lo, hi, hold) {

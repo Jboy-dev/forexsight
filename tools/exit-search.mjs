@@ -24,7 +24,42 @@ import { strictAnalyze } from '../functions/api/check-signals.js';
 
 const DIR = 'data/intraday';
 const SUFFIX = '.1h.json';
-const WINDOW = 300, HOLD = 240, COST_R = 0.02;
+const WINDOW = 300, HOLD = 240;
+
+/**
+ * COST IS NOT A FLAT R FIGURE. This was wrong in every backtest in this project
+ * until now, and it mattered.
+ *
+ * Cost in R = spread / stop distance. A trade with a 3x ATR stop risks twice as
+ * much per trade as one with a 1.5x stop, so the SAME spread is HALF the cost in
+ * R terms. Charging a flat 0.02R regardless of stop width penalised wide stops
+ * exactly as much as tight ones — biased against the one variant that should
+ * benefit from paying the spread less often relative to what it risks.
+ *
+ * The implied arithmetic made this worth checking: the static baseline is
+ * -0.0101R net with 0.02R charged, so GROSS it is about +0.0099R. These rules
+ * are not random — they are roughly break-even before costs, and the cost model
+ * is therefore the difference between a negative result and a neutral one.
+ *
+ * Spreads below are typical retail figures in PRICE terms, not pips, so the
+ * division is direct.
+ */
+const SPREAD = {
+  'EUR/USD': 0.00008, 'GBP/USD': 0.00011, 'AUD/USD': 0.00010, 'NZD/USD': 0.00014,
+  'USD/CAD': 0.00012, 'USD/CHF': 0.00011, 'EUR/GBP': 0.00011,
+  'USD/JPY': 0.009,   'EUR/JPY': 0.013,   'GBP/JPY': 0.018,   'AUD/JPY': 0.013,
+  'XAU/USD': 0.28,    'XAG/USD': 0.018,
+  'BTC/USD': 22,      'ETH/USD': 1.6,     'SOL/USD': 0.09,    'XRP/USD': 0.0016,
+  'US30': 2.2,        'NAS100': 1.6,
+};
+const DEFAULT_SPREAD_FRAC = 0.00012;      // as a share of price, if unlisted
+
+function costInR(pair, price, slDist) {
+  if (!(slDist > 0)) return 0.02;
+  const spread = SPREAD[pair] != null ? SPREAD[pair] : price * DEFAULT_SPREAD_FRAC;
+  // Round trip: in and out.
+  return (spread * 1.0) / slDist;
+}
 
 const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };
@@ -45,11 +80,12 @@ function atrAt(bars, i, p = 14) {
  * Resolve one entry under one exit scheme.
  * scheme = { sl, tps: [r...], trail: 'none'|'entry'|'prev' }
  */
-function resolveWith(bars, i, dir, atr, scheme) {
+function resolveWith(bars, i, dir, atr, scheme, pair) {
   const entry = bars[i + 1] && bars[i + 1].o;
   if (!entry || !(atr > 0)) return null;
   const sign = dir === 'BUY' ? 1 : -1;
   const slDist = atr * scheme.sl;
+  const COST_R = costInR(pair, entry, slDist);
   const stopInit = entry - sign * slDist;
   const tps = scheme.tps.map(r => entry + sign * slDist * r);
   const share = 1 / tps.length;
@@ -136,7 +172,7 @@ const results = [];
 for (const sc of schemes) {
   const tr = [], va = [], se = [];
   for (const e of entries) {
-    const r = resolveWith(byPair.get(e.pair), e.i, e.dir, e.atr, sc);
+    const r = resolveWith(byPair.get(e.pair), e.i, e.dir, e.atr, sc, e.pair);
     if (r == null) continue;
     (e.frac < 0.5 ? tr : e.frac < 0.75 ? va : se).push(r);
   }
@@ -174,10 +210,11 @@ const out = {
   current, best, improvementVsCurrentR: beatsCurrent == null ? null : +beatsCurrent.toFixed(4),
   bestClearsZero: !!clearsZero, bestPositiveInAllThree: consistent,
   top: results.slice(0, 15),
-  method: 'Engine entries held constant; only the exit varies. Entry at the next open, '
-        + 'stop checked before targets within a bar, costs charged, fixed 40-bar spacing between '
-        + 'entries so the entry set cannot change with the scheme. Train 0-50%, validate 50-75%, '
-        + 'sealed 75-100%.',
+  costModel: 'spread divided by stop distance, per instrument, not a flat R figure',
+  method: 'Engine entries held constant; only the exit varies. Cost is the spread divided by the '
+        + 'stop distance, so a wider stop pays proportionally less in R. Entry at the next open, '
+        + 'stop checked before targets within a bar, fixed 40-bar spacing between entries. '
+        + 'Train 0-50%, validate 50-75%, sealed 75-100%.',
   verdict: (clearsZero && consistent)
     ? `A different exit clears zero on the sealed quarter: ${best.id} at ${best.sealed.avgR}R, interval [${best.sealed.ci.join(', ')}].`
     : `No exit scheme turns these entries positive. The best on the sealed quarter is ${best.id} at `
