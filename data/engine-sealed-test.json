@@ -1,0 +1,74 @@
+{
+  "ts": 1791101451560,
+  "isoTime": "2026-10-04T08:10:51.560Z",
+  "builtBy": "tools/engine-sealed-test.mjs",
+  "instruments": 19,
+  "barsScanned": 286849,
+  "signalsFired": 21143,
+  "fireRatePct": 7.371,
+  "train": {
+    "n": 11016,
+    "avgR": 0.0035,
+    "t": 0.29,
+    "ci": [
+      -0.0203,
+      0.0274
+    ],
+    "winRate": 42.9
+  },
+  "validate": {
+    "n": 5247,
+    "avgR": 0.0078,
+    "t": 0.44,
+    "ci": [
+      -0.0268,
+      0.0423
+    ],
+    "winRate": 43
+  },
+  "sealed": {
+    "n": 4880,
+    "avgR": -0.0302,
+    "t": -1.71,
+    "ci": [
+      -0.0649,
+      0.0045
+    ],
+    "winRate": 43
+  },
+  "overall": {
+    "n": 21143,
+    "avgR": -0.0032,
+    "t": -0.37,
+    "ci": [
+      -0.0203,
+      0.0139
+    ],
+    "winRate": 42.9
+  },
+  "confidenceSplit": {
+    "low": {
+      "n": 10571,
+      "avgR": 0.0033,
+      "t": 0.27,
+      "ci": [
+        -0.0207,
+        0.0272
+      ],
+      "winRate": 43.8
+    },
+    "high": {
+      "n": 10572,
+      "avgR": -0.0097,
+      "t": -0.78,
+      "ci": [
+        -0.034,
+        0.0146
+      ],
+      "winRate": 42.1
+    },
+    "separates": false
+  },
+  "method": "strictAnalyze replayed bar by bar over hourly history with a 300-bar rolling window. The engine never sees a bar after the one it is judging. Resolved with ITS OWN entry, stop and targets under the managed ladder, costs charged, stop checked before targets within a bar, non-overlapping. Train 0-50%, validate 50-75%, sealed 75-100%.",
+  "verdict": "The engine does not establish an edge on held-out data. Sealed: -0.0302R over 4880 signals, interval [-0.0649, 0.0045], which includes zero."
+}

@@ -190,6 +190,12 @@ jobs:
         run: node tools/per-chart-search.mjs
         continue-on-error: true
 
+      # The ACTUAL engine, replayed bar by bar over years of history. Everything
+      # else here tests textbook rules; this tests what the site ships.
+      - name: Engine sealed test
+        run: node tools/engine-sealed-test.mjs
+        continue-on-error: true
+
       # The ONLY route a rule can take into the signal path. Promotes on sealed
       # evidence alone; today it promotes nothing, which is the correct output.
       - name: Promote what passed

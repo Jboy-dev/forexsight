@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -250,7 +250,15 @@ function card(s) {
 
   const chips = [];
   if (tier) chips.push(`<span class="chip ${tier === 'best' ? 'ok' : 'info'}">${esc(String(tier).toUpperCase())}</span>`);
-  if (conf != null) chips.push(`<span class="chip">conf ${esc(conf)}</span>`);
+  if (conf != null) {
+    // Measured across 21,143 engine signals: the high-confidence half averaged
+    // -0.0097R and the low half +0.0033R, a difference with t = -0.75. It does
+    // not separate winners from losers in EITHER direction. Showing it as a
+    // bare number invited it to be read as quality, so it is labelled.
+    const es = S.engineSealedTest;
+    const n = es && es.signalsFired;
+    chips.push(`<span class="chip" title="${n ? `Measured on ${n.toLocaleString()} signals: this score does not predict the outcome` : 'the engine\'s internal score'}">conf ${esc(conf)} <i style="font-style:normal;opacity:.6">· not predictive</i></span>`);
+  }
   if (regime.label) chips.push(`<span class="chip">${esc(regime.label)}</span>`);
   if (perfect != null) chips.push(`<span class="chip ${perfect > 1 ? 'ok' : 'bad'}">full run ${esc(sign(perfect) + perfect.toFixed(2))}R</span>`);
   if (r1 != null) chips.push(`<span class="chip ${r1 > 1 ? 'ok' : 'bad'}">TP1 ${esc(r1.toFixed(2))}R</span>`);
@@ -1325,6 +1333,41 @@ function renderLedger() {
 }
 
 
+
+/** The single most important measurement here: the ACTUAL engine, replayed over
+    years of bars and judged on data it never saw while deciding. */
+function renderEngineTest() {
+  const e = S.engineSealedTest;
+  if (!e) return '';
+  const S4 = e.sealed, O = e.overall;
+  const spans = Array.isArray(S4.ci) && S4.ci[0] <= 0 && S4.ci[1] >= 0;
+  const conf = e.confidenceSplit;
+  return `
+    <h2 class="sec" style="margin-top:4px">The engine itself, on data it never saw</h2>
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:24px">
+        <div class="rec-i"><div class="k">Signals replayed</div><div class="v">${esc(e.signalsFired.toLocaleString())}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">over ${esc(e.barsScanned.toLocaleString())} bars</div></div>
+        <div class="rec-i"><div class="k">Train</div><div class="v" style="font-size:20px;color:${e.train.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(e.train.avgR) + e.train.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">t=${esc(e.train.t)}</div></div>
+        <div class="rec-i"><div class="k">Validate</div><div class="v" style="font-size:20px;color:${e.validate.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(e.validate.avgR) + e.validate.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">t=${esc(e.validate.t)}</div></div>
+        <div class="rec-i"><div class="k">SEALED</div><div class="v" style="font-size:20px;color:${S4.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(S4.avgR) + S4.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">t=${esc(S4.t)}${spans ? ' · spans zero' : ''}</div></div>
+      </div>
+      <div class="rec-note">${esc(e.verdict)}
+        Win rate held at ${esc(S4.winRate)}% across every split, so the engine is consistent — consistently
+        at the level you would get without it.</div>
+    </div>
+    ${conf ? `<div class="voice-honest" style="margin-top:12px">
+      <strong>Its confidence score does not predict the outcome.</strong>
+      The higher-scoring half of ${esc(e.signalsFired.toLocaleString())} signals averaged
+      ${esc(sign(conf.high.avgR) + conf.high.avgR)}R and the lower half ${esc(sign(conf.low.avgR) + conf.low.avgR)}R —
+      a difference with t = −0.75, which establishes nothing in either direction. The number is still shown
+      because it is what the engine thought, but it is labelled, and it should not be used to pick between setups.
+    </div>` : ''}`;
+}
+
 /** Every chart searched on its own, not pooled. A pooled null can hide a single
     instrument that genuinely works — and a trader trades one chart, not the pool. */
 function renderPerChart() {
@@ -1382,6 +1425,9 @@ function renderTrials() {
   const active = a && a.active;
 
   box.innerHTML = `
+    ${renderEngineTest()}
+
+    <h2 class="sec">Textbook strategies, searched</h2>
     <div class="record" style="margin-top:0">
       <div class="rec-row" style="gap:28px">
         <div class="rec-i"><div class="k">Combinations tested</div><div class="v">${esc(t.hypotheses ?? '—')}</div></div>

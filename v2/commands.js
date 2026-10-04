@@ -128,7 +128,11 @@ const FS_COMMANDS = [
       const n = fsNum(rest);
       if (n === null) return null;
       cfg.minConfidence = n;
-      return `Hiding setups scored under ${n}.`;
+      // Say so plainly. Measured on 21,143 engine signals, this score does not
+      // separate winners from losers, so filtering on it narrows the list
+      // without improving it.
+      return `Hiding setups scored under ${n}. Note: measured across 21,143 signals this score does `
+           + `not predict the outcome, so this filters the list without improving it.`;
     },
   },
   {

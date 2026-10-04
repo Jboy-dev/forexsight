@@ -1225,5 +1225,53 @@ t('nothing is promoted from a search that did not clear its bar', () => {
   return true;
 });
 
+/* ── The engine itself. Everything else tested textbook rules; this tests what
+   the site actually ships, and it had never been measured. ───────────────── */
+t('the shipped engine is sealed-tested, not just textbook rules', () => {
+  if (!existsSync('tools/engine-sealed-test.mjs')) return 'the engine has no sealed test';
+  const src = readFileSync('tools/engine-sealed-test.mjs', 'utf8');
+  if (!/import \{ strictAnalyze \}/.test(src)) return 'it does not replay the real engine';
+  // The engine must never see a bar after the one it is judging.
+  if (!/bars\.slice\(i - WINDOW \+ 1, i \+ 1\)/.test(src)) {
+    return 'the rolling window is not strictly backward-looking — it could see the future';
+  }
+  // It must resolve with the ENGINE'S own levels, not a generic ladder.
+  if (!/\+sig\.entry|sig\.entry/.test(src)) return 'it does not use the engine\'s own entry/stop/targets';
+  const wf = readFileSync('.github/workflows/watch-offset.yml', 'utf8');
+  if (!/engine-sealed-test/.test(wf)) return 'it never runs in CI';
+  return true;
+});
+
+t('the engine result is published and honest about what it found', () => {
+  if (!existsSync('data/engine-sealed-test.json')) return 'skipped: not built yet';
+  const e = JSON.parse(readFileSync('data/engine-sealed-test.json', 'utf8'));
+  for (const k of ['train', 'validate', 'sealed', 'overall']) {
+    if (!e[k] || typeof e[k].avgR !== 'number') return `${k} split is missing`;
+  }
+  if (e.signalsFired < 1000) return `only ${e.signalsFired} signals replayed — too few to conclude from`;
+  // A sealed interval spanning zero must never be described as an edge.
+  const spans = Array.isArray(e.sealed.ci) && e.sealed.ci[0] <= 0 && e.sealed.ci[1] >= 0;
+  if (spans && /clears zero|establishes an edge|is profitable/i.test(e.verdict)) {
+    return 'the verdict claims an edge although the sealed interval includes zero';
+  }
+  return true;
+});
+
+t('confidence is labelled as non-predictive, since that is what it measured', () => {
+  const js = readFileSync('v2/base.js', 'utf8');
+  // Showing a bare score invites it to be read as quality. Measured across
+  // 21,143 signals the high half averaged -0.0097R and the low half +0.0033R,
+  // a difference with t = -0.75: it separates nothing in either direction.
+  if (/chips\.push\(`<span class="chip">conf \$\{esc\(conf\)\}<\/span>`\)/.test(js)) {
+    return 'confidence is shown as a bare number, implying it means something';
+  }
+  if (!/not predictive/.test(js)) return 'confidence carries no honesty label';
+  const cmd = readFileSync('v2/commands.js', 'utf8');
+  if (!/does \`\s*\+\s*\`not predict the outcome|not predict the outcome/.test(cmd)) {
+    return 'the confidence filter does not say that filtering on it does not improve the list';
+  }
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
