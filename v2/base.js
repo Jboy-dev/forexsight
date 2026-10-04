@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -1324,6 +1324,50 @@ function renderLedger() {
       ${esc(L.coverage.note)} Covering ${esc(String(L.coverage.from).slice(0, 10))} to ${esc(String(L.coverage.to).slice(0, 10))}.</p>`;
 }
 
+
+/** Every chart searched on its own, not pooled. A pooled null can hide a single
+    instrument that genuinely works — and a trader trades one chart, not the pool. */
+function renderPerChart() {
+  const p = S.perChartSearch;
+  if (!p) return '';
+  const expectedByLuck = Math.round(p.hypotheses * 0.05);
+  const asExpected = Math.abs(p.survivedTrainAndValidate - expectedByLuck) < expectedByLuck * 0.5;
+  return `
+    <h2 class="sec" style="margin-top:26px">Every chart, tested on its own</h2>
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:26px">
+        <div class="rec-i"><div class="k">Charts tested</div><div class="v">${esc(p.chartsTested)}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">instrument × timeframe</div></div>
+        <div class="rec-i"><div class="k">Backtests run</div><div class="v">${esc(p.backtestsRun.toLocaleString())}</div></div>
+        <div class="rec-i"><div class="k">Passed</div>
+          <div class="v" style="color:${p.passedSealed ? 'var(--up)' : 'var(--down)'}">${esc(p.passedSealed)}</div></div>
+        <div class="rec-i"><div class="k">Bar to clear</div><div class="v" style="font-size:19px">|t| &gt; ${esc(p.correctedBarT)}</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">corrected for ${esc(p.hypotheses.toLocaleString())} hypotheses</div></div>
+      </div>
+      <div class="rec-note">
+        ${esc(p.survivedTrainAndValidate)} combinations looked good through training AND validation on their own chart.
+        ${asExpected ? `<strong>Chance alone predicts about ${esc(expectedByLuck)}.</strong> The survivors are
+          indistinguishable from luck, which is exactly what searching ${esc(p.hypotheses.toLocaleString())}
+          hypotheses produces.` : ''}
+        ${esc(p.verdict)}
+      </div>
+    </div>
+    ${(p.top || []).length ? `<details class="fold" style="margin-top:12px;border-top:0">
+      <summary>The best survivors, and how they decayed</summary>
+      <div class="fold-in">
+        <table class="kb-t"><tr><th>chart</th><th>strategy</th><th>train</th><th>validate</th><th>sealed</th></tr>
+        ${p.top.slice(0, 12).map(r => `<tr>
+          <td>${esc(r.pair)} <i style="font-style:normal;color:var(--text-faint)">${esc(r.tf)}</i></td>
+          <td>${esc(r.combo)}</td>
+          <td>t=${esc(r.train.t)}</td><td>t=${esc(r.validate.t)}</td>
+          <td class="${r.sealed.avgR > 0 ? 'pos' : 'neg'}">${esc(sign(r.sealed.avgR) + r.sealed.avgR)}R <i style="font-style:normal;color:var(--text-faint)">t=${esc(r.sealed.t)}</i></td>
+        </tr>`).join('')}</table>
+        <p style="margin-top:10px">Some of those sealed figures look strong — +0.33R, +0.35R. But a t of 2 against a
+        required ${esc(p.correctedBarT)} is precisely what you expect to see somewhere when you look
+        ${esc(p.hypotheses.toLocaleString())} times. That is why the bar is where it is.</p>
+      </div></details>` : ''}`;
+}
+
 /* ──────────────── what has been tested, and what survived ────────────────
    The search runs continuously and almost always concludes that nothing works.
    That conclusion is the product, so it is shown rather than buried: a page
@@ -1369,6 +1413,8 @@ function renderTrials() {
         <p style="margin-top:12px">The pattern in every row is the same: strong in training, weaker on validation, gone by the sealed set. That is what choosing a rule on the data you are measuring it with produces. The last column is the 95th percentile of entering at random with the same ladder and trade count — where it exceeds the sealed column, the rule did not beat chance.</p>
       </div>
     </details>` : ''}
+
+    ${renderPerChart()}
 
     <p style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">${esc(t.method || '')}</p>`;
 }

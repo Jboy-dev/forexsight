@@ -1184,5 +1184,46 @@ t('volume is carried where it is real, and absent where it is not', () => {
   return true;
 });
 
+t('every chart and timeframe is searched, including 15m', () => {
+  for (const f of ['data/strategy-trials.json', 'data/strategy-trials.1h.json', 'data/strategy-trials.15m.json']) {
+    if (!existsSync(f)) return `${f} is missing — that timeframe is never searched`;
+  }
+  if (!existsSync('data/per-chart-search.json')) return 'no per-chart search';
+  const p = JSON.parse(readFileSync('data/per-chart-search.json', 'utf8'));
+  // The pooled search can hide a single instrument that works; nobody trades the pool.
+  if (p.chartsTested < 40) return `only ${p.chartsTested} chart/timeframe pairs searched`;
+  return true;
+});
+
+t('the per-chart bar is corrected for the WHOLE sweep, not per chart', () => {
+  if (!existsSync('data/per-chart-search.json')) return 'skipped';
+  const p = JSON.parse(readFileSync('data/per-chart-search.json', 'utf8'));
+  if (p.hypotheses !== p.chartsTested * p.combinations) {
+    return `hypotheses (${p.hypotheses}) is not charts x combinations — the correction is wrong`;
+  }
+  // Correcting per chart instead of per sweep is the same mistake as not
+  // correcting, only better disguised: 2,394 looks would yield ~120 passes.
+  if (p.correctedBarT < 4) {
+    return `the bar is |t| > ${p.correctedBarT}, too low for ${p.hypotheses} hypotheses`;
+  }
+  if (p.passedSealed > 0 && !(p.passed || []).length) return 'passedSealed disagrees with the passed list';
+  return true;
+});
+
+t('nothing is promoted from a search that did not clear its bar', () => {
+  if (!existsSync('data/active-strategy.json')) return 'skipped';
+  const a = JSON.parse(readFileSync('data/active-strategy.json', 'utf8'));
+  const sources = ['data/strategy-trials.json', 'data/strategy-trials.1h.json',
+                   'data/strategy-trials.15m.json', 'data/per-chart-search.json'];
+  let anyPassed = 0;
+  for (const f of sources) {
+    if (!existsSync(f)) continue;
+    const d = JSON.parse(readFileSync(f, 'utf8'));
+    anyPassed += (d.passed || []).length;
+  }
+  if (anyPassed === 0 && a.active) return 'a strategy is active although nothing passed any sealed test';
+  return true;
+});
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

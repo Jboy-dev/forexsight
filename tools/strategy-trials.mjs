@@ -50,7 +50,9 @@ const MIN_TRADES = 40;        // below this a slice says nothing
 
 // ── the managed ladder the site actually uses, so a result transfers ──────
 const SL_ATR = 1.5, TP1 = 1.2, TP2 = 2.0, TP3 = 3.5;
-const HOLD_CAP = TF === 'daily' ? 120 : 240;   // bars before a trade is closed out
+// Bars before a trade is closed out. This must scale with the timeframe or a
+// 15m position would be held for two and a half months.
+const HOLD_CAP = TF === 'daily' ? 120 : TF === '15m' ? 480 : 240;
 
 const mean = a => a.length ? a.reduce((s, x) => s + x, 0) / a.length : 0;
 const sd = a => { if (a.length < 2) return 0; const m = mean(a); return Math.sqrt(a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1)); };

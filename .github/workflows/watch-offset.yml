@@ -178,6 +178,18 @@ jobs:
         run: node tools/strategy-trials.mjs --tf=1h
         continue-on-error: true
 
+      # The 15m series was published but never searched — 96,740 bars of real
+      # price action that nothing had ever learned from.
+      - name: Strategy trials (15m)
+        run: node tools/strategy-trials.mjs --tf=15m
+        continue-on-error: true
+
+      # Every chart on its own. A pooled null can hide one instrument that
+      # genuinely works, and nobody trades the pool.
+      - name: Per-chart search
+        run: node tools/per-chart-search.mjs
+        continue-on-error: true
+
       # The ONLY route a rule can take into the signal path. Promotes on sealed
       # evidence alone; today it promotes nothing, which is the correct output.
       - name: Promote what passed
