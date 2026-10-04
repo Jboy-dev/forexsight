@@ -1,13 +1,66 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-04T02:50:36.594Z",
+  "timestamp": "2026-10-04T05:56:24.640Z",
   "scanned": 15,
   "setupsFound": 3,
   "passedMainGate": 0,
   "heldBackButValid": 3,
   "minStrengthFilter": 30,
   "radar": [
+    {
+      "pair": "XAU/USD",
+      "direction": "SELL",
+      "confidence": 87,
+      "strength": 91,
+      "verdict": "STRONG SHORT — 87% conviction",
+      "timeHorizon": "30 min",
+      "entry": 4162.3,
+      "sl": 4195.6,
+      "tp1": 4125.07,
+      "tp3": 4032.01,
+      "slPips": 333,
+      "tp1Pips": 372,
+      "tp3Pips": 1303,
+      "rrTP1": 1.12,
+      "rrTP3": 3.91,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports SELL (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 39.1 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 0,
+        "bear": 85,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors SHORT with 87% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack). HTF down. Structure range. Manage risk with the levels below."
+    },
     {
       "pair": "NAS100",
       "direction": "BUY",
@@ -60,59 +113,6 @@
         "marginPct": 100
       },
       "reasoning": "Weighted consensus favors LONG with 83% conviction. Top drivers: Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF up. Structure uptrend. Manage risk with the levels below."
-    },
-    {
-      "pair": "XAU/USD",
-      "direction": "SELL",
-      "confidence": 78,
-      "strength": 85,
-      "verdict": "MODERATE SHORT — 78% conviction",
-      "timeHorizon": "30 min",
-      "entry": 4162.3,
-      "sl": 4195.6,
-      "tp1": 4122.21,
-      "tp3": 4021.99,
-      "slPips": 333,
-      "tp1Pips": 401,
-      "tp3Pips": 1403,
-      "rrTP1": 1.2,
-      "rrTP3": 4.21,
-      "passedMainGate": false,
-      "mainTier": null,
-      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
-      "topFactors": [
-        {
-          "name": "Higher timeframe (4H) trend DOWN",
-          "weight": 20,
-          "note": ""
-        },
-        {
-          "name": "Price < EMA20 < EMA50 (bearish stack)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "MACD histogram negative (bearish momentum)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "RSI 39.1 — bearish momentum zone",
-          "weight": 10,
-          "note": ""
-        },
-        {
-          "name": "Bearish candle: strong-bear",
-          "weight": 10,
-          "note": ""
-        }
-      ],
-      "bullVsBear": {
-        "bull": 0,
-        "bear": 70,
-        "marginPct": 100
-      },
-      "reasoning": "Weighted consensus favors SHORT with 78% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
     },
     {
       "pair": "SPX500",
