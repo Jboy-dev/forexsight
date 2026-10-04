@@ -1,0 +1,399 @@
+{
+  "ts": 1791130180140,
+  "isoTime": "2026-10-04T16:09:40.140Z",
+  "builtBy": "tools/cost-ceiling-test.mjs",
+  "hypothesis": "Refusing signals whose spread is too large a share of the stop distance raises net return.",
+  "whyNotSelection": "The filter reads spread / stop distance, both known at signal time, never past returns.",
+  "confoundControlled": "Each ceiling is matched against the highest-ATR trades in the same window, same count, because a low cost ratio implies a wide stop implies high volatility.",
+  "falsifierStatedBeforeRunning": "Sign must hold in train, validate and sealed, and the cost arm must beat its matched volatility control.",
+  "stopMultiple": 3,
+  "ladder": [
+    1.2,
+    2,
+    3.5
+  ],
+  "totalTrades": 5709,
+  "baselineSealed": {
+    "n": 1298,
+    "avgR": 0.0027,
+    "t": 0.08,
+    "ci": [
+      -0.0636,
+      0.0689
+    ],
+    "winRate": 46
+  },
+  "results": [
+    {
+      "ceilingPctOfStop": 0.5,
+      "keptPct": 4.7,
+      "train": {
+        "n": 88,
+        "avgR": -0.0715,
+        "t": -0.6,
+        "ci": [
+          -0.3047,
+          0.1617
+        ],
+        "winRate": 44.3
+      },
+      "validate": {
+        "n": 76,
+        "avgR": 0.1215,
+        "t": 0.87,
+        "ci": [
+          -0.1534,
+          0.3964
+        ],
+        "winRate": 50
+      },
+      "sealed": {
+        "n": 103,
+        "avgR": -0.0407,
+        "t": -0.35,
+        "ci": [
+          -0.2664,
+          0.185
+        ],
+        "winRate": 43.7
+      },
+      "atrControlSealed": {
+        "n": 103,
+        "avgR": 0.1515,
+        "t": 1.22,
+        "ci": [
+          -0.0918,
+          0.3947
+        ],
+        "winRate": 50.5
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    },
+    {
+      "ceilingPctOfStop": 0.75,
+      "keptPct": 8.9,
+      "train": {
+        "n": 229,
+        "avgR": -0.0518,
+        "t": -0.69,
+        "ci": [
+          -0.1983,
+          0.0947
+        ],
+        "winRate": 45.9
+      },
+      "validate": {
+        "n": 135,
+        "avgR": 0.1602,
+        "t": 1.48,
+        "ci": [
+          -0.0521,
+          0.3725
+        ],
+        "winRate": 50.4
+      },
+      "sealed": {
+        "n": 146,
+        "avgR": 0.083,
+        "t": 0.83,
+        "ci": [
+          -0.1133,
+          0.2793
+        ],
+        "winRate": 48.6
+      },
+      "atrControlSealed": {
+        "n": 146,
+        "avgR": 0.1464,
+        "t": 1.4,
+        "ci": [
+          -0.0582,
+          0.351
+        ],
+        "winRate": 50.7
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    },
+    {
+      "ceilingPctOfStop": 1,
+      "keptPct": 13.3,
+      "train": {
+        "n": 415,
+        "avgR": -0.0121,
+        "t": -0.21,
+        "ci": [
+          -0.1257,
+          0.1016
+        ],
+        "winRate": 45.8
+      },
+      "validate": {
+        "n": 175,
+        "avgR": 0.1163,
+        "t": 1.22,
+        "ci": [
+          -0.0704,
+          0.3029
+        ],
+        "winRate": 48.6
+      },
+      "sealed": {
+        "n": 172,
+        "avgR": 0.0356,
+        "t": 0.39,
+        "ci": [
+          -0.1451,
+          0.2164
+        ],
+        "winRate": 46.5
+      },
+      "atrControlSealed": {
+        "n": 172,
+        "avgR": 0.1357,
+        "t": 1.41,
+        "ci": [
+          -0.0531,
+          0.3244
+        ],
+        "winRate": 50
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    },
+    {
+      "ceilingPctOfStop": 1.5,
+      "keptPct": 27.2,
+      "train": {
+        "n": 887,
+        "avgR": 0.0096,
+        "t": 0.24,
+        "ci": [
+          -0.0697,
+          0.0889
+        ],
+        "winRate": 45.8
+      },
+      "validate": {
+        "n": 368,
+        "avgR": -0.0232,
+        "t": -0.36,
+        "ci": [
+          -0.1481,
+          0.1017
+        ],
+        "winRate": 43.2
+      },
+      "sealed": {
+        "n": 299,
+        "avgR": 0.0043,
+        "t": 0.06,
+        "ci": [
+          -0.1318,
+          0.1404
+        ],
+        "winRate": 45.5
+      },
+      "atrControlSealed": {
+        "n": 299,
+        "avgR": 0.083,
+        "t": 1.15,
+        "ci": [
+          -0.058,
+          0.2241
+        ],
+        "winRate": 48.5
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    },
+    {
+      "ceilingPctOfStop": 2,
+      "keptPct": 43.1,
+      "train": {
+        "n": 1393,
+        "avgR": 0.0336,
+        "t": 1.02,
+        "ci": [
+          -0.0308,
+          0.0979
+        ],
+        "winRate": 46.1
+      },
+      "validate": {
+        "n": 613,
+        "avgR": -0.0562,
+        "t": -1.15,
+        "ci": [
+          -0.1521,
+          0.0397
+        ],
+        "winRate": 42.1
+      },
+      "sealed": {
+        "n": 455,
+        "avgR": -0.0216,
+        "t": -0.38,
+        "ci": [
+          -0.1318,
+          0.0886
+        ],
+        "winRate": 44.4
+      },
+      "atrControlSealed": {
+        "n": 455,
+        "avgR": 0.0708,
+        "t": 1.23,
+        "ci": [
+          -0.0424,
+          0.184
+        ],
+        "winRate": 48.6
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    },
+    {
+      "ceilingPctOfStop": 2.5,
+      "keptPct": 58.4,
+      "train": {
+        "n": 1856,
+        "avgR": 0.0132,
+        "t": 0.46,
+        "ci": [
+          -0.0425,
+          0.0689
+        ],
+        "winRate": 45.4
+      },
+      "validate": {
+        "n": 856,
+        "avgR": -0.0489,
+        "t": -1.19,
+        "ci": [
+          -0.1298,
+          0.0319
+        ],
+        "winRate": 42.9
+      },
+      "sealed": {
+        "n": 623,
+        "avgR": -0.0411,
+        "t": -0.86,
+        "ci": [
+          -0.1349,
+          0.0527
+        ],
+        "winRate": 43.8
+      },
+      "atrControlSealed": {
+        "n": 623,
+        "avgR": -0.017,
+        "t": -0.35,
+        "ci": [
+          -0.1124,
+          0.0783
+        ],
+        "winRate": 44.8
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    },
+    {
+      "ceilingPctOfStop": 3,
+      "keptPct": 71.4,
+      "train": {
+        "n": 2219,
+        "avgR": -0.0086,
+        "t": -0.33,
+        "ci": [
+          -0.0592,
+          0.042
+        ],
+        "winRate": 44.8
+      },
+      "validate": {
+        "n": 1064,
+        "avgR": -0.0373,
+        "t": -1,
+        "ci": [
+          -0.1104,
+          0.0359
+        ],
+        "winRate": 43.2
+      },
+      "sealed": {
+        "n": 794,
+        "avgR": -0.0261,
+        "t": -0.61,
+        "ci": [
+          -0.1097,
+          0.0576
+        ],
+        "winRate": 44.5
+      },
+      "atrControlSealed": {
+        "n": 794,
+        "avgR": -0.0343,
+        "t": -0.8,
+        "ci": [
+          -0.1183,
+          0.0498
+        ],
+        "winRate": 44.2
+      },
+      "signStable": false,
+      "beatsAtrControl": true
+    },
+    {
+      "ceilingPctOfStop": null,
+      "keptPct": 100,
+      "train": {
+        "n": 2928,
+        "avgR": 0.0029,
+        "t": 0.13,
+        "ci": [
+          -0.0412,
+          0.047
+        ],
+        "winRate": 45.7
+      },
+      "validate": {
+        "n": 1483,
+        "avgR": -0.0437,
+        "t": -1.4,
+        "ci": [
+          -0.1051,
+          0.0177
+        ],
+        "winRate": 43.8
+      },
+      "sealed": {
+        "n": 1298,
+        "avgR": 0.0027,
+        "t": 0.08,
+        "ci": [
+          -0.0636,
+          0.0689
+        ],
+        "winRate": 46
+      },
+      "atrControlSealed": {
+        "n": 1298,
+        "avgR": 0.0027,
+        "t": 0.08,
+        "ci": [
+          -0.0636,
+          0.0689
+        ],
+        "winRate": 46
+      },
+      "signStable": false,
+      "beatsAtrControl": false
+    }
+  ],
+  "passingCeilings": [],
+  "established": false,
+  "verdict": "No cost ceiling clears the stated falsifier. Baseline sealed 0.0027R at t=0.08. Spread is demonstrably eating the gross, but refusing the dear trades does not reliably recover it: 0 threshold(s) held sign across all three windows and 1 beat the volatility control."
+}

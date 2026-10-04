@@ -70,7 +70,15 @@ const MIN_TRADES = 40;        // below this a slice says nothing
 // on this data would be an artefact of the feed, not an effect in the market.
 
 // ── the managed ladder the site actually uses, so a result transfers ──────
-const SL_ATR = 1.5, TP1 = 1.2, TP2 = 2.0, TP3 = 3.5;
+// v611 — STOP WIDTH IS NOW SEARCHED, not assumed.
+//
+// Every earlier conclusion from this file was computed at SL 1.5x ATR with a
+// flat cost. Both were wrong in the same direction: the flat cost under-charged
+// tight stops, and 1.5x was then measured as the WORST of the family once cost
+// was modelled as spread/stop-distance. So "nothing works" was established
+// under the worst configuration available. It has to be re-derived.
+const SL_GRID = [1.5, 2.25, 3.0, 4.0];
+const TP1 = 1.2, TP2 = 2.0, TP3 = 3.5;
 // Bars before a trade is closed out. This must scale with the timeframe or a
 // 15m position would be held for two and a half months.
 const HOLD_CAP = TF === 'daily' ? 120 : TF === '15m' ? 480 : 240;
@@ -146,11 +154,11 @@ const FILTERS = {
 };
 
 /* ── the trade: enter next open, managed ladder, held to resolution ─────── */
-function runTrade(d, i, dir) {
+function runTrade(d, i, dir, slMult) {
   const a = d.atr[i]; if (a == null || !(a > 0)) return null;
   const entry = d.b[i + 1] && d.b[i + 1].o; if (!entry) return null;
   const sign = dir === 'BUY' ? 1 : -1;
-  const slDist = a * SL_ATR;
+  const slDist = a * slMult;
   const sl  = entry - sign * slDist;
   const t1 = entry + sign * slDist * TP1, t2 = entry + sign * slDist * TP2, t3 = entry + sign * slDist * TP3;
 
@@ -176,7 +184,7 @@ function runTrade(d, i, dir) {
 }
 
 /** Non-overlapping: no new entry until the open one resolves. */
-function backtest(sets, entryFn, filterFn, lo, hi) {
+function backtest(sets, entryFn, filterFn, lo, hi, slMult) {
   const rs = [];
   for (const d of sets) {
     const a = Math.max(210, Math.floor(d.b.length * lo));
@@ -186,7 +194,7 @@ function backtest(sets, entryFn, filterFn, lo, hi) {
       if (i < free) continue;
       const dir = entryFn(d, i); if (!dir) continue;
       if (!filterFn(d, i, dir)) continue;
-      const t = runTrade(d, i, dir); if (!t) continue;
+      const t = runTrade(d, i, dir, slMult); if (!t) continue;
       rs.push(t.r);
       free = i + t.bars + 1;
     }
@@ -194,24 +202,33 @@ function backtest(sets, entryFn, filterFn, lo, hi) {
   return rs;
 }
 
-function randomNull(sets, lo, hi, nTrades, draws = 200) {
+function randomNull(sets, lo, hi, nTrades, draws = 200, slMult = 3.0) {
   const outs = [];
+  const perSet = Math.max(1, Math.round(nTrades / sets.length));
   for (let k = 0; k < draws; k++) {
     const rs = [];
     for (const d of sets) {
       const a = Math.max(210, Math.floor(d.b.length * lo));
       const z = Math.min(d.b.length - 2, Math.floor(d.b.length * hi));
-      let guard = 0;
-      while (rs.length < nTrades / sets.length && guard++ < nTrades * 4) {
+      // BUG, fixed: the condition was `rs.length < nTrades / sets.length`, but
+      // rs accumulates across EVERY instrument. After the first one filled it,
+      // every later instrument exited immediately — so the null was drawn from
+      // a single market with a nineteenth of the trades. A small sample has a
+      // wide distribution, which pushed the 95th percentile up to +0.35R and
+      // made the null almost impossible to beat for the wrong reason.
+      let got = 0, guard = 0;
+      while (got < perSet && guard++ < perSet * 20) {
         const i = a + Math.floor(Math.random() * Math.max(1, z - a));
-        const t = runTrade(d, i, Math.random() < 0.5 ? 'BUY' : 'SELL');
-        if (t) rs.push(t.r);
+        const t = runTrade(d, i, Math.random() < 0.5 ? 'BUY' : 'SELL', slMult);
+        if (t) { rs.push(t.r); got++; }
       }
     }
     outs.push(mean(rs));
   }
   outs.sort((x, y) => x - y);
-  return { p95: outs[Math.floor(outs.length * 0.95)], mean: mean(outs) };
+  return { p95: outs[Math.floor(outs.length * 0.95)], mean: mean(outs),
+           p05: outs[Math.floor(outs.length * 0.05)], draws: outs.length,
+           tradesPerDraw: perSet * sets.length };
 }
 
 /* ── load ───────────────────────────────────────────────────────────────── */
@@ -233,7 +250,8 @@ console.log(`  split: train 0-50%, validate 50-75%, SEALED 75-100% (opened once,
 const combos = [];
 for (const [en, ef] of Object.entries(ENTRIES))
   for (const [fn, ff] of Object.entries(FILTERS))
-    combos.push({ name: `${en} × ${fn}`, entry: en, filter: fn, ef, ff });
+    for (const sl of SL_GRID)
+      combos.push({ name: `${en} × ${fn} × SL${sl}`, entry: en, filter: fn, sl, ef, ff });
 
 const HYPOTHESES = combos.length;
 // Bonferroni: testing this many and keeping the best is not one test.
@@ -253,7 +271,7 @@ console.log(`  ${HYPOTHESES} combinations tested -> Bonferroni bar |t| > ${BAR_T
 
 const trained = [];
 for (const c of combos) {
-  const rs = backtest(sets, c.ef, c.ff, 0, 0.5);
+  const rs = backtest(sets, c.ef, c.ff, 0, 0.5, c.sl);
   if (rs.length < MIN_TRADES) continue;
   trained.push({ ...c, train: { n: rs.length, avgR: +mean(rs).toFixed(4), t: +tstat(rs).toFixed(2) } });
 }
@@ -266,7 +284,7 @@ for (const c of trained.slice(0, 8))
 const survivors = [];
 for (const c of trained) {
   if (!(c.train.t > 1.5 && c.train.avgR > 0)) continue;       // only promising ones cost a validation
-  const rs = backtest(sets, c.ef, c.ff, 0.5, 0.75);
+  const rs = backtest(sets, c.ef, c.ff, 0.5, 0.75, c.sl);
   if (rs.length < MIN_TRADES / 2) continue;
   const v = { n: rs.length, avgR: +mean(rs).toFixed(4), t: +tstat(rs).toFixed(2) };
   if (v.avgR > 0 && v.t > 1.0) survivors.push({ ...c, validate: v });
@@ -279,11 +297,13 @@ if (!survivors.length) console.log('    (none)');
 /* ── 3. SEALED — opened once ────────────────────────────────────────────── */
 const sealed = [];
 for (const c of survivors) {
-  const rs = backtest(sets, c.ef, c.ff, 0.75, 1.0);
+  const rs = backtest(sets, c.ef, c.ff, 0.75, 1.0, c.sl);
   if (rs.length < MIN_TRADES / 2) { sealed.push({ ...c, sealed: { n: rs.length, tooFew: true } }); continue; }
-  const nul = randomNull(sets, 0.75, 1.0, rs.length, 150);
+  const nul = randomNull(sets, 0.75, 1.0, rs.length, 150, c.sl);
   const s = { n: rs.length, avgR: +mean(rs).toFixed(4), t: +tstat(rs).toFixed(2),
-              nullP95: +nul.p95.toFixed(4), beatsNull: mean(rs) > nul.p95,
+              nullP95: +nul.p95.toFixed(4), nullMean: +nul.mean.toFixed(4),
+              nullP05: +nul.p05.toFixed(4), nullTrades: nul.tradesPerDraw,
+              beatsNull: mean(rs) > nul.p95,
               clearsBar: Math.abs(tstat(rs)) > BAR_T && mean(rs) > 0 };
   s.passes = s.clearsBar && s.beatsNull;
   sealed.push({ ...c, sealed: s });

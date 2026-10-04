@@ -1315,5 +1315,102 @@ t('the engine is benchmarked against doing nothing', () => {
   return true;
 });
 
+
+/* ───────── the deep dive: cost, and the hypotheses it refused ───────── */
+
+t('the cost audit reconciles — net is gross minus the spread, not a separate guess', () => {
+  if (!existsSync('data/cost-audit.json')) return 'skipped: not built yet';
+  const c = JSON.parse(readFileSync('data/cost-audit.json', 'utf8'));
+  if (!c.pooled || !c.pooled.sealed) return 'no sealed pooled figure';
+  for (const r of c.perInstrument || []) {
+    // net = gross - cost must hold to rounding, or the three columns are not
+    // the same measurement and the headline share is meaningless.
+    if (Math.abs((r.grossR - r.costR) - r.netR) > 0.0002)
+      return `${r.pair}: net ${r.netR} is not gross ${r.grossR} minus cost ${r.costR}`;
+    if (!(r.costR > 0)) return `${r.pair}: cost is not positive — the spread cannot be free`;
+    // Cost is spread/stop, so it must be the same sign and scale everywhere.
+    if (r.costR > 0.5) return `${r.pair}: cost ${r.costR}R exceeds half the stop, which cannot be right`;
+  }
+  // The share can only be quoted when gross is positive; otherwise it is a
+  // percentage of a negative number, which reads backwards.
+  const g = c.pooled.sealed.gross.avgR;
+  if (c.sealedCostShareOfGrossPct != null && !(g > 0))
+    return 'a cost share of gross is quoted while gross is not positive';
+  return true;
+});
+
+t('every deep-dive hypothesis states its falsifier and reports the verdict it actually got', () => {
+  const files = ['data/trend-alignment-test.json', 'data/cost-ceiling-test.json',
+                 'data/volatility-gradient-test.json'];
+  let seen = 0;
+  for (const f of files) {
+    if (!existsSync(f)) continue;
+    seen++;
+    const d = JSON.parse(readFileSync(f, 'utf8'));
+    if (!d.hypothesis) return `${f}: no hypothesis recorded`;
+    if (!d.falsifierStatedBeforeRunning) return `${f}: no falsifier stated`;
+    if (typeof d.established !== 'boolean') return `${f}: no established flag`;
+    // The verdict text must agree with the flag. A refused hypothesis
+    // described in passing language is how a null result becomes a claim.
+    if (!d.established && /\b(holds|established|works|confirmed)\b/i.test(d.verdict || '')
+        && !/NOT ESTABLISHED|does NOT|not established|No cost ceiling|not survive/i.test(d.verdict || ''))
+      return `${f}: established=false but the verdict reads as a positive result`;
+    if (d.established && /NOT ESTABLISHED|does not survive/i.test(d.verdict || ''))
+      return `${f}: established=true but the verdict says otherwise`;
+  }
+  return seen ? true : 'skipped: none built yet';
+});
+
+t('the trend-alignment result is judged on stability, not on the sealed window alone', () => {
+  if (!existsSync('data/trend-alignment-test.json')) return 'skipped: not built yet';
+  const d = JSON.parse(readFileSync('data/trend-alignment-test.json', 'utf8'));
+  if (!d.periodEdgeR) return 'the difference is not reported per window, so a sign flip would be invisible';
+  const signs = ['train', 'validate', 'sealed'].map(k => Math.sign(d.periodEdgeR[k]));
+  const stable = signs.every(x => x > 0);
+  if (d.signStableAcrossPeriods !== stable)
+    return `signStableAcrossPeriods says ${d.signStableAcrossPeriods} but the per-window signs are ${signs}`;
+  // The sealed difference was +0.0611R at t=2.35, which passes a naive bar.
+  // It must not be reported as established while the sign flips.
+  if (!stable && d.established) return 'established although the sign flips between windows';
+  if (d.instrumentAgreementP == null) return 'instrument agreement is not tested against chance';
+  return true;
+});
+
+t('volatility is ranked within each instrument, never pooled across them', () => {
+  if (!existsSync('tools/volatility-gradient-test.mjs')) return 'skipped: tool missing';
+  const src = readFileSync('tools/volatility-gradient-test.mjs', 'utf8');
+  // Pooling ATR% across instruments ranks INSTRUMENTS, not regimes: crypto sits
+  // above FX in every period. That confound produced a clean monotone ladder in
+  // the cost-ceiling control arm and reversed when ranked properly.
+  if (!/ranked within/i.test(src) && !/within-instrument/i.test(src))
+    return 'nothing records that the ranking is within-instrument';
+  if (!/rows\.filter\(x => x\.win === w\)[\s\S]{0,200}sort/.test(src))
+    return 'the percentile is not computed within each window';
+  if (!existsSync('data/volatility-gradient-test.json')) return true;
+  const d = JSON.parse(readFileSync('data/volatility-gradient-test.json', 'utf8'));
+  if (!/within each instrument/i.test(d.ranking || '')) return 'the published result does not state the ranking scope';
+  // It was discovered on the sealed set, so sealed cannot also be its judge.
+  if (!/provenance/i.test(Object.keys(d).join(' '))) return 'no provenance recorded for where it was found';
+  if (!/train and validate/i.test(d.falsifierStatedBeforeRunning || ''))
+    return 'the falsifier does not name the untouched windows as the holdout';
+  return true;
+});
+
+t('the cost finding reaches the screen', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  // A measurement that stays in a JSON file has not been delivered.
+  const decls = src.match(/^function renderCostAudit\(/gm) || [];
+  if (decls.length === 0) return 'renderCostAudit is not declared';
+  if (decls.length > 1) return `renderCostAudit is declared ${decls.length} times — one would silently win`;
+  if (!/\$\{renderCostAudit\(\)\}/.test(src)) return 'renderCostAudit is declared but never called';
+  for (const f of ['cost-audit', 'cost-ceiling-test', 'trend-alignment-test', 'volatility-gradient-test'])
+    if (!new RegExp(`'${f}'`).test(src)) return `${f} is never loaded, so the panel would read undefined`;
+  // The panel must not invent a cost share when the tool published none.
+  if (/sealedCostShareOfGrossPct \|\| /.test(src))
+    return 'the cost share falls back to a stand-in value when it is absent';
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

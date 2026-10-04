@@ -1,0 +1,204 @@
+{
+  "ts": 1791130385256,
+  "isoTime": "2026-10-04T16:13:05.256Z",
+  "builtBy": "tools/trend-alignment-test.mjs",
+  "hypothesis": "Trading in the direction of the 200-period trend outperforms trading against it.",
+  "prespecified": true,
+  "entryRules": 8,
+  "instruments": 19,
+  "falsifierStatedBeforeRunning": "The with-trend minus against-trend difference must hold the same sign in train, validate AND sealed, instrument agreement must beat a coin flip, and with-trend must itself be positive on sealed data with an interval excluding zero. Being less bad than the opposite is not an edge.",
+  "withTrend": {
+    "train": {
+      "n": 11832,
+      "avgR": 0.0237,
+      "t": 2.11,
+      "ci": [
+        0.0016,
+        0.0458
+      ],
+      "winRate": 46.5
+    },
+    "validate": {
+      "n": 5954,
+      "avgR": -0.0176,
+      "t": -1.12,
+      "ci": [
+        -0.0486,
+        0.0133
+      ],
+      "winRate": 44.7
+    },
+    "sealed": {
+      "n": 5432,
+      "avgR": -0.0109,
+      "t": -0.67,
+      "ci": [
+        -0.043,
+        0.0212
+      ],
+      "winRate": 45.8
+    }
+  },
+  "against": {
+    "train": {
+      "n": 7233,
+      "avgR": -0.0285,
+      "t": -2,
+      "ci": [
+        -0.0565,
+        -0.0006
+      ],
+      "winRate": 44.5
+    },
+    "validate": {
+      "n": 3806,
+      "avgR": 0.0591,
+      "t": 2.96,
+      "ci": [
+        0.0199,
+        0.0983
+      ],
+      "winRate": 47.8
+    },
+    "sealed": {
+      "n": 3398,
+      "avgR": -0.0721,
+      "t": -3.57,
+      "ci": [
+        -0.1116,
+        -0.0325
+      ],
+      "winRate": 44
+    }
+  },
+  "sealedDifferenceR": 0.0611,
+  "sealedDifferenceT": 2.35,
+  "periodEdgeR": {
+    "train": 0.0522,
+    "validate": -0.0767,
+    "sealed": 0.0612
+  },
+  "signStableAcrossPeriods": false,
+  "instrumentsAgreeing": 11,
+  "instrumentsTested": 19,
+  "instrumentAgreementP": 0.648,
+  "perInstrument": {
+    "AUD/JPY": {
+      "withTrend": 0.0389,
+      "against": 0.0359,
+      "nWith": 1226,
+      "nAgainst": 813
+    },
+    "AUD/USD": {
+      "withTrend": -0.0733,
+      "against": -0.0317,
+      "nWith": 1445,
+      "nAgainst": 869
+    },
+    "BTC/USD": {
+      "withTrend": 0.0219,
+      "against": -0.0364,
+      "nWith": 1459,
+      "nAgainst": 879
+    },
+    "ETH/USD": {
+      "withTrend": 0.0084,
+      "against": 0.0293,
+      "nWith": 1485,
+      "nAgainst": 935
+    },
+    "EUR/GBP": {
+      "withTrend": -0.0481,
+      "against": -0.1159,
+      "nWith": 1063,
+      "nAgainst": 677
+    },
+    "EUR/JPY": {
+      "withTrend": -0.0306,
+      "against": 0.0494,
+      "nWith": 1217,
+      "nAgainst": 757
+    },
+    "EUR/USD": {
+      "withTrend": -0.0043,
+      "against": -0.0713,
+      "nWith": 1504,
+      "nAgainst": 882
+    },
+    "GBP/JPY": {
+      "withTrend": -0.0606,
+      "against": 0.0046,
+      "nWith": 1313,
+      "nAgainst": 749
+    },
+    "GBP/USD": {
+      "withTrend": -0.0113,
+      "against": -0.011,
+      "nWith": 1467,
+      "nAgainst": 910
+    },
+    "NAS100": {
+      "withTrend": 0.0713,
+      "against": -0.0122,
+      "nWith": 520,
+      "nAgainst": 323
+    },
+    "NZD/USD": {
+      "withTrend": -0.0314,
+      "against": -0.073,
+      "nWith": 1589,
+      "nAgainst": 1016
+    },
+    "SOL/USD": {
+      "withTrend": 0.0635,
+      "against": 0.0343,
+      "nWith": 1579,
+      "nAgainst": 1011
+    },
+    "US30": {
+      "withTrend": -0.072,
+      "against": -0.0306,
+      "nWith": 454,
+      "nAgainst": 288
+    },
+    "USD/CAD": {
+      "withTrend": 0.0345,
+      "against": -0.0853,
+      "nWith": 904,
+      "nAgainst": 573
+    },
+    "USD/CHF": {
+      "withTrend": -0.0538,
+      "against": 0.009,
+      "nWith": 1192,
+      "nAgainst": 753
+    },
+    "USD/JPY": {
+      "withTrend": 0.0156,
+      "against": 0.0411,
+      "nWith": 1294,
+      "nAgainst": 789
+    },
+    "XAG/USD": {
+      "withTrend": 0.0224,
+      "against": -0.0375,
+      "nWith": 997,
+      "nAgainst": 628
+    },
+    "XAU/USD": {
+      "withTrend": 0.1303,
+      "against": -0.0291,
+      "nWith": 933,
+      "nAgainst": 612
+    },
+    "XRP/USD": {
+      "withTrend": 0.086,
+      "against": -0.0097,
+      "nWith": 1577,
+      "nAgainst": 973
+    }
+  },
+  "established": false,
+  "method": "Every entry rule, every instrument, hourly bars. Stop 3x ATR, ladder 1.2/2.0/3.5R, cost = spread/stop distance, stop checked before targets, non-overlapping. The ONLY variable is whether the signal direction agrees with price against its 200-period average. One pre-specified comparison, so no multiple-testing correction is owed.",
+  "verdict": "NOT ESTABLISHED. On the sealed quarter with-trend beat against-trend by 0.0611R at t=2.35, which looks like a result. It is not one. Measured window by window the difference is +0.0522R in training, -0.0767R in validation and +0.0612R sealed. The sign flips, so this is not one mechanism measured three times. In the validation window trading AGAINST the 200-period trend returned 0.0591R at t=2.96 — the opposite of the claim, and more significant than the claim. 11 of 19 instruments agree, p=0.648 against a coin flip. And with-trend itself returns -0.0109R on sealed data with interval [-0.043, 0.0212], so even taken at face value it is not profitable. The 7-of-8 pattern in the 288-combination search was selection, not a mechanism: those combinations reached the sealed set by performing well in training and validation, which is the very thing the family test then read back off them."
+}

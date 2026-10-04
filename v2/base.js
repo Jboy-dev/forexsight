@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine', 'cost-audit', 'cost-ceiling-test', 'trend-alignment-test', 'volatility-gradient-test'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -1489,6 +1489,94 @@ function renderPerChart() {
       </div></details>` : ''}`;
 }
 
+/* ─────────────── where the money actually goes ───────────────
+   Every hypothesis about WHICH trade to take has now failed a sealed test:
+   288 entry/filter/stop combinations, a pre-specified trend-alignment family
+   test, 120 exit schemes, the confidence score, the per-chart search. It is
+   reasonable to conclude the entry is not the lever.
+
+   The cost audit says why, and it is not a subtle statistical point. The
+   strategy grosses +0.032R per trade on data it never saw and nets +0.0027R.
+   The spread takes 91.6% of it. The edge is real and too small to survive
+   being charged for.
+
+   This panel exists because that single number explains more than any of the
+   search results do, and because a site that shows a break-even engine without
+   showing where the money went is hiding the only useful part.
+   ------------------------------------------------------------------- */
+function renderCostAudit() {
+  const c = S.costAudit;
+  if (!c || !c.pooled || !c.pooled.sealed) return '';
+  const g = c.pooled.sealed.gross, n = c.pooled.sealed.net;
+  const cost = g.avgR - n.avgR;
+  const share = c.sealedCostShareOfGrossPct;
+  const rows = (c.perInstrument || []).slice();
+  const keeps = rows.filter(r => r.costAsPctOfGross != null && r.costAsPctOfGross < 20);
+
+  const refused = [
+    { d: S.trendAlignmentTest,     t: 'Trading with the 200-period trend' },
+    { d: S.costCeilingTest,        t: 'Refusing the trades you cannot afford' },
+    { d: S.volatilityGradientTest, t: 'Trading only when the market is moving' },
+  ].filter(x => x.d);
+
+  return `
+    <h2 class="sec" style="margin-top:4px">Where the money goes</h2>
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:26px">
+        <div class="rec-i"><div class="k">Gross, before costs</div>
+          <div class="v" style="font-size:20px;color:${g.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(g.avgR) + g.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">per trade, sealed quarter</div></div>
+        <div class="rec-i"><div class="k">Taken by the spread</div>
+          <div class="v" style="font-size:20px;color:var(--down)">−${esc(cost.toFixed(4))}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">${share != null ? esc(share) + '% of the gross' : 'known before each trade'}</div></div>
+        <div class="rec-i"><div class="k">What is left</div>
+          <div class="v" style="font-size:20px;color:${n.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(n.avgR) + n.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">t=${esc(n.t)}${Array.isArray(n.ci) && n.ci[0] <= 0 && n.ci[1] >= 0 ? ' · spans zero' : ''}, ${esc(n.n.toLocaleString())} trades</div></div>
+      </div>
+      <div class="rec-note"><strong>This is the finding that explains the others.</strong>
+        The strategy does find an edge before costs. ${share != null ? `It then hands ${esc(share)}% of it to the
+        broker` : 'It then hands almost all of it to the broker'}, which is why nothing measured here comes out
+        reliably positive. Cost is <em>spread ÷ stop distance</em> — both numbers are known before the trade is
+        taken, so unlike everything else on this page it is arithmetic rather than a prediction.</div>
+    </div>
+
+    <details class="fold" style="margin-top:12px;border-top:0"><summary>What each market charges to get in</summary>
+      <div class="fold-in">
+        <table class="kb-t"><tr><th>market</th><th>trades</th><th>gross</th><th>spread</th><th>net</th><th>spread ÷ stop</th><th>of gross eaten</th></tr>
+        ${rows.map(r => `<tr>
+          <td>${esc(r.pair)}</td><td>${esc(r.trades)}</td>
+          <td class="${r.grossR > 0 ? 'pos' : 'neg'}">${esc(sign(r.grossR) + r.grossR)}</td>
+          <td class="neg">−${esc(r.costR)}</td>
+          <td class="${r.netR > 0 ? 'pos' : 'neg'}">${esc(sign(r.netR) + r.netR)}</td>
+          <td>${esc(r.spreadAsPctOfStop)}%</td>
+          <td class="${r.costAsPctOfGross == null ? '' : r.costAsPctOfGross > 40 ? 'neg' : 'pos'}">${r.costAsPctOfGross == null ? 'gross ≤ 0' : esc(r.costAsPctOfGross) + '%'}</td>
+        </tr>`).join('')}</table>
+        <p style="margin-top:10px">Sorted by what the spread costs relative to the stop, which is the number that
+        matters — a wide spread on a wide stop is cheap, a tight spread on a tight stop is not.
+        ${keeps.length ? `Only <strong>${keeps.map(r => esc(r.pair)).join(' and ')}</strong>
+        ${keeps.length === 1 ? 'keeps' : 'keep'} more than 80% of what ${keeps.length === 1 ? 'it makes' : 'they make'}.` : ''}
+        ${rows.filter(r => r.costAsPctOfGross == null).length} of these ${esc(rows.length)} markets lose money
+        before any cost is charged at all, so for those the spread is not the problem.</p>
+      </div></details>
+
+    ${refused.length ? `<details class="fold" style="margin-top:12px;border-top:0">
+      <summary>Three ways to fix it that were tested and refused</summary>
+      <div class="fold-in">
+        ${refused.map(x => `<div style="margin-bottom:14px">
+          <div style="font-weight:600;margin-bottom:4px">${esc(x.t)}
+            <span style="font-weight:500;color:${x.d.established ? 'var(--up)' : 'var(--down)'}">— ${x.d.established ? 'holds' : 'refused'}</span></div>
+          <div style="font-size:12.5px;line-height:1.65;color:var(--text-dim)">${esc(x.d.verdict)}</div>
+          ${x.d.falsifierStatedBeforeRunning ? `<div style="font-size:11.5px;color:var(--text-faint);margin-top:5px">
+            Falsifier fixed before running: ${esc(x.d.falsifierStatedBeforeRunning)}</div>` : ''}
+        </div>`).join('')}
+        <p>Each of these was written with its own falsifier stated in advance, and each failed it. They are kept
+        here rather than deleted because a page showing only the tests that passed would imply some did.</p>
+      </div></details>` : ''}
+
+    <p style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">${esc(c.method || '')}</p>`;
+}
+
+
 /* ──────────────── what has been tested, and what survived ────────────────
    The search runs continuously and almost always concludes that nothing works.
    That conclusion is the product, so it is shown rather than buried: a page
@@ -1505,6 +1593,7 @@ function renderTrials() {
   box.innerHTML = `
     ${renderBenchmark()}
     ${renderEngineTest()}
+    ${renderCostAudit()}
     ${renderAdaptive()}
 
     <h2 class="sec">Textbook strategies, searched</h2>

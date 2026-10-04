@@ -1,0 +1,276 @@
+{
+  "ts": 1791130398306,
+  "isoTime": "2026-10-04T16:13:18.306Z",
+  "builtBy": "tools/volatility-gradient-test.mjs",
+  "hypothesis": "Volatility at entry, ranked within instrument and period, grades trade outcome monotonically.",
+  "provenance": "Seen in the control arm of tools/cost-ceiling-test.mjs on the SEALED quarter, so the sealed set is spent for this question. Train and validate had never been examined for it and are the holdout.",
+  "falsifierStatedBeforeRunning": "Spearman rho > 0.3 and a positive top-minus-bottom-third difference in BOTH train and validate, independently.",
+  "statistic": "Spearman rank correlation between volatility decile and mean return — one number per window, nothing to tune.",
+  "ranking": "Percentile within each instrument and each window. Gold ATR% and EUR/USD ATR% are not comparable, so pooling raw values would rank instruments rather than regimes.",
+  "stopMultiple": 3,
+  "ladder": [
+    1.2,
+    2,
+    3.5
+  ],
+  "totalTrades": 5709,
+  "windows": {
+    "train": {
+      "buckets": [
+        {
+          "decile": 1,
+          "n": 300,
+          "avgR": 0.0432,
+          "t": 0.59
+        },
+        {
+          "decile": 2,
+          "n": 290,
+          "avgR": 0.0412,
+          "t": 0.55
+        },
+        {
+          "decile": 3,
+          "n": 292,
+          "avgR": -0.0468,
+          "t": -0.66
+        },
+        {
+          "decile": 4,
+          "n": 290,
+          "avgR": -0.1028,
+          "t": -1.51
+        },
+        {
+          "decile": 5,
+          "n": 286,
+          "avgR": -0.0214,
+          "t": -0.3
+        },
+        {
+          "decile": 6,
+          "n": 295,
+          "avgR": 0.036,
+          "t": 0.49
+        },
+        {
+          "decile": 7,
+          "n": 292,
+          "avgR": 0.006,
+          "t": 0.08
+        },
+        {
+          "decile": 8,
+          "n": 290,
+          "avgR": -0.0039,
+          "t": -0.05
+        },
+        {
+          "decile": 9,
+          "n": 292,
+          "avgR": 0.0763,
+          "t": 1.1
+        },
+        {
+          "decile": 10,
+          "n": 301,
+          "avgR": -0.0011,
+          "t": -0.02
+        }
+      ],
+      "spearman": 0.042,
+      "topThird": {
+        "n": 982,
+        "avgR": 0.0305,
+        "t": 0.8,
+        "ci": [
+          -0.0446,
+          0.1055
+        ]
+      },
+      "bottomThird": {
+        "n": 976,
+        "avgR": 0.0157,
+        "t": 0.39,
+        "ci": [
+          -0.063,
+          0.0943
+        ]
+      },
+      "topMinusBottomR": 0.0148,
+      "topMinusBottomT": 0.27
+    },
+    "validate": {
+      "buckets": [
+        {
+          "decile": 1,
+          "n": 154,
+          "avgR": 0.1857,
+          "t": 1.82
+        },
+        {
+          "decile": 2,
+          "n": 149,
+          "avgR": 0.0278,
+          "t": 0.27
+        },
+        {
+          "decile": 3,
+          "n": 144,
+          "avgR": 0.0039,
+          "t": 0.04
+        },
+        {
+          "decile": 4,
+          "n": 147,
+          "avgR": -0.0799,
+          "t": -0.81
+        },
+        {
+          "decile": 5,
+          "n": 141,
+          "avgR": -0.0373,
+          "t": -0.39
+        },
+        {
+          "decile": 6,
+          "n": 153,
+          "avgR": -0.1909,
+          "t": -2.03
+        },
+        {
+          "decile": 7,
+          "n": 147,
+          "avgR": -0.1108,
+          "t": -1.11
+        },
+        {
+          "decile": 8,
+          "n": 144,
+          "avgR": 0.0207,
+          "t": 0.2
+        },
+        {
+          "decile": 9,
+          "n": 149,
+          "avgR": -0.1109,
+          "t": -1.15
+        },
+        {
+          "decile": 10,
+          "n": 155,
+          "avgR": -0.1426,
+          "t": -1.55
+        }
+      ],
+      "spearman": -0.709,
+      "topThird": {
+        "n": 502,
+        "avgR": -0.1033,
+        "t": -1.98,
+        "ci": [
+          -0.2057,
+          -0.0008
+        ]
+      },
+      "bottomThird": {
+        "n": 494,
+        "avgR": 0.0497,
+        "t": 0.87,
+        "ci": [
+          -0.0623,
+          0.1616
+        ]
+      },
+      "topMinusBottomR": -0.1529,
+      "topMinusBottomT": -1.98
+    },
+    "sealed": {
+      "buckets": [
+        {
+          "decile": 1,
+          "n": 136,
+          "avgR": 0.042,
+          "t": 0.41
+        },
+        {
+          "decile": 2,
+          "n": 128,
+          "avgR": 0.1582,
+          "t": 1.41
+        },
+        {
+          "decile": 3,
+          "n": 130,
+          "avgR": 0.0286,
+          "t": 0.26
+        },
+        {
+          "decile": 4,
+          "n": 126,
+          "avgR": -0.1008,
+          "t": -0.96
+        },
+        {
+          "decile": 5,
+          "n": 126,
+          "avgR": -0.0135,
+          "t": -0.12
+        },
+        {
+          "decile": 6,
+          "n": 129,
+          "avgR": -0.0318,
+          "t": -0.29
+        },
+        {
+          "decile": 7,
+          "n": 127,
+          "avgR": 0.0092,
+          "t": 0.09
+        },
+        {
+          "decile": 8,
+          "n": 129,
+          "avgR": 0.1,
+          "t": 0.9
+        },
+        {
+          "decile": 9,
+          "n": 129,
+          "avgR": -0.0218,
+          "t": -0.2
+        },
+        {
+          "decile": 10,
+          "n": 138,
+          "avgR": -0.1376,
+          "t": -1.47
+        }
+      ],
+      "spearman": -0.515,
+      "topThird": {
+        "n": 438,
+        "avgR": -0.0296,
+        "t": -0.52,
+        "ci": [
+          -0.1414,
+          0.0822
+        ]
+      },
+      "bottomThird": {
+        "n": 433,
+        "avgR": 0.0762,
+        "t": 1.27,
+        "ci": [
+          -0.0416,
+          0.1941
+        ]
+      },
+      "topMinusBottomR": -0.1058,
+      "topMinusBottomT": -1.28
+    }
+  },
+  "established": false,
+  "verdict": "The gradient does NOT survive the windows it was not found in. Training rho=0.042, validation rho=-0.709, against a stated bar of 0.3 in both. Top third minus bottom third was 0.0148R in training and -0.1529R in validation. The clean monotone ladder on the sealed quarter (-0.1058R, t=-1.28) was a pattern in the one window it was spotted in."
+}
