@@ -26,8 +26,28 @@ const CH_COL = {
   entry: '#6b8cff', sl: '#ff5f6d', tp: '#2fd98a', now: '#ffb63d',
 };
 
-const chDp = (pair) => /JPY/.test(pair) ? 3 : /XAU|XAG|BTC|ETH|SOL|XRP|US30|NAS/.test(pair) ? 2 : 5;
-const chFmt = (v, pair) => (typeof v === 'number' && isFinite(v)) ? v.toFixed(chDp(pair)) : '—';
+/**
+ * Decimals from the PRICE, not from the symbol.
+ *
+ * Classing XRP with BTC gave it 2 decimals, so a stop of 1.49747 and an entry
+ * of 1.49150 both rendered as "1.50" and "1.49" — two levels 0.6% apart looked
+ * adjacent, on a chart whose entire job is showing you where they sit. Bucketing
+ * by instrument cannot work when one bucket spans 85,000 and 1.50.
+ */
+function chDp(pair, price) {
+  const p = String(pair || '');
+  if (typeof price === 'number' && isFinite(price) && price > 0) {
+    const a = Math.abs(price);
+    if (a >= 10000) return 1;      // BTC, indices
+    if (a >= 1000) return 2;       // gold, NAS100
+    if (a >= 100) return 3;        // JPY pairs, SOL, silver
+    if (a >= 10) return 4;
+    if (a >= 1) return 5;          // XRP, EUR/USD, most FX
+    return 6;                      // anything sub-1
+  }
+  return /JPY/.test(p) ? 3 : /XAU|XAG|BTC|ETH|US30|NAS/.test(p) ? 2 : 5;
+}
+const chFmt = (v, pair) => (typeof v === 'number' && isFinite(v)) ? v.toFixed(chDp(pair, v)) : '—';
 
 /* ── data ───────────────────────────────────────────────────────────────── */
 // Bars are cached per instrument. Opening a chart used to wait on a network
@@ -36,23 +56,25 @@ const chFmt = (v, pair) => (typeof v === 'number' && isFinite(v)) ? v.toFixed(ch
 const CH_CACHE = new Map();          // pair -> { bars, at }
 const CH_TTL = 60000;
 
-async function chLoadBars(pair, { allowStale = false } = {}) {
-  const hit = CH_CACHE.get(pair);
+async function chLoadBars(pair, source = '1h', { allowStale = false } = {}) {
+  const ck = pair + '|' + source;
+  const hit = CH_CACHE.get(ck);
   if (hit && (allowStale || Date.now() - hit.at < CH_TTL)) {
     // Fresh enough to use now. If it is ageing, refresh behind the scenes so
     // the NEXT open is instant too, without blocking this one.
-    if (Date.now() - hit.at >= CH_TTL) chFetchBars(pair).catch(() => {});
+    if (Date.now() - hit.at >= CH_TTL) chFetchBars(pair, source).catch(() => {});
     return hit.bars;
   }
-  return chFetchBars(pair);
+  return chFetchBars(pair, source);
 }
 
-async function chFetchBars(pair) {
+async function chFetchBars(pair, source = '1h') {
   const slug = String(pair).replace('/', '-');
+  const suffix = source === '15m' ? '.15m' : '';
   const bust = Date.now();
   const urls = [
-    `https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/ohlc/${slug}.json?_b=${bust}`,
-    `/data/ohlc/${slug}.json?_b=${bust}`,
+    `https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/ohlc/${slug}${suffix}.json?_b=${bust}`,
+    `/data/ohlc/${slug}${suffix}.json?_b=${bust}`,
   ];
   const got = [];
   await Promise.all(urls.map(async (u) => {
@@ -68,7 +90,7 @@ async function chFetchBars(pair) {
   // Freshest wins, same rule the rest of the app uses.
   got.sort((a, b) => b.ts - a.ts);
   const bars = got[0].bars.filter(b => b && [b.o, b.h, b.l, b.c].every(v => typeof v === 'number' && isFinite(v) && v > 0));
-  if (bars.length) CH_CACHE.set(pair, { bars, at: Date.now() });
+  if (bars.length) CH_CACHE.set(pair + '|' + source, { bars, at: Date.now() });
   return bars;
 }
 
@@ -80,11 +102,11 @@ async function chFetchBars(pair) {
  * next two-minute cycle. On a phone opening the app cold that is all you ever
  * saw, which is exactly the bar going missing. */
 function chPrefetch(pairs) {
-  const wanted = pairs.slice(0, 8).filter(p => p && !CH_CACHE.has(p));
+  const wanted = pairs.slice(0, 8).filter(p => p && !CH_CACHE.has(p + '|1h'));
   if (!wanted.length) return;
   let landed = 0;
   for (const p of wanted) {
-    chFetchBars(p)
+    chFetchBars(p, '1h')
       .then((bars) => { if (bars && bars.length) landed++; })
       .catch(() => {})
       .finally(() => {
@@ -98,96 +120,189 @@ function chPrefetch(pairs) {
   var pending = wanted.length;
 }
 
+
+/* ───────────────── timeframes ─────────────────
+   1h is published; 15m is published separately because a lower timeframe
+   cannot be invented from a higher one. 4h and 1D are AGGREGATED up from the
+   hourly series, which is exact: open of the first bar, close of the last,
+   the highest high, the lowest low, volume summed.
+   ------------------------------------------------------------------- */
+const CH_TFS = [
+  { id: '15m', label: '15m', source: '15m', group: 1 },
+  { id: '1h',  label: '1H',  source: '1h',  group: 1 },
+  { id: '4h',  label: '4H',  source: '1h',  group: 4 },
+  { id: '1d',  label: '1D',  source: '1h',  group: 24 },
+];
+
+function chAggregate(bars, n) {
+  if (n <= 1) return bars;
+  const out = [];
+  for (let i = 0; i < bars.length; i += n) {
+    const slice = bars.slice(i, i + n);
+    if (!slice.length) continue;
+    let hi = -Infinity, lo = Infinity, vol = 0, anyVol = false;
+    for (const b of slice) {
+      if (b.h > hi) hi = b.h;
+      if (b.l < lo) lo = b.l;
+      if (typeof b.v === 'number' && b.v > 0) { vol += b.v; anyVol = true; }
+    }
+    out.push({ t: slice[0].t, o: slice[0].o, h: hi, l: lo,
+               c: slice[slice.length - 1].c, v: anyVol ? vol : null });
+  }
+  return out;
+}
+
+async function chLoadForTf(pair, tfId) {
+  const tf = CH_TFS.find(x => x.id === tfId) || CH_TFS[1];
+  const base = await chLoadBars(pair, tf.source);
+  if (!base || !base.length) return null;
+  return chAggregate(base, tf.group);
+}
+
 /* ── drawing ────────────────────────────────────────────────────────────── */
+/** Gridlines on ROUND numbers, the way a price scale is actually read.
+    Evenly dividing the range gives ticks like 2693.47, which no one reads. */
+function chNiceStep(range, target) {
+  const raw = range / Math.max(1, target);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / mag;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10;
+  return step * mag;
+}
+
+function chSMA(bars, period) {
+  const out = Array(bars.length).fill(null);
+  let sum = 0;
+  for (let i = 0; i < bars.length; i++) {
+    sum += bars[i].c;
+    if (i >= period) sum -= bars[i - period].c;
+    if (i >= period - 1) out[i] = sum / period;
+  }
+  return out;
+}
+
 function chDraw() {
   const cv = document.getElementById('chart-canvas');
   if (!cv || !CH.bars.length) return;
-  // Render at the panel's true pixel density so lines and type are sharp on a
-  // retina or OLED screen rather than upscaled. Capped at 3: beyond that the
-  // buffer grows quadratically for no visible gain, and on a large phone that
-  // is the difference between a smooth chart and a stuttering one.
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   CH.dpr = dpr;
   const W = cv.clientWidth, H = cv.clientHeight;
   const needW = Math.round(W * dpr), needH = Math.round(H * dpr);
-  // ONLY resize when the size actually changed.
-  //
-  // Assigning cv.width unconditionally re-allocated the backing store on every
-  // single redraw, and that RELEASES POINTER CAPTURE — which fires
-  // pointercancel, which aborted the gesture in progress. A pinch therefore
-  // died the moment the first frame rendered, so it worked in a tight loop with
-  // no frames and failed on a real phone where frames obviously do render.
-  // That is why the chart kept snapping back to where it started.
+  // Only resize when the size actually changed: assigning cv.width reallocates
+  // the backing store and RELEASES POINTER CAPTURE, which fires pointercancel
+  // and kills any gesture in progress.
   if (cv.width !== needW || cv.height !== needH) { cv.width = needW; cv.height = needH; }
   const g = cv.getContext('2d');
   g.setTransform(dpr, 0, 0, dpr, 0, 0);
   g.clearRect(0, 0, W, H);
 
-  const padR = 72, padB = 26, padT = 10, padL = 6;
-  const plotW = W - padR - padL, plotH = H - padB - padT;
-  if (plotW <= 10 || plotH <= 10) return;
-
+  const padR = 76, padB = 24, padT = 26, padL = 6;
   const { from, to } = CH.view;
   const vis = CH.bars.slice(from, to);
   if (!vis.length) return;
 
-  // Scale must include every level we are about to draw, or a stop sitting off
-  // the top of the chart looks like it does not exist.
+  // Volume gets its own strip, but only where volume is real. Spot FX has no
+  // central exchange and therefore no genuine volume; drawing an empty strip
+  // there would imply data that does not exist.
+  const hasVol = vis.some(b => typeof b.v === 'number' && b.v > 0);
+  const volH = hasVol ? Math.round((H - padT - padB) * 0.18) : 0;
+  const plotW = W - padR - padL;
+  const plotH = H - padB - padT - volH;
+  if (plotW <= 10 || plotH <= 10) return;
+
   let lo = Infinity, hi = -Infinity;
   for (const b of vis) { if (b.l < lo) lo = b.l; if (b.h > hi) hi = b.h; }
-  const s = CH.sig;
-  if (s) for (const v of [s.entry, s.sl, s.tp1, s.tp2, s.tp3]) {
+  const sg = CH.sig;
+  if (sg) for (const v of [sg.entry, sg.sl, sg.tp1, sg.tp2, sg.tp3]) {
     if (typeof v === 'number' && isFinite(v)) { if (v < lo) lo = v; if (v > hi) hi = v; }
   }
   const span0 = (hi - lo) || (hi * 0.001) || 1;
-  lo -= span0 * 0.08; hi += span0 * 0.08;
-
-  // Manual vertical zoom and pan, applied around the chosen centre.
+  lo -= span0 * 0.06; hi += span0 * 0.06;
   if (CH.yZoom !== 1 || CH.yCenter != null) {
     const c = CH.yCenter != null ? CH.yCenter : (lo + hi) / 2;
     const half = ((hi - lo) / 2) / CH.yZoom;
     lo = c - half; hi = c + half;
   }
 
-  const x = (i) => padL + (i + 0.5) * (plotW / vis.length);
+  // A little room on the right, like TradingView, so the newest candle is not
+  // jammed against the price axis.
+  const slot = plotW / (vis.length + 2);
+  const x = (i) => padL + (i + 0.5) * slot;
   const y = (p) => padT + (hi - p) / (hi - lo) * plotH;
 
-  // grid + price axis
   g.font = '10px ui-monospace, SF Mono, Menlo, monospace';
   g.textBaseline = 'middle';
-  const ticks = 6;
-  for (let i = 0; i <= ticks; i++) {
-    const p = lo + (hi - lo) * (i / ticks), py = y(p);
+
+  // ── price grid on round numbers
+  const step = chNiceStep(hi - lo, 7);
+  const first = Math.ceil(lo / step) * step;
+  for (let p = first; p <= hi; p += step) {
+    const py = Math.round(y(p)) + 0.5;
     g.strokeStyle = CH_COL.grid; g.lineWidth = 1;
-    g.beginPath(); g.moveTo(padL, Math.round(py) + 0.5); g.lineTo(padL + plotW, Math.round(py) + 0.5); g.stroke();
+    g.beginPath(); g.moveTo(padL, py); g.lineTo(padL + plotW, py); g.stroke();
     g.fillStyle = CH_COL.axis; g.textAlign = 'left';
-    g.fillText(chFmt(p, CH.pair), padL + plotW + 7, py);
+    g.fillText(chFmt(p, CH.pair), padL + plotW + 8, py);
   }
 
-  // time axis
-  const everyN = Math.max(1, Math.floor(vis.length / 6));
-  g.textAlign = 'center'; g.fillStyle = CH_COL.axis;
+  // ── time axis, with the vertical gridlines TradingView draws
+  const everyN = Math.max(1, Math.floor(vis.length / 7));
+  g.textAlign = 'center';
   for (let i = 0; i < vis.length; i += everyN) {
+    const px = Math.round(x(i)) + 0.5;
+    g.strokeStyle = CH_COL.grid; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(px, padT); g.lineTo(px, padT + plotH + volH); g.stroke();
     const d = new Date(vis[i].t);
-    const lbl = `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:00`;
+    const daily = CH.tf === '1d';
+    const lbl = daily
+      ? `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`
+      : `${String(d.getUTCDate()).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+    g.fillStyle = CH_COL.axis;
     g.fillText(lbl, x(i), H - padB / 2);
   }
 
-  // candles
-  const cw = Math.max(1, (plotW / vis.length) * 0.66);
-  for (let i = 0; i < vis.length; i++) {
-    const b = vis[i], up = b.c >= b.o;
-    const cx = x(i);
-    g.strokeStyle = up ? CH_COL.up : CH_COL.down;
-    g.lineWidth = 1;
-    g.beginPath(); g.moveTo(Math.round(cx) + 0.5, y(b.h)); g.lineTo(Math.round(cx) + 0.5, y(b.l)); g.stroke();
-    const yo = y(b.o), yc = y(b.c);
-    const top = Math.min(yo, yc), hgt = Math.max(1, Math.abs(yc - yo));
-    g.fillStyle = up ? CH_COL.up : CH_COL.down;
-    g.fillRect(cx - cw / 2, top, cw, hgt);
+  // ── volume strip
+  if (hasVol) {
+    let vmax = 0;
+    for (const b of vis) if (b.v > vmax) vmax = b.v;
+    const vTop = padT + plotH, vBot = vTop + volH - 4;
+    for (let i = 0; i < vis.length; i++) {
+      const b = vis[i];
+      if (!(b.v > 0)) continue;
+      const h2 = Math.max(1, ((b.v / vmax) * (volH - 6)));
+      g.fillStyle = (b.c >= b.o ? CH_COL.up : CH_COL.down) + '55';
+      g.fillRect(x(i) - slot * 0.33, vBot - h2, Math.max(1, slot * 0.66), h2);
+    }
   }
 
-  // the signal's levels
+  // ── moving averages, drawn under the candles
+  for (const [period, colour] of [[20, '#6b8cff88'], [50, '#ffb63d88']]) {
+    if (CH.bars.length < period + 2) continue;
+    const ma = chSMA(CH.bars, period);
+    g.strokeStyle = colour; g.lineWidth = 1.4;
+    g.beginPath();
+    let started = false;
+    for (let i = 0; i < vis.length; i++) {
+      const v = ma[from + i];
+      if (v == null) continue;
+      const px = x(i), py = y(v);
+      if (!started) { g.moveTo(px, py); started = true; } else g.lineTo(px, py);
+    }
+    g.stroke();
+  }
+
+  // ── candles
+  const cw = Math.max(1, slot * 0.66);
+  for (let i = 0; i < vis.length; i++) {
+    const b = vis[i], up = b.c >= b.o, cx = x(i);
+    g.strokeStyle = up ? CH_COL.up : CH_COL.down;
+    g.lineWidth = Math.max(1, Math.min(1.5, slot * 0.1));
+    g.beginPath(); g.moveTo(Math.round(cx) + 0.5, y(b.h)); g.lineTo(Math.round(cx) + 0.5, y(b.l)); g.stroke();
+    const yo = y(b.o), yc = y(b.c);
+    g.fillStyle = up ? CH_COL.up : CH_COL.down;
+    g.fillRect(cx - cw / 2, Math.min(yo, yc), cw, Math.max(1, Math.abs(yc - yo)));
+  }
+
+  // ── the signal's levels
   const line = (price, colour, label, dashed) => {
     if (typeof price !== 'number' || !isFinite(price)) return;
     const py = Math.round(y(price)) + 0.5;
@@ -202,30 +317,26 @@ function chDraw() {
     const tw = g.measureText(txt).width + 10;
     g.fillStyle = colour;
     g.fillRect(padL + 2, py - 8, tw, 16);
-    g.fillStyle = '#070a12'; g.textAlign = 'left'; g.textBaseline = 'middle';
+    g.fillStyle = '#070a12'; g.textAlign = 'left';
     g.fillText(txt, padL + 7, py);
     g.font = '10px ui-monospace, SF Mono, Menlo, monospace';
   };
-
-  if (s) {
-    line(s.sl, CH_COL.sl, 'SL', false);
-    line(s.entry, CH_COL.entry, 'ENTRY', false);
-    line(s.tp1, CH_COL.tp, 'TP1', true);
-    line(s.tp2, CH_COL.tp, 'TP2', true);
-    line(s.tp3, CH_COL.tp, 'TP3', true);
-
-    // shade risk and reward so the geometry is visible, not just numeric
+  if (sg) {
     const shade = (a, b2, colour) => {
       if (![a, b2].every(v => typeof v === 'number' && isFinite(v))) return;
-      const ya = y(a), yb = y(b2);
       g.fillStyle = colour;
-      g.fillRect(padL, Math.min(ya, yb), plotW, Math.abs(yb - ya));
+      g.fillRect(padL, Math.min(y(a), y(b2)), plotW, Math.abs(y(b2) - y(a)));
     };
-    shade(s.entry, s.sl, '#ff5f6d12');
-    shade(s.entry, s.tp3, '#2fd98a10');
+    shade(sg.entry, sg.sl, '#ff5f6d12');
+    shade(sg.entry, sg.tp3, '#2fd98a10');
+    line(sg.sl, CH_COL.sl, 'SL', false);
+    line(sg.entry, CH_COL.entry, 'ENTRY', false);
+    line(sg.tp1, CH_COL.tp, 'TP1', true);
+    line(sg.tp2, CH_COL.tp, 'TP2', true);
+    line(sg.tp3, CH_COL.tp, 'TP3', true);
   }
 
-  // last traded price
+  // ── last traded price, tagged on the axis
   const last = vis[vis.length - 1];
   if (last) {
     const py = Math.round(y(last.c)) + 0.5;
@@ -235,30 +346,63 @@ function chDraw() {
     g.fillRect(padL + plotW + 2, py - 8, padR - 4, 16);
     g.fillStyle = '#070a12'; g.font = '600 9.5px ui-monospace, monospace'; g.textAlign = 'left';
     g.fillText(chFmt(last.c, CH.pair), padL + plotW + 6, py);
+    g.font = '10px ui-monospace, SF Mono, Menlo, monospace';
   }
 
-  // crosshair
-  if (CH.hover) {
-    const i = Math.max(0, Math.min(vis.length - 1, Math.round((CH.hover.x - padL) / (plotW / vis.length) - 0.5)));
-    const b = vis[i];
-    if (b) {
-      g.save(); g.strokeStyle = '#8fa8ff66'; g.lineWidth = 1; g.setLineDash([3, 3]);
-      g.beginPath(); g.moveTo(Math.round(x(i)) + 0.5, padT); g.lineTo(Math.round(x(i)) + 0.5, padT + plotH); g.stroke();
-      g.beginPath(); g.moveTo(padL, Math.round(CH.hover.y) + 0.5); g.lineTo(padL + plotW, Math.round(CH.hover.y) + 0.5); g.stroke();
-      g.restore();
-      const rd = document.getElementById('chart-readout');
-      if (rd) {
-        const d = new Date(b.t);
-        rd.innerHTML = `<b>${d.toISOString().slice(0, 16).replace('T', ' ')} UTC</b>`
-          + `<span>O ${chFmt(b.o, CH.pair)}</span><span>H ${chFmt(b.h, CH.pair)}</span>`
-          + `<span>L ${chFmt(b.l, CH.pair)}</span><span class="${b.c >= b.o ? 'up' : 'dn'}">C ${chFmt(b.c, CH.pair)}</span>`;
-      }
+  // ── OHLC legend, top-left, the way TradingView reads
+  const shown = CH.hover ? vis[Math.max(0, Math.min(vis.length - 1,
+                  Math.round((CH.hover.x - padL) / slot - 0.5)))] : last;
+  if (shown) {
+    const up = shown.c >= shown.o;
+    const parts = [
+      ['O', chFmt(shown.o, CH.pair)], ['H', chFmt(shown.h, CH.pair)],
+      ['L', chFmt(shown.l, CH.pair)], ['C', chFmt(shown.c, CH.pair)],
+    ];
+    g.font = '600 10px ui-monospace, SF Mono, Menlo, monospace';
+    g.textAlign = 'left'; g.textBaseline = 'middle';
+    let lx = padL + 4;
+    for (const [k, v] of parts) {
+      g.fillStyle = CH_COL.axis; g.fillText(k, lx, 12); lx += g.measureText(k).width + 3;
+      g.fillStyle = up ? CH_COL.up : CH_COL.down; g.fillText(v, lx, 12); lx += g.measureText(v).width + 9;
     }
+    const chg = shown.o ? ((shown.c - shown.o) / shown.o) * 100 : 0;
+    g.fillStyle = up ? CH_COL.up : CH_COL.down;
+    g.fillText(`${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`, lx, 12);
+  }
+
+  // ── crosshair, with the price and time LABELLED on the axes
+  if (CH.hover) {
+    const i = Math.max(0, Math.min(vis.length - 1, Math.round((CH.hover.x - padL) / slot - 0.5)));
+    const b = vis[i];
+    const hy = Math.max(padT, Math.min(padT + plotH, CH.hover.y));
+    g.save(); g.strokeStyle = '#8fa8ff55'; g.lineWidth = 1; g.setLineDash([3, 3]);
+    g.beginPath(); g.moveTo(Math.round(x(i)) + 0.5, padT); g.lineTo(Math.round(x(i)) + 0.5, padT + plotH + volH); g.stroke();
+    g.beginPath(); g.moveTo(padL, Math.round(hy) + 0.5); g.lineTo(padL + plotW, Math.round(hy) + 0.5); g.stroke();
+    g.restore();
+
+    // price label on the right axis
+    const pAt = hi - ((hy - padT) / plotH) * (hi - lo);
+    g.fillStyle = '#2b3a5e';
+    g.fillRect(padL + plotW + 2, hy - 8, padR - 4, 16);
+    g.fillStyle = CH_COL.bright; g.font = '600 9.5px ui-monospace, monospace'; g.textAlign = 'left';
+    g.fillText(chFmt(pAt, CH.pair), padL + plotW + 6, hy);
+
+    // time label on the bottom axis
+    if (b) {
+      const d = new Date(b.t);
+      const lbl = `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')} ${String(d.getUTCHours()).padStart(2, '0')}:${String(d.getUTCMinutes()).padStart(2, '0')}`;
+      g.font = '600 9.5px ui-monospace, monospace';
+      const tw = g.measureText(lbl).width + 12;
+      g.fillStyle = '#2b3a5e';
+      g.fillRect(Math.min(padL + plotW - tw, Math.max(padL, x(i) - tw / 2)), H - padB + 1, tw, 16);
+      g.fillStyle = CH_COL.bright; g.textAlign = 'center';
+      g.fillText(lbl, Math.min(padL + plotW - tw / 2, Math.max(padL + tw / 2, x(i))), H - padB + 9);
+    }
+    g.font = '10px ui-monospace, SF Mono, Menlo, monospace';
   }
 }
 
-
-
+/* ── drawing ────────────────────────────────────────────────────────────── */
 /* ───────────────── full screen ─────────────────
    Works for BOTH views: our canvas and the TradingView embed are inside the
    same panel, so the panel is what goes full screen and whichever view is
@@ -648,7 +792,7 @@ async function chOpen(sig, pickFn) {
         <div class="ch-top">
           <div><div class="ch-pair" id="chart-pair"></div><div class="ch-sub" id="chart-sub"></div></div>
           <div class="ch-zoom">
-            ${[60, 120, 240, 500].map(n => `<button class="ch-z" data-bars="${n}">${n}</button>`).join('')}
+            ${CH_TFS.map(t => `<button class="ch-z" data-tf="${t.id}">${t.label}</button>`).join('')}
           </div>
           <button class="rs-x" data-chclose="1" aria-label="Close">&times;</button>
         </div>
@@ -668,8 +812,8 @@ async function chOpen(sig, pickFn) {
 
     el0.addEventListener('click', (e) => {
       if (e.target.dataset.chclose) chClose();
-      const z = e.target.closest('[data-bars]');
-      if (z) { chSetBars(+z.dataset.bars); }
+      const z = e.target.closest('[data-tf]');
+      if (z) chSetTf(z.dataset.tf);
       const m = e.target.closest('[data-mode]');
       if (m) chSetView(m.dataset.mode);
       if (e.target.closest('#chart-full')) chToggleFull();
@@ -694,7 +838,10 @@ async function chOpen(sig, pickFn) {
   // better than a blank panel that waits for the network.
   const pref = chLoadPref();
   const wantBars = pref && pref.bars > 0 ? pref.bars : 120;
-  const cached = CH_CACHE.get(CH.pair);
+  try { CH.tf = localStorage.getItem('fs.chart.tf') || '1h'; } catch (_) { CH.tf = '1h'; }
+  if (!CH_TFS.some(t => t.id === CH.tf)) CH.tf = '1h';
+  for (const b of document.querySelectorAll('.ch-z')) b.classList.toggle('on', b.dataset.tf === CH.tf);
+  const cached = CH_CACHE.get(CH.pair + '|1h');
   if (cached && cached.bars.length) {
     CH.bars = cached.bars;
     chSetBars(wantBars, { remember: false });
@@ -702,7 +849,7 @@ async function chOpen(sig, pickFn) {
     chRefreshMeta();
   }
 
-  const bars = await chLoadBars(CH.pair);
+  const bars = await chLoadForTf(CH.pair, CH.tf);
   if (!bars || !bars.length) {
     if (!cached) document.getElementById('chart-sub').textContent = 'no published bars for this instrument';
     return;
@@ -745,6 +892,33 @@ function chLoadPref() {
   return null;
 }
 
+
+/** Switch timeframe. The chosen one is remembered, like the zoom. */
+async function chSetTf(tfId) {
+  if (!CH_TFS.some(t => t.id === tfId)) return;
+  CH.tf = tfId;
+  try { localStorage.setItem('fs.chart.tf', tfId); } catch (_) {}
+  for (const b of document.querySelectorAll('.ch-z')) b.classList.toggle('on', b.dataset.tf === tfId);
+
+  const sub = document.getElementById('chart-sub');
+  if (sub) sub.textContent = 'loading ' + tfId + '…';
+
+  const bars = await chLoadForTf(CH.pair, tfId);
+  if (!bars || !bars.length) {
+    if (sub) sub.textContent = `no ${tfId} bars published for ${CH.pair}`;
+    return;
+  }
+  CH.bars = bars;
+  // Keep roughly the same span on screen rather than snapping to a default,
+  // so switching timeframe does not also throw away where you were looking.
+  const pref = chLoadPref();
+  const want = pref && pref.bars > 0 ? pref.bars : 120;
+  CH.view = chClampView(bars.length - want, bars.length);
+  CH.yZoom = 1; CH.yCenter = null;
+  chRefreshMeta();
+  chRequestDraw();
+}
+
 function chSetBars(n, { remember = true } = {}) {
   CH.yZoom = 1; CH.yCenter = null;          // a preset window implies auto-fit
   const total = CH.bars.length;
@@ -759,7 +933,8 @@ function chRefreshMeta() {
   const sub = document.getElementById('chart-sub');
   if (sub && last) {
     const ageMin = Math.round((Date.now() - last.t) / 60000);
-    sub.textContent = `hourly · ${CH.bars.length} bars · last ${chFmt(last.c, CH.pair)} · ${ageMin < 90 ? ageMin + 'm ago' : Math.round(ageMin / 60) + 'h ago'}`;
+    const tfLabel = (CH_TFS.find(t => t.id === CH.tf) || {}).label || CH.tf;
+    sub.textContent = `${tfLabel} · ${CH.bars.length} bars · last ${chFmt(last.c, CH.pair)} · ${ageMin < 90 ? ageMin + 'm ago' : Math.round(ageMin / 60) + 'h ago'}`;
   }
   const lg = document.getElementById('chart-legend');
   const s = CH.sig;
@@ -812,6 +987,6 @@ function chClose(fromBack) {
   CH.timer = null;
 }
 
-window.FSCHART = { cached: (p) => (CH_CACHE.get(p) || {}).bars || null,
+window.FSCHART = { cached: (p) => (CH_CACHE.get(p + '|1h') || {}).bars || null,
                    open: chOpen, close: chClose, draw: chDraw, prefetch: chPrefetch,
                    tvSymbol: chTvSymbol, tvUrl: chTvUrl, TV_MAP: CH_TV, state: CH };

@@ -768,8 +768,13 @@ t('published OHLC covers every instrument that can produce a signal', () => {
 t('the chart scales to include every level it draws', () => {
   const js = readFileSync('v2/chart.js', 'utf8');
   // A stop outside the visible range would silently look like it does not exist.
-  if (!/for \(const v of \[s\.entry, s\.sl, s\.tp1, s\.tp2, s\.tp3\]\)/.test(js)) {
+  // Name-agnostic: this broke once on a rename while the behaviour was intact.
+  // What matters is that the scale considers the signal's levels at all.
+  if (!/for \(const v of \[\w+\.entry, \w+\.sl, \w+\.tp1, \w+\.tp2, \w+\.tp3\]\)/.test(js)) {
     return 'the price scale is computed from bars only — a level outside the bar range would be invisible';
+  }
+  if (!/if \(v < lo\) lo = v; if \(v > hi\) hi = v;/.test(js)) {
+    return 'the levels are read but do not widen the scale';
   }
   return true;
 });
@@ -1117,6 +1122,65 @@ t('grid children can shrink, so nothing is pushed past the right edge', () => {
   if (!/\.acct-in input, \.acct-in select \{ min-width: 0/.test(css)) {
     return 'account inputs have no min-width:0 — the grid overflows on a phone';
   }
+  return true;
+});
+
+t('only ONE chDraw exists, so the newest renderer is the one that runs', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  const n = (js.match(/^function chDraw\(\) \{/gm) || []).length;
+  // A second copy declared later silently overrides the first. A rewritten
+  // renderer shipped and did nothing because a stale duplicate won.
+  if (n !== 1) return `chDraw is declared ${n} times — the later one overrides the earlier, so the rewrite does nothing`;
+  for (const fn of ['chSetTf', 'chAggregate', 'chNiceStep', 'chSMA']) {
+    if ((js.match(new RegExp(`^(async )?function ${fn}\\b`, 'gm')) || []).length !== 1) {
+      return `${fn} is not declared exactly once`;
+    }
+  }
+  return true;
+});
+
+t('price decimals come from the PRICE, not the instrument class', () => {
+  for (const f of ['v2/chart.js', 'v2/base.js']) {
+    const js = readFileSync(f, 'utf8');
+    // Bucketing by symbol put XRP (1.50) with BTC (85,000) at 2dp, so a stop of
+    // 1.49747 and an entry of 1.49150 both rendered as "1.50"/"1.49".
+    if (/dp = \/JPY\/\.test\(p\) \? 3 : \/XAU\|BTC/.test(js)) {
+      return `${f} still buckets decimals by symbol — two levels 0.6% apart would render identically`;
+    }
+    if (!/a >= 10000 \? 1|a >= 10000\) return 1/.test(js)) return `${f} does not scale decimals by magnitude`;
+  }
+  return true;
+});
+
+t('the chart offers real timeframes, aggregated exactly', () => {
+  const js = readFileSync('v2/chart.js', 'utf8');
+  for (const tf of ["'15m'", "'1h'", "'4h'", "'1d'"]) {
+    if (!js.includes(tf)) return `timeframe ${tf} is missing`;
+  }
+  // Aggregation must take the first open, last close, highest high, lowest low.
+  if (!/o: slice\[0\]\.o/.test(js)) return 'aggregation does not take the first open';
+  if (!/c: slice\[slice\.length - 1\]\.c/.test(js)) return 'aggregation does not take the last close';
+  if (!/if \(b\.h > hi\) hi = b\.h/.test(js)) return 'aggregation does not take the highest high';
+  return true;
+});
+
+t('15m bars are published, since a lower timeframe cannot be invented', () => {
+  if (!existsSync('data/ohlc')) return 'skipped: no published OHLC';
+  const m15 = readdirSync('data/ohlc').filter(f => f.endsWith('.15m.json'));
+  const h1 = readdirSync('data/ohlc').filter(f => f.endsWith('.json') && !f.includes('.15m'));
+  if (m15.length < h1.length) return `${h1.length} hourly series but only ${m15.length} 15m — the 15m view would be empty for the rest`;
+  return true;
+});
+
+t('volume is carried where it is real, and absent where it is not', () => {
+  if (!existsSync('data/ohlc/BTC-USD.json')) return 'skipped';
+  const btc = JSON.parse(readFileSync('data/ohlc/BTC-USD.json', 'utf8'));
+  const bars = btc.ohlc || btc.bars || [];
+  if (!bars.some(b => 'v' in b)) return 'no volume field on crypto bars, where volume genuinely exists';
+  const js = readFileSync('v2/chart.js', 'utf8');
+  // Spot FX has no central exchange and therefore no real volume; drawing an
+  // empty strip there would imply data that does not exist.
+  if (!/const hasVol = vis\.some/.test(js)) return 'the volume strip is drawn unconditionally';
   return true;
 });
 

@@ -62,8 +62,11 @@ function ago(ts) {
 }
 function price(v, pair) {
   const n = num(v); if (n == null) return '—';
-  const p = String(pair || '');
-  const dp = /JPY/.test(p) ? 3 : /XAU|BTC|ETH|US30|SPX|NAS/.test(p) ? 2 : 5;
+  // Decimals from the PRICE, not the symbol. Bucketing by instrument put XRP
+  // (1.50) in the same bucket as BTC (85,000) and rounded its stop and entry
+  // onto the same displayed number.
+  const a = Math.abs(n);
+  const dp = a >= 10000 ? 1 : a >= 1000 ? 2 : a >= 100 ? 3 : a >= 10 ? 4 : a >= 1 ? 5 : 6;
   return n.toFixed(dp);
 }
 

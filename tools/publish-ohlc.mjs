@@ -61,9 +61,11 @@ const DRY = process.argv.includes('--dry-run');
 
 export const slugFor = (pair) => pair.replace('/', '-');
 
-async function fetchBars(symbol, pair) {
+async function fetchBars(symbol, pair, interval = '1h') {
+  // 15m only reaches back 60 days on this feed; the hourly window is longer.
+  const range = interval === '15m' ? '60d' : rangeFor(pair || symbol);
   const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}`
-            + `?interval=1h&range=${rangeFor(pair || symbol)}`;
+            + `?interval=${interval}&range=${range}`;
   const res = await fetch(url, {
     headers: { 'User-Agent': 'Mozilla/5.0' },
     signal: AbortSignal.timeout(20000),
@@ -75,10 +77,11 @@ async function fetchBars(symbol, pair) {
   const bars = [];
   for (let i = 0; i < ts.length; i++) {
     const o = q.open?.[i], h = q.high?.[i], l = q.low?.[i], c = q.close?.[i];
+    const vol = q.volume?.[i];
     if ([o, h, l, c].some(v => v == null || !Number.isFinite(v))) continue;
     // Round to the instrument's meaningful precision to keep files compact.
     const dp = symbol.includes('JPY') ? 3 : (symbol === 'GC=F' || symbol.includes('-USD')) ? 2 : 5;
-    bars.push({ t: ts[i] * 1000, o: +o.toFixed(dp), h: +h.toFixed(dp), l: +l.toFixed(dp), c: +c.toFixed(dp) });
+    bars.push({ t: ts[i] * 1000, o: +o.toFixed(dp), h: +h.toFixed(dp), l: +l.toFixed(dp), c: +c.toFixed(dp), v: Number.isFinite(vol) && vol > 0 ? vol : null });
   }
   return bars;
 }
@@ -90,7 +93,18 @@ if (!DRY) mkdirSync('data/ohlc', { recursive: true });
 
 await Promise.all(Object.entries(PAIRS).map(async ([pair, sym]) => {
   try {
-    const bars = await fetchBars(sym, pair);
+    const bars = await fetchBars(sym, pair, '1h');
+    // A second, finer series. The chart aggregates UP from these (1h -> 4h -> 1D)
+    // but cannot invent a lower timeframe, so 15m has to be published.
+    try {
+      const m15 = await fetchBars(sym, pair, '15m');
+      if (m15 && m15.length > 200) {
+        writeFileSync(`data/ohlc/${slugFor(pair)}.15m.json`, JSON.stringify({
+          pair, symbol: sym, interval: '15m', ts: Date.now(),
+          isoTime: new Date().toISOString(), count: m15.length, ohlc: m15,
+        }));
+      }
+    } catch (_) { /* the hourly series is what matters; 15m is a bonus */ }
     if (bars.length < 24) { summary.push(`${pair}: only ${bars.length} bars — skipped`); return; }
     const ageMin = Math.round((Date.now() - bars[bars.length - 1].t) / 60000);
     const payload = {
