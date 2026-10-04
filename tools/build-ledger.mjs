@@ -156,6 +156,25 @@ out.verdict = out.returns.ci95 && out.returns.ci95[0] > 0
     + `the record does not establish an edge in either direction. Collapsed to `
     + `${out.episodes.count} independent episodes it reads ${out.episodes.avgR}R.`;
 
+// Refuse to write a ledger whose own fields disagree. A `git pull -X theirs`
+// can splice a CI-built file with a locally-built one, and the result had
+// coverage.total 403 against 402 history rows — a published file that
+// contradicts itself. Catching it after the fact is not enough when the fix is
+// this cheap.
+if (out.history.length !== out.coverage.total) {
+  console.error(`build-ledger: REFUSING to write — history has ${out.history.length} rows but `
+    + `coverage.total says ${out.coverage.total}. These come from the same array, so a mismatch `
+    + `means the inputs changed mid-build.`);
+  process.exit(1);
+}
+const bucketSum = out.history.filter(x => typeof x.resultR === 'number' && x.resultR > 0).length
+                + out.history.filter(x => typeof x.resultR === 'number' && x.resultR <= 0).length
+                + out.history.filter(x => x.resultR == null).length;
+if (bucketSum !== out.history.length) {
+  console.error(`build-ledger: REFUSING to write — outcome buckets sum to ${bucketSum} of ${out.history.length}.`);
+  process.exit(1);
+}
+
 writeFileSync('data/ledger.json', JSON.stringify(out, null, 2));
 
 console.log(`ledger: ${out.coverage.total} signals (${out.coverage.resolved} resolved, ${out.coverage.open} open)`);
