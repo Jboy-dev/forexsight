@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -1335,6 +1335,40 @@ function renderLedger() {
 
 
 
+
+/** An engine that changes its mind — tested, because "it should adapt" is a
+    hypothesis and not a plan until somebody measures it. */
+function renderAdaptive() {
+  const a = S.adaptiveEngine;
+  if (!a) return '';
+  const A = a.adaptive, B = a.staticBaseline;
+  const worse = a.selectionGainR < 0;
+  return `
+    <h2 class="sec" style="margin-top:26px">An engine that adapts</h2>
+    <div class="record" style="margin-top:0">
+      <div class="rec-row" style="gap:26px">
+        <div class="rec-i"><div class="k">Adaptive, sealed</div>
+          <div class="v" style="color:${A.sealed.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(A.sealed.avgR) + A.sealed.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">${esc(A.sealed.n.toLocaleString())} trades · t=${esc(A.sealed.t)}</div></div>
+        <div class="rec-i"><div class="k">No selection at all</div>
+          <div class="v" style="color:${B.sealed.avgR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(B.sealed.avgR) + B.sealed.avgR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">${esc(B.sealed.n.toLocaleString())} trades · t=${esc(B.sealed.t)}</div></div>
+        <div class="rec-i"><div class="k">What adapting bought</div>
+          <div class="v" style="color:${worse ? 'var(--down)' : 'var(--up)'}">${esc(sign(a.selectionGainR) + a.selectionGainR)}R</div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">per trade, on data it never saw</div></div>
+      </div>
+      <div class="rec-note">
+        At every bar it looked at how each of its ${esc(a.rules)} rules had done on its last ${esc(a.lookback)}
+        <strong>already-resolved</strong> trades, and traded only the ones currently paying. Nothing from the
+        future was consulted, and the bar was absolute rather than relative — scoring rules against each other
+        promotes the least-bad loser.
+        ${worse ? `<strong style="color:var(--warn)"> Adapting made it worse.</strong> Choosing rules by their
+        recent record did not predict their next trade.` : ''}
+        ${esc(a.verdict)}
+      </div>
+    </div>`;
+}
+
 /** The comparison every strategy owes you: is it better than doing nothing?
     A strategy that loses while holding gains is not a strategy. */
 function renderBenchmark() {
@@ -1471,6 +1505,7 @@ function renderTrials() {
   box.innerHTML = `
     ${renderBenchmark()}
     ${renderEngineTest()}
+    ${renderAdaptive()}
 
     <h2 class="sec">Textbook strategies, searched</h2>
     <div class="record" style="margin-top:0">

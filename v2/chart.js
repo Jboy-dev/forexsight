@@ -181,6 +181,31 @@ function chSMA(bars, period) {
   return out;
 }
 
+
+/**
+ * Is the last bar still forming?
+ *
+ * The feed's final bar is the period CURRENTLY IN PROGRESS. It arrives with a
+ * timestamp that is not aligned to the interval — 08:25:18 on an hourly series
+ * — and usually with open = high = low = close, because only one tick has
+ * printed. Drawn as an ordinary candle that is a zero-height body and no wick:
+ * a flat line jammed against the right edge that reads as a glitch, and an OHLC
+ * legend showing "O 1.50 H 1.50 L 1.50 C 1.50 +0.00%".
+ *
+ * It is real data and should not be hidden — it is the live price. It just must
+ * not be drawn as though it were a completed candle.
+ */
+function chFormingIndex(bars, tfId) {
+  if (!bars.length) return -1;
+  const ms = { '15m': 9e5, '1h': 36e5, '4h': 144e5, '1d': 864e5 }[tfId] || 36e5;
+  const last = bars[bars.length - 1];
+  if (!last) return -1;
+  const aligned = last.t % ms === 0;
+  const flat = last.o === last.h && last.h === last.l && last.l === last.c;
+  // Unaligned is decisive; a flat but aligned bar is a real, very quiet period.
+  return (!aligned || (flat && Date.now() - last.t < ms)) ? bars.length - 1 : -1;
+}
+
 function chDraw() {
   const cv = document.getElementById('chart-canvas');
   if (!cv || !CH.bars.length) return;
@@ -275,9 +300,13 @@ function chDraw() {
   }
 
   // ── moving averages, drawn under the candles
+  // Computed WITHOUT the forming bar: a partial period that has printed one
+  // tick would pull the average toward that tick and make it twitch.
+  const forming = chFormingIndex(CH.bars, CH.tf);
+  const maSource = forming >= 0 ? CH.bars.slice(0, forming) : CH.bars;
   for (const [period, colour] of [[20, '#6b8cff88'], [50, '#ffb63d88']]) {
-    if (CH.bars.length < period + 2) continue;
-    const ma = chSMA(CH.bars, period);
+    if (maSource.length < period + 2) continue;
+    const ma = chSMA(maSource, period);
     g.strokeStyle = colour; g.lineWidth = 1.4;
     g.beginPath();
     let started = false;
@@ -292,8 +321,26 @@ function chDraw() {
 
   // ── candles
   const cw = Math.max(1, slot * 0.66);
+  const formingVisAt = forming >= 0 ? forming - from : -1;
   for (let i = 0; i < vis.length; i++) {
     const b = vis[i], up = b.c >= b.o, cx = x(i);
+    const isForming = i === formingVisAt;
+
+    if (isForming) {
+      // The period in progress: a hollow marker at the live price rather than a
+      // flat candle. It cannot be mistaken for a completed bar, and it still
+      // shows exactly where price is.
+      const py = y(b.c);
+      g.save();
+      g.strokeStyle = CH_COL.now; g.lineWidth = 1.2; g.setLineDash([3, 3]);
+      g.beginPath(); g.moveTo(Math.round(cx) + 0.5, y(Math.max(b.h, b.c)));
+      g.lineTo(Math.round(cx) + 0.5, y(Math.min(b.l, b.c))); g.stroke();
+      g.setLineDash([]);
+      g.strokeRect(cx - cw / 2, py - 3, cw, 6);
+      g.restore();
+      continue;
+    }
+
     g.strokeStyle = up ? CH_COL.up : CH_COL.down;
     g.lineWidth = Math.max(1, Math.min(1.5, slot * 0.1));
     g.beginPath(); g.moveTo(Math.round(cx) + 0.5, y(b.h)); g.lineTo(Math.round(cx) + 0.5, y(b.l)); g.stroke();
@@ -350,8 +397,12 @@ function chDraw() {
   }
 
   // ── OHLC legend, top-left, the way TradingView reads
-  const shown = CH.hover ? vis[Math.max(0, Math.min(vis.length - 1,
-                  Math.round((CH.hover.x - padL) / slot - 0.5)))] : last;
+  // Default the legend to the last COMPLETED bar, not the partial one — a
+  // legend reading "O 1.50 H 1.50 L 1.50 C 1.50 +0.00%" tells you nothing.
+  const lastComplete = formingVisAt >= 0 && vis.length > 1 ? vis[vis.length - 2] : last;
+  const hoverIdx = CH.hover ? Math.max(0, Math.min(vis.length - 1, Math.round((CH.hover.x - padL) / slot - 0.5))) : -1;
+  const shown = hoverIdx >= 0 ? vis[hoverIdx] : lastComplete;
+  const showingForming = hoverIdx >= 0 ? hoverIdx === formingVisAt : false;
   if (shown) {
     const up = shown.c >= shown.o;
     const parts = [
@@ -368,6 +419,11 @@ function chDraw() {
     const chg = shown.o ? ((shown.c - shown.o) / shown.o) * 100 : 0;
     g.fillStyle = up ? CH_COL.up : CH_COL.down;
     g.fillText(`${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`, lx, 12);
+    lx += g.measureText(`${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%`).width + 10;
+    if (showingForming || (hoverIdx < 0 && formingVisAt >= 0)) {
+      g.fillStyle = CH_COL.now;
+      g.fillText(showingForming ? 'forming' : 'last closed', lx, 12);
+    }
   }
 
   // ── crosshair, with the price and time LABELLED on the axes

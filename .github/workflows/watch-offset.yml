@@ -206,6 +206,12 @@ jobs:
         run: node tools/benchmark-vs-holding.mjs
         continue-on-error: true
 
+      # An engine that changes its mind: rules weighted by their own recent
+      # RESOLVED record, no lookahead, absolute bar. Re-measured as data grows.
+      - name: Adaptive engine
+        run: node tools/adaptive-engine.mjs
+        continue-on-error: true
+
       # The ONLY route a rule can take into the signal path. Promotes on sealed
       # evidence alone; today it promotes nothing, which is the correct output.
       - name: Promote what passed

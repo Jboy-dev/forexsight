@@ -1,0 +1,87 @@
+{
+  "ts": 1791119765597,
+  "isoTime": "2026-10-04T13:16:05.597Z",
+  "builtBy": "tools/adaptive-engine.mjs",
+  "instruments": 19,
+  "rules": 8,
+  "lookback": 30,
+  "minTrades": 12,
+  "absoluteBarR": 0,
+  "adaptive": {
+    "train": {
+      "n": 7900,
+      "avgR": -0.0206,
+      "t": -1.51,
+      "ci": [
+        -0.0474,
+        0.0062
+      ],
+      "winRate": 44.6
+    },
+    "validate": {
+      "n": 4066,
+      "avgR": -0.0144,
+      "t": -0.76,
+      "ci": [
+        -0.0516,
+        0.0228
+      ],
+      "winRate": 45.1
+    },
+    "sealed": {
+      "n": 3698,
+      "avgR": -0.0281,
+      "t": -1.43,
+      "ci": [
+        -0.0667,
+        0.0105
+      ],
+      "winRate": 45
+    },
+    "all": {
+      "n": 15664,
+      "avgR": -0.0208,
+      "t": -2.15,
+      "ci": [
+        -0.0397,
+        -0.0018
+      ],
+      "winRate": 44.8
+    }
+  },
+  "staticBaseline": {
+    "sealed": {
+      "n": 217839,
+      "avgR": -0.0142,
+      "t": -5.48,
+      "ci": [
+        -0.0193,
+        -0.0091
+      ],
+      "winRate": 45.1
+    },
+    "all": {
+      "n": 907718,
+      "avgR": -0.0101,
+      "t": -7.93,
+      "ci": [
+        -0.0126,
+        -0.0076
+      ],
+      "winRate": 45.1
+    }
+  },
+  "selectionGainR": -0.0139,
+  "ruleUsage": {
+    "momentum-60": 7010,
+    "momentum-120": 2051,
+    "ma-cross": 981,
+    "rsi-reversion": 1617,
+    "rsi-trend": 1310,
+    "donchian-20": 1349,
+    "pullback": 420,
+    "trend-with-vol": 926
+  },
+  "method": "Online learning with no lookahead. At each bar a rule is traded only if its own recently RESOLVED trades (closed strictly before that bar) average above an ABSOLUTE positive bar. Non-overlapping. Compared against the same rules with no selection at all.",
+  "verdict": "Adapting does not rescue it. On the sealed quarter the adaptive engine returned -0.0281R against -0.0142R for no selection at all — a difference of -0.0139R with the interval [-0.0667, 0.0105] including zero. Choosing rules by their recent record does not predict their next trade."
+}
