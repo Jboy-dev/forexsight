@@ -933,9 +933,15 @@ t('asset classification is by pattern, not a list that goes stale', () => {
          + 'bars were reported as a feed splice';
   }
   if (!/\^\(BTC\|ETH\|SOL\|XRP/.test(src)) return 'no pattern-based crypto classification';
-  if (!/overnightOnIndex/.test(src)) {
+  if (!/indexClosure/.test(src)) {
     return 'an index trades one session a day, so every night is a gap — without this US30 and '
          + 'NAS100 are reported with 16 unexplained gaps each while being intact';
+  }
+  // The closure test must check an actual SESSION BOUNDARY, not just a duration.
+  // A flat "under 20x the spacing" tolerance excused a genuine 4-hour hole torn
+  // out of the middle of a session; a control with three bars removed proved it.
+  if (!/sessionEnd && sessionOpen/.test(src)) {
+    return 'a closure is excused by duration alone — a real mid-session hole would pass as clean';
   }
   return true;
 });
