@@ -1,12 +1,61 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-04T21:59:07.319Z",
+  "timestamp": "2026-10-04T22:59:27.773Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "XAU/USD",
+      "direction": "SELL",
+      "confidence": 59,
+      "strength": 47,
+      "verdict": "WEAK SHORT — 59% conviction",
+      "timeHorizon": "30 min",
+      "entry": 4175.9,
+      "sl": 4209.31,
+      "tp1": 4139.46,
+      "tp3": 4048.36,
+      "slPips": 334,
+      "tp1Pips": 364,
+      "tp3Pips": 1275,
+      "rrTP1": 1.09,
+      "rrTP3": 3.82,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 44.4 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 40,
+        "bear": 60,
+        "marginPct": 20
+      },
+      "reasoning": "Weighted consensus favors SHORT with 59% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure uptrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
