@@ -760,9 +760,14 @@ function chInstallInteraction(cv) {
      decays, and any new touch kills it immediately so it never fights the hand.
      Velocity is in bars per millisecond, so it behaves the same at every zoom. */
   const fling = { v: 0, lastT: 0, lastFrom: 0, raf: 0 };
-  const stopFling = () => { if (fling.raf) cancelAnimationFrame(fling.raf); fling.raf = 0; fling.v = 0; };
+  // Two separate things, and conflating them cost an evening: cancelFling stops
+  // the animation, stopFling stops it AND forgets the speed. startFling must use
+  // the first — calling the second zeroed the very velocity it was about to test,
+  // so the threshold below always failed and no glide ever started.
+  const cancelFling = () => { if (fling.raf) cancelAnimationFrame(fling.raf); fling.raf = 0; };
+  const stopFling = () => { cancelFling(); fling.v = 0; };
   function startFling() {
-    stopFling();
+    cancelFling();
     // Below this a flick is indistinguishable from a slow drag ending, and
     // gliding then feels like the chart is drifting on its own.
     if (Math.abs(fling.v) < 0.0008) return;

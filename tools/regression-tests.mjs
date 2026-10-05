@@ -1744,6 +1744,11 @@ t('the chart keeps moving after a flick, and stops when touched', () => {
   if (!/addEventListener\('pointerdown', stopFling/.test(src)) return 'a new touch does not stop the glide';
   // And it must stop at the edges rather than grinding.
   if (!/stopFling\(\); chSavePref\(\); return;/.test(src)) return 'the glide does not stop when the view is clamped';
+  // The bug this exists for: startFling called stopFling first, which zeroed
+  // fling.v, so the threshold below it could never pass and no glide ever ran.
+  const start = src.slice(src.indexOf('function startFling'), src.indexOf('Math.abs(fling.v) <'));
+  if (/fling\.v\s*=\s*0/.test(start) || /\bstopFling\(\)/.test(start))
+    return 'startFling erases its own velocity before testing it, so no glide can ever start';
   return true;
 });
 
