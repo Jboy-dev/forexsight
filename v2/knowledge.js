@@ -58,15 +58,47 @@ const TOPICS = [
         description, not an action.</p>`);
 
       // ── 3. the record, stated honestly
-      const b = S && S.learningBrain;
-      if (b) {
-        const m = b.measures || {}, ev = m.everySignal || b.headline || {}, ep = m.episodeAverage;
-        const ci = ev.ci95 || ev.ci;
-        out.push(`<p><strong>My record.</strong> ${KB_ESC(kbNum(b.rawPublications) ?? kbNum(b.totalSamples) ?? '—')} published signals`
-          + (ep && kbNum(ep.count) ? `, which collapse to ${KB_ESC(ep.count)} independent episodes once republications of the same move are merged` : '')
-          + `. ${ev.avgR != null ? `That is ${KB_ESC(kbSign(ev.avgR) + ev.avgR)}R per signal` : ''}`
-          + `${Array.isArray(ci) ? ` with an interval of [${KB_ESC(ci.join(', '))}]` : ''}`
-          + `${Array.isArray(ci) && ci[0] <= 0 && ci[1] >= 0 ? `, <strong>which includes zero — so it does not establish an edge in either direction</strong>` : ''}.</p>`);
+      // Counted from the LEDGER, because that is the book the History and Ledger
+      // tabs show. learning-brain's "rawPublications" counts only rows carrying a
+      // numeric resultR, so quoting it here read as 354 beside a tab showing 451
+      // and looked like one of them was wrong. Both are right about different
+      // things; saying which is which is the whole job.
+      const L = S && S.ledger;
+      const hist = (L && Array.isArray(L.history)) ? L.history : null;
+      if (hist) {
+        const by = (st) => hist.filter((r) => r.status === st).length;
+        const won = by('won'), lost = by('lost'), expired = by('expired'), open = by('open');
+        const settled = won + lost;
+        const ep = L.episodes || {};
+        const ci = ep.ci95 || ep.ci;
+        out.push(`<p><strong>My record.</strong> The book holds <strong>${KB_ESC(hist.length)}</strong> signals:
+          ${KB_ESC(won)} won, ${KB_ESC(lost)} lost, ${KB_ESC(expired)} expired without reaching a target or a stop,
+          and ${KB_ESC(open)} still open.
+          ${settled ? `Of the ${KB_ESC(settled)} that settled either way, ${KB_ESC((won / settled * 100).toFixed(1))}% won.` : ''}
+          ${kbNum(ep.count) ? `Republications of the same move collapse to <strong>${KB_ESC(ep.count)}</strong> independent episodes,
+            which is the honest unit to judge me on` : ''}
+          ${kbNum(ep.avgR) ? `, averaging ${KB_ESC(kbSign(ep.avgR) + ep.avgR)}R` : ''}
+          ${Array.isArray(ci) ? ` with an interval of [${KB_ESC(ci.join(', '))}]` : ''}
+          ${Array.isArray(ci) && ci[0] <= 0 && ci[1] >= 0
+            ? `. <strong>That interval includes zero, so it does not establish an edge in either direction.</strong>` : '.'}</p>`);
+        const brain = S && S.learningBrain;
+        if (brain && kbNum(brain.rawPublications) && brain.rawPublications !== hist.length) {
+          out.push(`<p>You will see a smaller number elsewhere: ${KB_ESC(brain.rawPublications)} rather than
+            ${KB_ESC(hist.length)}. That is not a disagreement. The learning figures are computed only from signals that carry a
+            measured result in R, and an expired signal often has none, so ${KB_ESC(hist.length - brain.rawPublications)} are in the
+            book but not in that average.</p>`);
+        }
+      } else {
+        const b2 = S && S.learningBrain;
+        if (b2) {
+          const m = b2.measures || {}, ev = m.everySignal || b2.headline || {};
+          const ci = ev.ci95 || ev.ci;
+          out.push(`<p><strong>My record.</strong> The ledger has not loaded, so this is the learning file's figure only:
+            ${KB_ESC(kbNum(b2.rawPublications) ?? '—')} signals carrying a measured result`
+            + `${ev.avgR != null ? `, averaging ${KB_ESC(kbSign(ev.avgR) + ev.avgR)}R` : ''}`
+            + `${Array.isArray(ci) ? ` with an interval of [${KB_ESC(ci.join(', '))}]` : ''}`
+            + `${Array.isArray(ci) && ci[0] <= 0 && ci[1] >= 0 ? `, which includes zero` : ''}.</p>`);
+        }
       }
 
       // ── 4. what I have tested, including what failed

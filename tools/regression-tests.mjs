@@ -1541,5 +1541,34 @@ t('the site can account for what it is currently doing, from live state', () => 
 });
 
 
+
+t('the record Research quotes is the same book the tabs count', () => {
+  const src = readFileSync('v2/knowledge.js', 'utf8');
+  const base = readFileSync('v2/base.js', 'utf8');
+  const i = src.indexOf("id: 'status'");
+  if (i < 0) return 'no status answer';
+  const block = src.slice(i, src.indexOf("id: '", i + 20));
+  // The History tab badge counts ledger.history. Research quoting
+  // learningBrain.rawPublications instead printed 354 beside a tab showing 451,
+  // which reads as one of them being broken. They measure different things, so
+  // the answer must use the same book the tabs do and explain the other number.
+  if (!/S\.ledger/.test(block)) return 'the status answer does not read the ledger the tabs count';
+  if (!/history/.test(block)) return 'the status answer does not count the ledger history';
+  if (!/tab-n-history[\s\S]{0,120}history\.length/.test(base))
+    return 'the History tab no longer counts ledger.history — the status answer would now disagree with it';
+  // If both numbers appear, the difference must be explained, not left hanging.
+  // The explanation has to sit WITH the smaller number, not merely somewhere in
+  // the answer — the fallback branch happens to contain the same words, which
+  // let a version through that showed both counts and explained neither.
+  const rp = block.search(/brain\.rawPublications\)/);
+  if (rp >= 0) {
+    const near = block.slice(Math.max(0, rp - 400), rp + 700);
+    if (!/not a disagreement/i.test(near) || !/expired/i.test(near))
+      return 'both counts are shown but the difference is not explained beside them';
+  }
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
