@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine', 'cost-audit', 'cost-ceiling-test', 'trend-alignment-test', 'volatility-gradient-test', 'atr-method-test'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine', 'cost-audit', 'cost-ceiling-test', 'trend-alignment-test', 'volatility-gradient-test', 'atr-method-test', 'hold-window-test'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -1670,6 +1670,7 @@ function renderCostAudit() {
     { d: S.costCeilingTest,        t: 'Refusing the trades you cannot afford' },
     { d: S.volatilityGradientTest, t: 'Trading only when the market is moving' },
     { d: S.atrMethodTest,          t: 'Measuring volatility the other common way' },
+    { d: S.holdWindowTest,         t: 'Watching a setup for longer before giving up' },
   ].filter(x => x.d);
 
   return `
@@ -1713,7 +1714,7 @@ function renderCostAudit() {
       </div></details>
 
     ${refused.length ? `<details class="fold" style="margin-top:12px;border-top:0">
-      <summary>Three ways to fix it that were tested and refused</summary>
+      <summary>Four things that were tested, and what each measured</summary>
       <div class="fold-in">
         ${refused.map(x => `<div style="margin-bottom:14px">
           <div style="font-weight:600;margin-bottom:4px">${esc(x.t)}
@@ -1722,8 +1723,10 @@ function renderCostAudit() {
           ${x.d.falsifierStatedBeforeRunning ? `<div style="font-size:11.5px;color:var(--text-faint);margin-top:5px">
             Falsifier fixed before running: ${esc(x.d.falsifierStatedBeforeRunning)}</div>` : ''}
         </div>`).join('')}
-        <p>Each of these was written with its own falsifier stated in advance, and each failed it. They are kept
-        here rather than deleted because a page showing only the tests that passed would imply some did.</p>
+        <p>Each was written with its own falsifier stated in advance. None cleared it, and they are kept here
+        rather than deleted because a page showing only the tests that passed would imply some did. One of them
+        changed the system anyway: the watch window, where the measurement is ambiguous but the mechanism is not
+        — once a third is banked at TP1 the stop sits at entry, so waiting longer cannot lose.</p>
       </div></details>` : ''}
 
     <p style="font-size:11.5px;color:var(--text-faint);margin-top:12px;line-height:1.6">${esc(c.method || '')}</p>`;

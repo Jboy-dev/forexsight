@@ -1664,5 +1664,45 @@ t('the engine computes ATR the way the charts and the backtests do', () => {
 });
 
 
+
+t('the live watch window matches the test whose number the site publishes', () => {
+  const live = readFileSync('tools/watch-setups.mjs', 'utf8').match(/EXPIRY_HOURS\s*=\s*(\d+)/);
+  if (!live) return 'the watcher no longer declares EXPIRY_HOURS';
+  if (!existsSync('tools/engine-sealed-test.mjs')) return 'skipped: sealed test missing';
+  const sealed = readFileSync('tools/engine-sealed-test.mjs', 'utf8').match(/(?:MAX_)?HOLD\s*=\s*(\d+)/);
+  if (!sealed) return 'the sealed test no longer declares a hold window';
+  // The site prints the sealed test's result as "the engine itself, on data it
+  // never saw". If the live watcher gives up sooner, that sentence describes a
+  // system that is given more time than the one actually running.
+  if (Number(live[1]) !== Number(sealed[1]))
+    return `the watcher gives up at ${live[1]}h but the published sealed test allows ${sealed[1]}h`;
+  return true;
+});
+
+t('the measured cost of the watch window is published, not just chosen', () => {
+  if (!existsSync('data/hold-window-test.json')) return 'skipped: not built yet';
+  const d = JSON.parse(readFileSync('data/hold-window-test.json', 'utf8'));
+  if (!Array.isArray(d.grid) || d.grid.length < 5) return 'fewer than five windows were compared';
+  if (!d.falsifierStatedBeforeRunning) return 'no falsifier stated';
+  if (typeof d.signStable !== 'boolean') return 'sign stability across windows is not recorded';
+  // The chosen window must be one that was actually measured, not invented.
+  const live = Number(readFileSync('tools/watch-setups.mjs', 'utf8').match(/EXPIRY_HOURS\s*=\s*(\d+)/)[1]);
+  if (!d.grid.some(g => g.holdHours === live))
+    return `the live window of ${live}h was never one of the windows measured`;
+  // And a longer window must not be described as proven when the sign flipped.
+  // Negation-aware, for the same reason the guarantee check is: the sentence
+  // this test wants to see is "is NOT established as better", and matching the
+  // bare phrase banned the very wording it is asking for.
+  if (!d.signStable) {
+    for (const m of (d.verdict || '').matchAll(/\b(proven|established as better|clearly better)\b/gi)) {
+      const before = d.verdict.slice(Math.max(0, m.index - 60), m.index);
+      if (!/\b(not|never|no|rather than)\b[^.]{0,50}$/i.test(before))
+        return `the verdict claims the longer window is established although the sign flips: "${d.verdict.slice(Math.max(0, m.index - 35), m.index + 25).trim()}"`;
+    }
+  }
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

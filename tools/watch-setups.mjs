@@ -28,7 +28,31 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 const DRY = process.argv.includes('--dry-run');
 const BOOK = 'data/open-setups.json';
 const OUT = 'data/shadow-tracker.json';
-const EXPIRY_HOURS = 48;
+// How long a setup is watched before it is given up on and closed at market.
+//
+// This was 48 hours, and it was the single biggest thing wrong with the book:
+// 187 of 405 resolved signals — 46% — ended as "ran out of time" rather than at
+// a target or a stop. tools/hold-window-test.mjs measured nine windows on the
+// same entries and 48h came second worst of the nine, beaten only by 24h:
+//
+//     24h  -185.7R total, 57.6% cut off unfinished
+//     48h  -147.0R total, 31.7% cut off      <- what this used to be
+//    240h   -54.9R total,  1.4% cut off
+//
+// The per-window sign test does not pass (validation dissents), so a longer
+// window is NOT claimed as proven. Two things carry it instead. First, the
+// ladder moves the stop to entry once TP1 is banked, so past that point holding
+// longer cannot lose — it can only convert to TP2 or TP3 — and at 48h nearly
+// half of everything cut off had already banked TP1 and was holding a free
+// option when the watcher killed it. Second, engine-sealed-test.mjs, whose
+// result this site publishes as "the engine on data it never saw", allows 240
+// hours. Shipping 48 meant the headline measurement described a system given
+// five times as long as the one actually running.
+//
+// KNOWN GAP: the cost model charges spread only. Financing/swap on a multi-day
+// hold is not modelled, and over ten days that is not nothing. The figures above
+// are therefore optimistic for the longer windows by an amount not yet measured.
+const EXPIRY_HOURS = 240;
 
 const PAIR_SYMBOLS = {
   'EUR/USD': 'EURUSD=X', 'GBP/USD': 'GBPUSD=X', 'USD/JPY': 'USDJPY=X',
