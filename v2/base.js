@@ -209,7 +209,42 @@ function renderCards() {
       Nothing published right now matches what you asked for. Type <code>reset</code> to see everything again.</div>`;
     return;
   }
+  // ───────── why this is not just `box.innerHTML = …` ─────────
+  // cycle() re-renders every two minutes. A plain innerHTML wipe throws away
+  // two things the person was in the middle of using:
+  //
+  //   1. every <details> they opened — it slams shut under their finger;
+  //   2. the input they are typing a balance into, along with its focus and
+  //      caret, so a half-typed "15" of "1500" is what gets saved.
+  //
+  // Collapsing more of the card into folds (which is what makes it readable on
+  // a phone) is only safe once both survive a refresh. So: if a field inside a
+  // card has focus, the cards are left alone entirely until the next cycle —
+  // nothing here is urgent enough to interrupt typing. Otherwise the open folds
+  // are remembered by key and reopened after the rewrite.
+  if (box.contains(document.activeElement) && /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)) {
+    S.cardsDeferred = (S.cardsDeferred || 0) + 1;
+    return;
+  }
+  S.cardsDeferred = 0;
+
+  const open = new Set();
+  box.querySelectorAll('details[data-fold]').forEach((d) => { if (d.open) open.add(d.dataset.fold); });
+  // Folds opened before this render still count, so a card that briefly leaves
+  // the feed and comes back does not forget.
+  if (S.openFolds) S.openFolds.forEach((k) => open.add(k));
+  S.openFolds = open;
+
   box.innerHTML = sigs.map(card).join('');
+  box.querySelectorAll('details[data-fold]').forEach((d) => { if (open.has(d.dataset.fold)) d.open = true; });
+  // Remember it the moment it is toggled, not at the next render, because the
+  // card may be re-rendered by an event the toggle itself triggered.
+  box.querySelectorAll('details[data-fold]').forEach((d) => {
+    d.addEventListener('toggle', () => {
+      if (!S.openFolds) S.openFolds = new Set();
+      if (d.open) S.openFolds.add(d.dataset.fold); else S.openFolds.delete(d.dataset.fold);
+    });
+  });
   // Warm the chart cache for what is on screen, so the first tap paints
   // immediately instead of waiting on a fetch.
   if (window.FSCHART && window.FSCHART.prefetch) {
@@ -308,37 +343,41 @@ function card(s) {
     <div class="c-body">
       <div class="chips">${chips.join('')}</div>
       <div class="c-why">${esc(why[0] || '')}</div>
-      ${why.length > 1 ? `<details class="fold why-fold"><summary>Why this setup</summary>
-        <div class="fold-in">${esc(why.slice(1).join(' '))}</div></details>` : ''}
+      ${glanceLine(s)}
 
-      <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>The whole ladder and what it pays</summary><div class="fold-in">
-        <dl class="kv">
-          <dt>TP1</dt><dd>${esc(price(tp1, pair))} · ${r1 != null ? esc(r1.toFixed(2)) + 'R' : '—'} · bank a third</dd>
-          <dt>TP2</dt><dd>${esc(price(tp2, pair))} · ${r2v != null ? esc(r2v.toFixed(2)) + 'R' : '—'} · bank a third, stop to entry</dd>
-          <dt>TP3</dt><dd>${esc(price(tp3, pair))} · ${r3 != null ? esc(r3.toFixed(2)) + 'R' : '—'} · final third, stop to TP1</dd>
-          <dt>Full run</dt><dd>${perfect != null ? esc(sign(perfect) + perfect.toFixed(3)) + 'R' : '—'}</dd>
-          <dt>Full stop-out</dt><dd>&minus;1.000R</dd>
-        </dl>
-        <p style="margin-top:9px">${perfect != null && perfect > 1
-          ? `A completed run pays ${esc(perfect.toFixed(2))}R against ${esc((1).toFixed(2))}R risked, so the geometry is the right way round. That is arithmetic about this ladder — not a claim about how often it completes.`
-          : 'This ladder does not pay more than it risks on a full run. It should not have been published.'}</p>
-      </div></details>
+      <details class="fold" data-fold="${esc(sigKey(s))}|more" ${S.cfg && S.cfg.expand ? "open" : ""}>
+        <summary>The full working</summary>
+        <div class="fold-in">
+          ${why.length > 1 ? `<p class="c-why" style="margin-bottom:12px">${esc(why.slice(1).join(' '))}</p>` : ''}
 
-      ${trackerBlock(s)}
-      ${moneyBlock(s)}
+          <div class="sub-k">The whole ladder and what it pays</div>
+          <dl class="kv">
+            <dt>TP1</dt><dd>${esc(price(tp1, pair))} · ${r1 != null ? esc(r1.toFixed(2)) + 'R' : '—'} · bank a third</dd>
+            <dt>TP2</dt><dd>${esc(price(tp2, pair))} · ${r2v != null ? esc(r2v.toFixed(2)) + 'R' : '—'} · bank a third, stop to entry</dd>
+            <dt>TP3</dt><dd>${esc(price(tp3, pair))} · ${r3 != null ? esc(r3.toFixed(2)) + 'R' : '—'} · final third, stop to TP1</dd>
+            <dt>Full run</dt><dd>${perfect != null ? esc(sign(perfect) + perfect.toFixed(3)) + 'R' : '—'}</dd>
+            <dt>Full stop-out</dt><dd>&minus;1.000R</dd>
+          </dl>
+          <p style="margin-top:9px">${perfect != null && perfect > 1
+            ? `A completed run pays ${esc(perfect.toFixed(2))}R against ${esc((1).toFixed(2))}R risked, so the geometry is the right way round. That is arithmetic about this ladder — not a claim about how often it completes.`
+            : 'This ladder does not pay more than it risks on a full run. It should not have been published.'}</p>
 
-      <details class="fold" ${S.cfg && S.cfg.expand ? "open" : ""}><summary>Costs, news and the modelled outcome</summary><div class="fold-in">
-        <dl class="kv">
-          ${cost.spreadPips != null ? `<dt>Spread</dt><dd>${esc(cost.spreadPips)} pips (${esc(cost.spreadAsPctOfRisk ?? '?')}% of risk)</dd>` : ''}
-          ${cost.riskPips != null ? `<dt>Risk</dt><dd>${esc(cost.riskPips)} pips</dd>` : ''}
-          ${cost.tp1NetR != null ? `<dt>TP1 after costs</dt><dd>${esc(cost.tp1NetR)}R</dd>` : ''}
-          <dt>News</dt><dd>${esc(news.verdict || 'not checked')}</dd>
-          ${mc.runs ? `<dt>Modelled</dt><dd>${esc(mc.expectedR)}R over ${esc(mc.runs)} runs</dd>` : ''}
-          ${mc.hitTp1Pct != null ? `<dt>Reached TP1</dt><dd>${esc(mc.hitTp1Pct)}% of runs</dd>` : ''}
-        </dl>
-        ${news.note ? `<p style="margin-top:9px">${esc(news.note)}</p>` : ''}
-        ${mc.runs ? `<p style="margin-top:9px">The modelled figure is a simulation of this ladder under measured volatility. It is a model of the exit rules, not evidence that the entry works.</p>` : ''}
-      </div></details>
+          ${trackerBlock(s)}
+          ${moneyBlock(s)}
+
+          <div class="sub-k" style="margin-top:14px">Costs, news and the modelled outcome</div>
+          <dl class="kv">
+            ${cost.spreadPips != null ? `<dt>Spread</dt><dd>${esc(cost.spreadPips)} pips (${esc(cost.spreadAsPctOfRisk ?? '?')}% of risk)</dd>` : ''}
+            ${cost.riskPips != null ? `<dt>Risk</dt><dd>${esc(cost.riskPips)} pips</dd>` : ''}
+            ${cost.tp1NetR != null ? `<dt>TP1 after costs</dt><dd>${esc(cost.tp1NetR)}R</dd>` : ''}
+            <dt>News</dt><dd>${esc(news.verdict || 'not checked')}</dd>
+            ${mc.runs ? `<dt>Modelled</dt><dd>${esc(mc.expectedR)}R over ${esc(mc.runs)} runs</dd>` : ''}
+            ${mc.hitTp1Pct != null ? `<dt>Reached TP1</dt><dd>${esc(mc.hitTp1Pct)}% of runs</dd>` : ''}
+          </dl>
+          ${news.note ? `<p style="margin-top:9px">${esc(news.note)}</p>` : ''}
+          ${mc.runs ? `<p style="margin-top:9px">The modelled figure is a simulation of this ladder under measured volatility. It is a model of the exit rules, not evidence that the entry works.</p>` : ''}
+        </div>
+      </details>
     </div>
   </article>`;
 }
@@ -731,6 +770,54 @@ function livePrice(pair) {
   return last && typeof last.c === 'number' ? { price: last.c, at: last.t } : null;
 }
 
+/* ─────────────── the one line that replaces four blocks ───────────────
+   A phone showed one signal as 927px — taller than the screen — so nine of them
+   was ten screens of scrolling. Almost all of that was secondary: a wrapped
+   badge row, a tracker panel, a money panel and three separate fold headers,
+   each costing 56px of chrome before it showed anything.
+
+   None of it is deleted; it moved one tap down. What stays visible is the line
+   below, which answers the only three questions worth asking at a glance: is it
+   running, how far has it gone, and what is it worth to me. Everything else is
+   detail you go looking for, not detail you scroll past nine times.
+   ------------------------------------------------------------------- */
+function glanceLine(sig) {
+  const entry = num(pick(sig, 'entry')), sl = num(pick(sig, 'sl'));
+  const dir = String(pick(sig, 'direction') || '').toUpperCase();
+  const bits = [];
+
+  if (entry != null && sl != null && Math.abs(entry - sl) > 0) {
+    const live = livePrice(pick(sig, 'pair'));
+    const sgn = (dir === 'BUY' || dir === 'LONG') ? 1 : -1;
+    if (live) {
+      const runR = ((live.price - entry) * sgn) / Math.abs(entry - sl);
+      const cls = runR > 0.02 ? 'up' : runR < -0.02 ? 'dn' : '';
+      bits.push(`<span class="g-run ${cls}">${esc(sign(runR) + runR.toFixed(2))}R<i>running</i></span>`);
+    } else {
+      // Never imply a position that cannot be seen. The chart fetches the bars.
+      bits.push('<span class="g-run">—<i>price not loaded</i></span>');
+    }
+  }
+
+  if (window.FSCALC) {
+    const base = S.cfg || {};
+    const ov = (base.perSignal || {})[sigKey(sig)];
+    const o = (typeof ov === 'number') ? { balance: ov } : (ov || {});
+    const r = window.FSCALC.calcSignal(sig, {
+      ...base,
+      balance: o.balance != null ? o.balance : base.balance,
+      riskPct: o.riskPct != null ? o.riskPct : base.riskPct,
+    }, S.fxRates);
+    if (r && r.rateKnown) {
+      const M = (v) => window.FSCALC.money(v, r.currency);
+      bits.push(`<span class="g-win">${esc(M(r.best.money))}<i>to TP3</i></span>`);
+      bits.push(`<span class="g-lose">${esc(M(r.worst.money))}<i>if stopped</i></span>`);
+    }
+  }
+
+  return bits.length ? `<div class="c-glance">${bits.join('')}</div>` : '';
+}
+
 function trackerBlock(sig) {
   const pair = pick(sig, 'pair');
   const live = livePrice(pair);
@@ -839,7 +926,7 @@ function moneyBlock(sig) {
       <div class="mny-lose"><span>if the stop is hit</span><b>${esc(M(worst.money))}</b></div>
     </div>
 
-    <details class="fold mny-fold"><summary>Change the amount, and see each target</summary>
+    <details class="fold mny-fold" data-fold="${esc(key)}|money"><summary>Change the amount, and see each target</summary>
       <div class="fold-in">
         <div class="mny-edits">
           <span class="mny-edit" title="Balance used for this signal">

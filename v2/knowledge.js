@@ -29,6 +29,86 @@ function kbMissing(what, file) {
 }
 
 const TOPICS = [
+  /* ═══ WHAT IT IS UP TO — the site's own account of itself ══════════════ */
+  {
+    id: 'status', kind: 'measured',
+    q: 'What are you doing right now, and what do you know?',
+    keys: ['what are you doing', 'what are you up to', 'up to', 'status', 'current state', 'state',
+           'what do you know', 'know everything', 'everything you know', 'about yourself', 'yourself',
+           'whats going on', 'what is going on', 'running', 'active', 'alive', 'working on', 'summary'],
+    answer(S) {
+      const out = [];
+      const feed = S && S.latestSignals;
+      const sigs = (feed && feed.signals) || [];
+      const ageMin = feed && feed.ts ? Math.round((Date.now() - feed.ts) / 60000) : null;
+      const src = feed && feed._src ? feed._src : null;
+
+      // ── 1. right now
+      out.push('<p class="kb-warn"><strong>Right now.</strong> ' + (feed
+        ? `The feed is ${ageMin != null ? KB_ESC(ageMin < 60 ? ageMin + ' minutes' : (ageMin / 60).toFixed(1) + ' hours') + ' old' : 'of unknown age'}`
+          + `${src ? `, taken from the ${KB_ESC(src === 'mirror' ? 'GitHub mirror' : 'deployed copy')} because it was the fresher of the two sources I race` : ''}`
+          + `, and carries <strong>${sigs.length} setup${sigs.length === 1 ? '' : 's'}</strong>`
+          + (sigs.length ? `: ${KB_ESC(sigs.map(x => x.pair).filter(Boolean).join(', '))}.` : '. An empty feed is a result, not a fault.')
+        : 'I could not read the feed from either source, so I am showing you nothing rather than something stale.') + '</p>');
+
+      // ── 2. what runs without being asked
+      out.push(`<p><strong>What I do on my own.</strong> I reload every published file every two minutes, which costs no API quota
+        because they are static. A scheduled job re-runs the engine and republishes the feed. When a new setup appears and you have
+        allowed notifications, I send one. I never place an order, and I have no connection to any broker — everything here is a
+        description, not an action.</p>`);
+
+      // ── 3. the record, stated honestly
+      const b = S && S.learningBrain;
+      if (b) {
+        const m = b.measures || {}, ev = m.everySignal || b.headline || {}, ep = m.episodeAverage;
+        const ci = ev.ci95 || ev.ci;
+        out.push(`<p><strong>My record.</strong> ${KB_ESC(kbNum(b.rawPublications) ?? kbNum(b.totalSamples) ?? '—')} published signals`
+          + (ep && kbNum(ep.count) ? `, which collapse to ${KB_ESC(ep.count)} independent episodes once republications of the same move are merged` : '')
+          + `. ${ev.avgR != null ? `That is ${KB_ESC(kbSign(ev.avgR) + ev.avgR)}R per signal` : ''}`
+          + `${Array.isArray(ci) ? ` with an interval of [${KB_ESC(ci.join(', '))}]` : ''}`
+          + `${Array.isArray(ci) && ci[0] <= 0 && ci[1] >= 0 ? `, <strong>which includes zero — so it does not establish an edge in either direction</strong>` : ''}.</p>`);
+      }
+
+      // ── 4. what I have tested, including what failed
+      const tested = [];
+      const push = (d, label) => { if (d) tested.push({ d, label }); };
+      push(S && S.strategyTrials, 'textbook strategy combinations');
+      push(S && S.perChartSearch, 'per-chart searches');
+      push(S && S.exitSearch, 'exit schemes');
+      push(S && S.engineSealedTest, 'the engine itself, on data it never saw');
+      push(S && S.trendAlignmentTest, 'trading with the long trend');
+      push(S && S.costCeilingTest, 'refusing trades that cost too much');
+      push(S && S.volatilityGradientTest, 'trading only when the market is moving');
+      push(S && S.adaptiveEngine, 'adapting to what is working lately');
+      if (tested.length) {
+        out.push(`<p><strong>What I have tested.</strong> ${KB_ESC(tested.length)} separate investigations are published on this site,
+          and you can read every one under <em>Tested</em>. They include ${KB_ESC(tested.map(x => x.label).slice(0, 4).join(', '))}
+          and more. Each keeps the last slice of its data sealed until the method is fixed, and each states what would have proved
+          it wrong before it was run. <strong>None of them has produced a rule that survives that test.</strong></p>`);
+      }
+
+      // ── 5. the finding that matters most
+      const c = S && S.costAudit, pl = c && c.pooled && c.pooled.sealed;
+      if (pl) {
+        out.push(`<p><strong>The most important thing I know about myself.</strong> On data it had never seen, the strategy makes
+          ${KB_ESC(kbSign(pl.gross.avgR) + pl.gross.avgR)}R per trade before costs and keeps
+          ${KB_ESC(kbSign(pl.net.avgR) + pl.net.avgR)}R after them${c.sealedCostShareOfGrossPct != null
+            ? ` — the spread takes <strong>${KB_ESC(c.sealedCostShareOfGrossPct)}%</strong> of it` : ''}.
+          The edge is real and too small to survive being charged for. Ask me about spread and costs for the full working.</p>`);
+      }
+
+      // ── 6. the limits, said plainly
+      out.push(`<p><strong>What I will not do.</strong> I will not predict a price, tell you which pair to trade next, or tell you a
+        setup is going to win — those answers would have to be invented, and an invented answer in a trading tool costs money. I will
+        not describe anything here as guaranteed. Where a measurement includes zero I say so instead of rounding it into a claim.</p>`);
+
+      out.push(`<p><strong>What I do not know.</strong> I see published candles, not your broker's prices, so your fills and spread
+        will differ from mine. I have no position of yours, no account balance beyond what you typed in, and no way to tell whether
+        you actually took any of these trades.</p>`);
+
+      return { body: out.join('\n'), source: 'live, from the files this page has loaded' };
+    },
+  },
   /* ═══ ABOUT THIS SITE — all MEASURED ═══════════════════════════════════ */
   {
     id: 'record', kind: 'measured',

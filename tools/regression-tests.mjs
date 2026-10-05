@@ -394,12 +394,26 @@ t('research: prediction questions are REFUSED, never answered', () => {
 });
 
 t('research: no topic claims a guaranteed or predicted result', () => {
+  // A refusal is not a claim. "I will not describe anything as guaranteed" is
+  // the sentence this test exists to protect, so matching the bare word would
+  // ban the very disclaimer it wants. Each hit is checked for a negation in the
+  // words immediately before it.
   const banned = /\b(guarantee[ds]?|will win|sure thing|risk[- ]free|100% accurate|cannot lose|always profit)\b/i;
+  const isRefusal = (text, idx) => /\b(not|never|no|refuse[sd]?|without|avoid|rather than|instead of)\b[^.]{0,60}$/i
+    .test(text.slice(Math.max(0, idx - 70), idx));
   for (const topic of KB.TOPICS) {
     const a = topic.answer(KBS);
     // The refusal topic quotes these words in order to reject them.
     if (topic.kind === 'refusal') continue;
-    if (banned.test(a.body.replace(/<[^>]+>/g, ' '))) return `${topic.id} contains a guarantee-style claim`;
+    // EVERY occurrence, not just the first. The first hit in an honest answer is
+    // usually its own disclaimer ("nothing here is guaranteed"), so stopping
+    // there let a real claim further down the same answer through — which is
+    // exactly what happened when this check was first written.
+    const plain = a.body.replace(/<[^>]+>/g, ' ');
+    for (const hit of plain.matchAll(new RegExp(banned.source, 'gi'))) {
+      if (isRefusal(plain, hit.index)) continue;
+      return `${topic.id} contains a guarantee-style claim: "${plain.slice(Math.max(0, hit.index - 40), hit.index + 30).trim()}"`;
+    }
   }
   return true;
 });
@@ -1463,6 +1477,65 @@ t('the deploy stamps scripts and styles but never the manifest or icons', () => 
     const m = readFileSync(f, 'utf8').match(/manifest\.json\?v=([A-Za-z0-9._-]+)/);
     if (m && /^\d{8}-\d{6}-/.test(m[1]))
       return `${f} has a build id as its manifest key — the stamp was committed`;
+  }
+  return true;
+});
+
+
+
+t('a card refresh does not close folds or interrupt typing', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  const i = src.indexOf('function renderCards()');
+  const body = src.slice(i, src.indexOf('\nfunction card(s)', i));
+  // cycle() rewrites the cards every two minutes. Without these two guards a
+  // fold slams shut under the finger and a half-typed balance is what gets saved.
+  if (!/activeElement/.test(body)) return 'nothing checks whether a field is focused before rewriting the cards';
+  if (!/INPUT\|TEXTAREA\|SELECT/.test(body)) return 'the focus check does not look for an editable field';
+  if (!/data-fold/.test(body)) return 'open folds are not captured before the rewrite';
+  if (!/d\.open = true/.test(body)) return 'folds are captured but never reopened';
+  if (!/addEventListener\('toggle'/.test(body)) return 'a fold toggled between renders would not be remembered';
+  // Every fold rendered INTO a card needs a stable key, or restoring picks the
+  // wrong one. Only the functions that build a card count — the folds in the
+  // Tested and Ledger panels live outside #cards and are never rewritten by
+  // this path, so requiring a key there would be noise.
+  const fnBody = (name) => {
+    const a = src.indexOf(`function ${name}(`);
+    if (a < 0) return '';
+    const b = src.indexOf('\nfunction ', a + 1);
+    return src.slice(a, b < 0 ? src.length : b);
+  };
+  const cardSrc = ['card', 'moneyBlock', 'trackerBlock'].map(fnBody).join('\n');
+  const folds = (cardSrc.match(/<details[^>]*class="fold[^>]*>/g) || []);
+  const keyed = folds.filter(f => /data-fold=/.test(f));
+  if (!folds.length) return 'no folds found in the card renderers — the check is looking in the wrong place';
+  if (keyed.length !== folds.length)
+    return `${folds.length - keyed.length} of ${folds.length} card folds have no data-fold key`;
+  return true;
+});
+
+
+
+t('the site can account for what it is currently doing, from live state', () => {
+  const src = readFileSync('v2/knowledge.js', 'utf8');
+  const i = src.indexOf("id: 'status'");
+  if (i < 0) return 'there is no answer describing what the site is up to';
+  const block = src.slice(i, src.indexOf("id: '", i + 20));
+  // It must read the live files, not recite a fixed description that goes stale.
+  for (const k of ['latestSignals', 'learningBrain', 'costAudit'])
+    if (!new RegExp(`S\\.${k}`).test(block)) return `the status answer never reads S.${k}`;
+  // Hard-coded measurements would drift from the data silently.
+  if (/\b91\.6\b|\b0\.032\b|\b0\.0027\b|\b[0-9]{3,} published\b/.test(block))
+    return 'a measured figure is hard-coded into the status answer instead of read from the data';
+  // It must still state its limits — a self-description that only lists
+  // capabilities is marketing, not an account.
+  if (!/will not/i.test(block)) return 'the status answer never says what it refuses to do';
+  if (!/do not know/i.test(block)) return 'the status answer never says what it cannot see';
+  // And it must not claim an edge the interval does not support.
+  // Same correction as the shared honesty test: the status answer is REQUIRED to
+  // say nothing is guaranteed, so only an unnegated claim counts.
+  for (const claim of block.matchAll(/\b(guarantee[ds]?|will win|proven edge)\b/gi)) {
+    if (/\b(not|never|no|rather than)\b[^.]{0,60}$/i.test(block.slice(Math.max(0, claim.index - 70), claim.index))) continue;
+    return `the status answer overclaims: "${block.slice(Math.max(0, claim.index - 40), claim.index + 25).trim()}"`;
   }
   return true;
 });

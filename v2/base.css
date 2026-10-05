@@ -192,7 +192,38 @@ h2.sec::after { content: ''; flex: 1; height: 1px; background: linear-gradient(9
 .lvl.tp .lvl-v { color: var(--up); }
 
 .c-body { padding: 13px var(--pad) var(--pad); }
-.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 11px; }
+/* One row, scrolled sideways if it overflows. Wrapping put three rows of
+   badges above every signal, which on a phone cost more height than the prices
+   underneath them. */
+.chips { display: flex; flex-wrap: nowrap; gap: 6px; margin-bottom: 10px;
+  overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.chips::-webkit-scrollbar { display: none; }
+/* Fade the right edge so a cut-off badge reads as "there is more, scroll" and
+   not as a rendering fault. */
+.chips { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent);
+         mask-image: linear-gradient(to right, #000 calc(100% - 22px), transparent); }
+.chip { flex: 0 0 auto; }
+
+/* The glance line: running position and what it is worth, on one row. */
+/* Three equal cells, value over label — the same shape as the price row above,
+   so the eye reads them as one table. Side by side with the label inline they
+   did not fit 375px and wrapped to two rows, which cost more than it showed. */
+.c-glance { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
+  margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
+.c-glance > span { font: 620 13px/1 var(--mono); letter-spacing: -.03em; text-align: center;
+  padding: 8px 5px; border-radius: 5px; border: 1px solid var(--line-soft); background: #0a0e1a;
+  overflow: hidden; text-overflow: ellipsis; }
+.c-glance i { display: block; font-style: normal; font: 500 9px var(--mono); color: var(--text-faint);
+  margin-top: 5px; letter-spacing: .04em; }
+.c-glance .g-run { color: var(--text-dim); }
+.c-glance .g-run.up { color: var(--up);   background: var(--up-soft);   border-color: #2fd98a35; }
+.c-glance .g-run.dn { color: var(--down); background: var(--down-soft); border-color: #ff5f6d35; }
+.c-glance .g-win  { color: var(--up);   background: var(--up-soft);   border-color: #2fd98a35; }
+.c-glance .g-lose { color: var(--down); background: var(--down-soft); border-color: #ff5f6d35; }
+
+/* A heading inside a fold, now that four folds are one. */
+.sub-k { font: 600 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text-faint); margin-bottom: 9px; }
 .chip {
   font: 600 10px/1 var(--mono); letter-spacing: .05em; padding: 5px 8px;
   border-radius: 5px; background: #0a0e1a; border: 1px solid var(--line-soft); color: var(--text-dim);
@@ -622,7 +653,7 @@ header.top { box-shadow: 0 1px 0 #ffffff06, 0 6px 24px -12px #000a; }
 }
 
 /* ───────────── per-signal money ───────────── */
-.mny { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.mny { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
 .mny-k { font: 600 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 10px; }
 .mny-two { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .mny-win, .mny-lose { padding: 11px 12px; border-radius: var(--r-sm); border: 1px solid; }
