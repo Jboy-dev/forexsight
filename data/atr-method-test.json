@@ -1,0 +1,87 @@
+{
+  "ts": 1791243498940,
+  "isoTime": "2026-10-05T23:38:18.940Z",
+  "builtBy": "tools/atr-method-test.mjs",
+  "hypothesis": "The ATR definition used to size the stop changes the result.",
+  "falsifierStatedBeforeRunning": "To prefer one method the difference must hold the same sign in train, validate AND sealed. A single sealed win is the shape noise takes.",
+  "engineUses": "simple moving average of true range (functions/api/check-signals.js)",
+  "backtestsUse": "Wilder smoothing, which is what TradingView and MT5 call ATR",
+  "stopMultiple": 3,
+  "ladder": [
+    1.2,
+    2,
+    3.5
+  ],
+  "instruments": 19,
+  "wilder": {
+    "train": {
+      "n": 2928,
+      "avgR": 0.0029,
+      "t": 0.13,
+      "ci": [
+        -0.0412,
+        0.047
+      ]
+    },
+    "validate": {
+      "n": 1483,
+      "avgR": -0.0437,
+      "t": -1.4,
+      "ci": [
+        -0.1051,
+        0.0177
+      ]
+    },
+    "sealed": {
+      "n": 1298,
+      "avgR": 0.0027,
+      "t": 0.08,
+      "ci": [
+        -0.0636,
+        0.0689
+      ]
+    },
+    "avgCostR": 0.0256,
+    "avgStopPctOfPrice": 1.281
+  },
+  "sma": {
+    "train": {
+      "n": 2866,
+      "avgR": 0.0145,
+      "t": 0.63,
+      "ci": [
+        -0.0302,
+        0.0592
+      ]
+    },
+    "validate": {
+      "n": 1441,
+      "avgR": -0.046,
+      "t": -1.45,
+      "ci": [
+        -0.1083,
+        0.0162
+      ]
+    },
+    "sealed": {
+      "n": 1285,
+      "avgR": 0.002,
+      "t": 0.06,
+      "ci": [
+        -0.064,
+        0.068
+      ]
+    },
+    "avgCostR": 0.0264,
+    "avgStopPctOfPrice": 1.292
+  },
+  "perWindowDiffR": {
+    "train": 0.0116,
+    "validate": -0.0023,
+    "sealed": -0.0007
+  },
+  "signStable": false,
+  "engineStopsWiderPct": 0.9,
+  "established": false,
+  "verdict": "Neither ATR definition is established as better: engine minus backtests is 0.0116R in training, -0.0023R in validation and -0.0007R sealed, and the sign flips. What is NOT in doubt is that they differ: the engine's stops run 0.9% wider than every published measurement on this site assumes, so the backtests describe a slightly different system from the one that ships."
+}

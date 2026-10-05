@@ -73,17 +73,30 @@ function macd(closes, f = 12, s = 26, sig = 9) {
   const hist = line.map((v, i) => v != null && signal[i] != null ? v - signal[i] : null);
   return { line, signal, hist };
 }
+// ATR, Wilder's smoothing — the definition TradingView, MT4 and MT5 all use and
+// the one every backtest on this site measures with.
+//
+// This was a plain rolling mean of true range (sum/p). That is a real variant,
+// but it is not what "ATR" means on a chart the reader is comparing against, and
+// it was not what any measurement here described. On a volatile snapshot the two
+// diverge by about 20%; across 19 instruments and years of bars the average stop
+// width differs by only 0.9%, and tools/atr-method-test.mjs found neither method
+// better — the sign of the difference flips between train, validate and sealed.
+//
+// So this change is not expected to improve results and is not claimed to. It
+// removes a discrepancy between what ships, what is measured, and what the chart
+// the reader is looking at would say.
 function atr(highs, lows, closes, p = 14) {
+  const n = closes.length;
   const tr = [0];
-  for (let i = 1; i < closes.length; i++) {
+  for (let i = 1; i < n; i++) {
     tr.push(Math.max(highs[i] - lows[i], Math.abs(highs[i] - closes[i - 1]), Math.abs(lows[i] - closes[i - 1])));
   }
-  const out = Array(closes.length).fill(null);
-  let sum = 0;
-  for (let i = 0; i < tr.length; i++) {
-    sum += tr[i];
-    if (i >= p) sum -= tr[i - p];
-    if (i >= p - 1) out[i] = sum / p;
+  const out = Array(n).fill(null);
+  let seed = 0;
+  for (let i = 1; i < n; i++) {
+    if (i <= p) { seed += tr[i]; if (i === p) out[i] = seed / p; }
+    else out[i] = (out[i - 1] * (p - 1) + tr[i]) / p;
   }
   return out;
 }

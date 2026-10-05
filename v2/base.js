@@ -30,7 +30,7 @@
 
 const MIRROR = 'https://raw.githubusercontent.com/Jboy-dev/forexsight/main/data/';
 const LOCAL  = '/data/';
-const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine', 'cost-audit', 'cost-ceiling-test', 'trend-alignment-test', 'volatility-gradient-test'];
+const FILES  = ['latest-signals', 'market-voice', 'learning-brain', 'shadow-tracker', 'self-evaluation', 'strategy-trials', 'active-strategy', 'ledger', 'fx-rates', 'per-chart-search', 'engine-sealed-test', 'exit-search', 'benchmark-vs-holding', 'adaptive-engine', 'cost-audit', 'cost-ceiling-test', 'trend-alignment-test', 'volatility-gradient-test', 'atr-method-test'];
 
 const S = { loaded: false, at: 0, errors: [], cfg: null, lastMsg: null };   // the single source of truth
 
@@ -1669,6 +1669,7 @@ function renderCostAudit() {
     { d: S.trendAlignmentTest,     t: 'Trading with the 200-period trend' },
     { d: S.costCeilingTest,        t: 'Refusing the trades you cannot afford' },
     { d: S.volatilityGradientTest, t: 'Trading only when the market is moving' },
+    { d: S.atrMethodTest,          t: 'Measuring volatility the other common way' },
   ].filter(x => x.d);
 
   return `

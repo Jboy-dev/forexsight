@@ -1642,5 +1642,27 @@ t('adverse movement is never rendered as if it were a gain', () => {
 });
 
 
+
+t('the engine computes ATR the way the charts and the backtests do', () => {
+  const src = readFileSync('functions/api/check-signals.js', 'utf8');
+  const i = src.indexOf('function atr(highs, lows, closes');
+  if (i < 0) return 'the engine has no atr()';
+  const fn = src.slice(i, src.indexOf('\nfunction ', i + 10));
+  // Wilder smoothing, not a rolling mean. A rolling mean is a real variant but
+  // it is not what TradingView/MT5 call ATR, and it is not what any measurement
+  // on this site uses — so the backtests would describe a different system.
+  if (/sum -= tr\[i - p\]/.test(fn)) return 'ATR is a rolling mean of true range, not Wilder smoothing';
+  if (!/out\[i - 1\] \* \(p - 1\) \+ tr\[i\]\) \/ p/.test(fn)) return 'ATR does not use Wilder smoothing';
+  // And the measurement tools must agree with it, or the comparison is void.
+  for (const tool of ['tools/cost-audit.mjs', 'tools/strategy-trials.mjs']) {
+    if (!existsSync(tool)) continue;
+    const t2 = readFileSync(tool, 'utf8');
+    if (/function atr/i.test(t2) && !/\(out\[i-1\]\*\(p-1\)\+tr\)\/p|\(out\[i - 1\] \* \(p - 1\) \+ tr\)/.test(t2))
+      return `${tool} does not use Wilder ATR, so it measures a different stop than the engine ships`;
+  }
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
