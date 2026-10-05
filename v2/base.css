@@ -267,6 +267,17 @@ details.fold > summary:hover { color: var(--text-dim); }
 .h-res.win  { color: var(--up);   background: var(--up-soft);   border: 1px solid #2fd98a40; }
 .h-res.loss { color: var(--down); background: var(--down-soft); border: 1px solid #ff5f6d40; }
 .h-res.open { color: var(--warn); background: var(--warn-soft); border: 1px solid #ffb63d40; }
+/* "Ran out of time" is its own ending, not a quiet win or a quiet loss. It is
+   the commonest one here, so it gets its own colour rather than borrowing. */
+.h-res.exp  { color: var(--text-dim); background: #121826; border: 1px solid var(--line); }
+
+/* summary layout: pair and direction on top, the span of time underneath */
+.h-mid { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.h-top { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.h-span { font: 500 10.5px/1.35 var(--mono); color: var(--text-faint); letter-spacing: -.01em; }
+.h-span b { font-weight: 620; color: var(--text-dim); }
+.h-span em { font-style: normal; color: var(--warn); }
+.hf.exp.on { border-color: var(--line); }
 .h-pair { font-weight: 620; font-size: 14.5px; letter-spacing: -.02em; }
 .h-when { font: 500 11px/1 var(--mono); color: var(--text-faint); }
 .h-r { margin-left: auto; font: 640 15px/1 var(--mono); letter-spacing: -.02em; }

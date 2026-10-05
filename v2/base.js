@@ -482,9 +482,11 @@ function histRow(x) {
       </dl>
       <p style="margin-top:10px">${open
         ? 'Still running, so it counts for nothing yet. It is listed so the record cannot be read as only the resolved ones.'
+        : st === 'expired'
+          ? `It did not fail at a stop and it did not hit a target — it simply ran out of its watch window${dur ? ` after ${esc(dur)}` : ''}, closing ${esc(sign(R) + R.toFixed(2))}R wherever price happened to be. ${mfe != null && mfe < 1 ? `Its best moment was ${esc(sign(mfe) + mfe.toFixed(2))}R, so it never came close.` : mfe != null ? `It reached ${esc(sign(mfe) + mfe.toFixed(2))}R at best.` : ''} This is how most signals here end, which is why the win rate by outcome and the win rate by target differ.`
         : R > 0
-          ? `Closed ${esc(sign(R) + R.toFixed(2))}R.${mae != null && mae < -0.5 ? ` It first went ${esc(mae.toFixed(2))}R against the position, so this win was not comfortable.` : ''}`
-          : `Closed ${esc(sign(R) + R.toFixed(2))}R.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : mfe != null ? ` It reached ${esc(sign(mfe) + mfe.toFixed(2))}R before turning.` : ''}`}</p>
+          ? `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}.${mae != null && mae < -0.5 ? ` It first went ${esc(mae.toFixed(2))}R against the position, so this win was not comfortable.` : ''}`
+          : `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}${dur ? `, ${esc(dur)} after it fired` : ''}.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : mfe != null ? ` It reached ${esc(sign(mfe) + mfe.toFixed(2))}R before turning.` : ''}`}</p>
     </div>
   </details>`;
 }
@@ -1210,14 +1212,21 @@ function renderHistory() {
   const cfg = S.cfg || {};
   const filter = cfg.histFilter || 'all';
 
-  const isWin = (x) => typeof x.resultR === 'number' && x.resultR > 0;
-  const isLoss = (x) => typeof x.resultR === 'number' && x.resultR <= 0;
-  const isOpen = (x) => x.resultR == null;
+  // Categories come from the ledger's own status. Splitting on the sign of the
+  // result instead put every expired signal into Won or Lost, which is the
+  // distinction this panel is most often asked for: did it fail, or did it just
+  // never finish? Four statuses, and they sum to the total.
+  const stOf = (x) => String(x.status || (x.resultR == null ? 'open' : x.resultR > 0 ? 'won' : 'lost')).toLowerCase();
+  const isWin = (x) => stOf(x) === 'won';
+  const isLoss = (x) => stOf(x) === 'lost';
+  const isExpired = (x) => stOf(x) === 'expired';
+  const isOpen = (x) => stOf(x) === 'open';
 
   const counts = {
     all: rows.length,
     won: rows.filter(isWin).length,
     lost: rows.filter(isLoss).length,
+    expired: rows.filter(isExpired).length,
     open: rows.filter(isOpen).length,
     target: rows.filter(x => (x.tpReached || 0) >= 1).length,
   };
@@ -1225,6 +1234,7 @@ function renderHistory() {
   let shown = rows;
   if (filter === 'won') shown = rows.filter(isWin);
   else if (filter === 'lost') shown = rows.filter(isLoss);
+  else if (filter === 'expired') shown = rows.filter(isExpired);
   else if (filter === 'open') shown = rows.filter(isOpen);
   else if (filter === 'target') shown = rows.filter(x => (x.tpReached || 0) >= 1);
 
@@ -1250,9 +1260,11 @@ function renderHistory() {
       <div class="rec-row" style="gap:26px">
         <div class="rec-i"><div class="k">Signals in view</div><div class="v">${esc(shown.length)}</div>
           <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">of ${esc(rows.length)} ever published</div></div>
-        <div class="rec-i"><div class="k">Won / lost</div>
-          <div class="v" style="font-size:22px"><span style="color:var(--up)">${esc(wins)}</span> / <span style="color:var(--down)">${esc(resolved.length - wins)}</span></div>
-          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">${resolved.length ? esc(Math.round((wins / resolved.length) * 100)) + '% of resolved' : 'none resolved'}</div></div>
+        <div class="rec-i"><div class="k">How they ended</div>
+          <div class="v" style="font-size:20px"><span style="color:var(--up)">${esc(shown.filter(isWin).length)}</span>
+            / <span style="color:var(--down)">${esc(shown.filter(isLoss).length)}</span>
+            / <span style="color:var(--warn)">${esc(shown.filter(isExpired).length)}</span></div>
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">won / lost / ran out of time</div></div>
         <div class="rec-i"><div class="k">Total</div>
           <div class="v" style="color:${sumR > 0 ? 'var(--up)' : 'var(--down)'}">${esc(sign(sumR) + sumR.toFixed(1))}R</div>
           <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px">sum of every resolved result</div></div>
@@ -1263,6 +1275,7 @@ function renderHistory() {
       ${chip('all', 'Everything', counts.all)}
       ${chip('won', 'Won', counts.won, 'win')}
       ${chip('lost', 'Lost', counts.lost, 'loss')}
+      ${chip('expired', 'Ran out of time', counts.expired, 'exp')}
       ${chip('target', 'Hit a target', counts.target)}
       ${chip('open', 'Still open', counts.open, 'open')}
     </div>
@@ -1272,8 +1285,11 @@ function renderHistory() {
 
     <p style="font-size:11.5px;color:var(--text-faint);margin-top:14px;line-height:1.6">
       Covering ${esc(String(L.coverage.from).slice(0, 10))} to ${esc(String(L.coverage.to).slice(0, 10))}.
-      A signal counts as <strong>won</strong> if it closed positive — which includes setups that timed out
-      slightly ahead without reaching a target. ${esc(counts.target)} of ${esc(counts.all)} actually reached TP1 or better.</p>`;
+      Every row shows when it started, when it ended and how long it ran, on your own clock; the exact UTC stamps
+      are inside each row. <strong>Won</strong> and <strong>lost</strong> mean it closed ahead or behind;
+      <strong>ran out of time</strong> means the watch window closed before either a target or the stop was reached,
+      which is how ${esc(counts.expired)} of ${esc(counts.all)} ended. Only ${esc(counts.target)} ever reached TP1
+      or better, so that is the number to judge the entries by.</p>`;
 
   for (const b of box.querySelectorAll('[data-hfilter]')) {
     b.addEventListener('click', () => {
@@ -1284,25 +1300,76 @@ function renderHistory() {
   }
 }
 
+/* ─────────────── one line of history ───────────────
+   "When did it start, when did it end, and did it fail" is the question this
+   panel exists to answer, so all three are on the face of the row rather than
+   behind a tap.
+
+   The result word comes from the ledger's own `status`, not from the sign of
+   the result. Deriving it printed WON or LOST for all 187 EXPIRED signals, which
+   is the single most misleading thing this page could do: a setup that drifted
+   to -0.3R and timed out is not the same event as one that was stopped out at
+   -1R, and lumping them hides that most signals here end by running out of time.
+   ------------------------------------------------------------------- */
+function histTime(iso) {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (!isFinite(t)) return null;
+  const d = new Date(t);
+  // The viewer's own clock. "When did it fail" is a question about the day they
+  // were having, not about UTC. The exact UTC stamp stays in the detail below.
+  return d.toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+function histDur(fromIso, toIso) {
+  const a = Date.parse(fromIso), b = toIso ? Date.parse(toIso) : Date.now();
+  if (!isFinite(a) || !isFinite(b) || b < a) return null;
+  const m = Math.round((b - a) / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60), rm = m % 60;
+  if (h < 48) return rm ? `${h}h ${rm}m` : `${h}h`;
+  const d = Math.floor(h / 24), rh = h % 24;
+  return rh ? `${d}d ${rh}h` : `${d}d`;
+}
+
 function historyRow(x) {
   const R = num(x.resultR);
-  const open = R == null;
-  const cls = open ? 'open' : R > 0 ? 'win' : 'loss';
-  const label = open ? 'OPEN' : R > 0 ? 'WON' : 'LOST';
+  // Trust the published status; fall back to the sign only when it is absent.
+  const st = String(x.status || (R == null ? 'open' : R > 0 ? 'won' : 'lost')).toLowerCase();
+  const open = st === 'open';
+  const cls = open ? 'open' : st === 'won' ? 'win' : st === 'expired' ? 'exp' : 'loss';
+  const label = open ? 'OPEN' : st === 'won' ? 'WON' : st === 'expired' ? 'EXPIRED' : 'LOST';
   const mae = num(x.maeR), mfe = num(x.mfeR);
+
+  const started = histTime(x.firedAt);
+  const ended = histTime(x.resolvedAt);
+  const dur = x.firedAt ? histDur(x.firedAt, x.resolvedAt) : null;
+  const span = started
+    ? `<span class="h-span"><b>${esc(started)}</b>${open
+        ? ` &rarr; <em>still running</em>` + (dur ? ` &middot; ${esc(dur)} so far` : '')
+        : ended ? ` &rarr; <b>${esc(ended)}</b>` + (dur ? ` &middot; ran ${esc(dur)}` : '') : ' &rarr; end time not recorded'}</span>`
+    : '<span class="h-span">start time not recorded</span>';
+
+  const utc = (iso) => new Date(iso).toUTCString().slice(5, 22) + ' UTC';
 
   return `<details class="hrow">
     <summary>
       <span class="h-caret">&#9656;</span>
       <span class="h-res ${cls}">${esc(label)}</span>
-      <span>
-        <span class="h-pair">${esc(x.pair || '—')}</span>
-        <span class="h-when"> ${esc(String(x.direction || '').toUpperCase())} &middot; ${esc(x.firedAt ? ago(Date.parse(x.firedAt)) : '—')}${x.tpReached ? ' &middot; TP' + esc(x.tpReached) : ''}</span>
+      <span class="h-mid">
+        <span class="h-top"><span class="h-pair">${esc(x.pair || '—')}</span>
+          <span class="h-when">${esc(String(x.direction || '').toUpperCase())}${x.tpReached ? ' &middot; TP' + esc(x.tpReached) : ''}</span></span>
+        ${span}
       </span>
       <span class="h-r ${open ? '' : R > 0 ? 'pos' : 'neg'}">${open ? 'running' : esc(sign(R) + R.toFixed(2)) + 'R'}</span>
     </summary>
     <div class="h-body">
       <dl class="kv">
+        <dt>Started</dt><dd>${x.firedAt ? esc(utc(x.firedAt)) : 'not recorded'}</dd>
+        <dt>Ended</dt><dd>${x.resolvedAt ? esc(utc(x.resolvedAt)) : (open ? 'still running' : 'not recorded')}</dd>
+        <dt>How it ended</dt><dd>${open ? 'has not ended yet'
+          : st === 'won' ? 'closed ahead' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)}` : '')
+          : st === 'lost' ? 'closed behind' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)} first` : ', without reaching a target')
+          : `ran out of time after ${dur ? esc(dur) : 'its watch window'}${x.tpReached ? `, having reached TP${esc(x.tpReached)}` : ', without reaching a target'}`}</dd>
         <dt>Entry</dt><dd>${esc(price(x.entry, x.pair))}</dd>
         <dt>Stop</dt><dd>${esc(price(x.sl, x.pair))}</dd>
         <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} &middot; ${esc(price(x.tp2, x.pair))} &middot; ${esc(price(x.tp3, x.pair))}</dd>
@@ -1311,8 +1378,6 @@ function historyRow(x) {
         ${mae != null ? `<dt>Worst it went</dt><dd>${esc(sign(mae) + mae.toFixed(2))}R</dd>` : ''}
         ${x.confidence != null ? `<dt>Confidence</dt><dd>${esc(x.confidence)}</dd>` : ''}
         ${x.regime ? `<dt>Regime</dt><dd>${esc(x.regime)}</dd>` : ''}
-        ${x.firedAt ? `<dt>Fired</dt><dd>${esc(new Date(x.firedAt).toUTCString().slice(5, 22))} UTC</dd>` : ''}
-        ${x.resolvedAt ? `<dt>Resolved</dt><dd>${esc(new Date(x.resolvedAt).toUTCString().slice(5, 22))} UTC</dd>` : ''}
       </dl>
       <p style="margin-top:10px">${open
         ? 'Still running, so it counts for nothing yet.'

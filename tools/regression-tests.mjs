@@ -1570,5 +1570,58 @@ t('the record Research quotes is the same book the tabs count', () => {
 });
 
 
+
+t('history shows when each signal started, ended and how long it ran', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  const i = src.indexOf('function historyRow(x)');
+  if (i < 0) return 'historyRow is gone';
+  const row = src.slice(i, src.indexOf('\nfunction ', i + 10));
+  // The whole point of the panel: both ends of the signal, on the face of it.
+  if (!/firedAt/.test(row)) return 'the row never reads firedAt, so no start time is shown';
+  if (!/resolvedAt/.test(row)) return 'the row never reads resolvedAt, so no end time is shown';
+  if (!/histDur\(/.test(row)) return 'the row shows no duration';
+  // The span is assembled above and interpolated, so check the summary pulls it
+  // in AND that what it pulls in is built from both timestamps. Looking for the
+  // class name inside the summary markup finds nothing, because it is not
+  // written there literally — an earlier version of this check failed for that
+  // reason rather than because the times were missing.
+  const summary = row.slice(row.indexOf('<summary>'), row.indexOf('</summary>'));
+  if (!/\$\{span\}/.test(summary)) return 'the start-to-end span is not placed on the summary row';
+  const spanDef = row.slice(row.indexOf('const span ='), row.indexOf('const utc ='));
+  if (!/h-span/.test(spanDef)) return 'the span is not the start-to-end element';
+  if (!/started/.test(spanDef) || !/ended/.test(spanDef))
+    return 'the span does not carry both the start and the end';
+  // The result word must come from the published status. Deriving it from the
+  // sign labelled all 187 expired signals WON or LOST, which hides the very
+  // thing this panel is asked for.
+  if (!/x\.status/.test(row)) return 'the result label ignores the published status';
+  if (!/expired/i.test(row)) return 'expired is not a distinct outcome in the row';
+  return true;
+});
+
+t('the four history outcomes account for every signal', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  const i = src.indexOf('function renderHistory()');
+  const fn = src.slice(i, src.indexOf('\nfunction ', i + 10));
+  if (!/isExpired/.test(fn)) return 'renderHistory has no expired category';
+  if (!/stOf/.test(fn)) return 'the categories are not derived from the published status';
+  // Against the real file: won + lost + expired + open must equal the total, or
+  // a signal is being double counted or dropped from the breakdown.
+  if (!existsSync('data/ledger.json')) return 'skipped: ledger not built';
+  const L = JSON.parse(readFileSync('data/ledger.json', 'utf8'));
+  if (!Array.isArray(L.history)) return 'skipped: no history array';
+  const st = (x) => String(x.status || (x.resultR == null ? 'open' : x.resultR > 0 ? 'won' : 'lost')).toLowerCase();
+  const n = { won: 0, lost: 0, expired: 0, open: 0, other: 0 };
+  for (const r of L.history) (n[st(r)] !== undefined ? n[st(r)]++ : n.other++);
+  const sum = n.won + n.lost + n.expired + n.open;
+  if (n.other) return `${n.other} rows have a status outside the four the panel shows`;
+  if (sum !== L.history.length) return `categories sum to ${sum} but the book holds ${L.history.length}`;
+  // Every resolved row must carry both ends, or the panel prints a blank span.
+  const missing = L.history.filter((r) => st(r) !== 'open' && (!r.firedAt || !r.resolvedAt)).length;
+  if (missing) return `${missing} resolved signals are missing a start or end time`;
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
