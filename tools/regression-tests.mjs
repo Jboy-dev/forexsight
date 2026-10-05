@@ -1623,5 +1623,24 @@ t('the four history outcomes account for every signal', () => {
 });
 
 
+
+t('adverse movement is never rendered as if it were a gain', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  // maeR is published as a POSITIVE magnitude of how far price went AGAINST the
+  // position. Passing it through sign() printed "Worst it went +1.07R" on a
+  // trade that lost a full R, which reads as profit.
+  if (/sign\(mae\)/.test(src)) return 'mae is passed through sign(), which prefixes adverse movement with +';
+  // And any threshold on it must be in the direction the data actually goes.
+  const dead = src.match(/mae\s*[!=]=\s*null\s*&&\s*mae\s*<\s*-?[\d.]+/);
+  if (dead) return `a condition on mae tests for a negative value, which this field never takes: "${dead[0]}"`;
+  if (!existsSync('data/ledger.json')) return true;
+  const L = JSON.parse(readFileSync('data/ledger.json', 'utf8'));
+  const vals = (L.history || []).map(r => r.maeR).filter(v => typeof v === 'number');
+  if (vals.length && vals.some(v => v < 0))
+    return 'maeR now contains negative values — the display assumes a positive magnitude and must be revisited';
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

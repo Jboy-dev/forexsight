@@ -476,7 +476,7 @@ function histRow(x) {
         <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} · ${esc(price(x.tp2, x.pair))} · ${esc(price(x.tp3, x.pair))}</dd>
         <dt>Furthest reached</dt><dd>${x.tpReached ? esc('TP' + x.tpReached) : 'no target reached'}</dd>
         ${mfe != null ? `<dt>Best it went</dt><dd>${esc(sign(mfe) + mfe.toFixed(2))}R</dd>` : ''}
-        ${mae != null ? `<dt>Worst it went</dt><dd>${esc(sign(mae) + mae.toFixed(2))}R</dd>` : ''}
+        ${mae != null ? `<dt>Went against it</dt><dd>${esc(mae.toFixed(2))}R${mae > 0 ? ' at its worst' : ''}</dd>` : ''}
         ${x.confidence != null ? `<dt>Confidence at entry</dt><dd>${esc(x.confidence)}</dd>` : ''}
         ${x.strategies != null ? `<dt>Strategies agreeing</dt><dd>${esc(x.strategies)}</dd>` : ''}
       </dl>
@@ -485,7 +485,7 @@ function histRow(x) {
         : st === 'expired'
           ? `It did not fail at a stop and it did not hit a target — it simply ran out of its watch window${dur ? ` after ${esc(dur)}` : ''}, closing ${esc(sign(R) + R.toFixed(2))}R wherever price happened to be. ${mfe != null && mfe < 1 ? `Its best moment was ${esc(sign(mfe) + mfe.toFixed(2))}R, so it never came close.` : mfe != null ? `It reached ${esc(sign(mfe) + mfe.toFixed(2))}R at best.` : ''} This is how most signals here end, which is why the win rate by outcome and the win rate by target differ.`
         : R > 0
-          ? `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}.${mae != null && mae < -0.5 ? ` It first went ${esc(mae.toFixed(2))}R against the position, so this win was not comfortable.` : ''}`
+          ? `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}.${mae != null && mae > 0.5 ? ` It first went ${esc(mae.toFixed(2))}R against the position, so this win was not comfortable.` : ''}`
           : `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}${dur ? `, ${esc(dur)} after it fired` : ''}.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : mfe != null ? ` It reached ${esc(sign(mfe) + mfe.toFixed(2))}R before turning.` : ''}`}</p>
     </div>
   </details>`;
@@ -1375,14 +1375,14 @@ function historyRow(x) {
         <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} &middot; ${esc(price(x.tp2, x.pair))} &middot; ${esc(price(x.tp3, x.pair))}</dd>
         <dt>Furthest reached</dt><dd>${x.tpReached ? 'TP' + esc(x.tpReached) : 'no target reached'}</dd>
         ${mfe != null ? `<dt>Best it went</dt><dd>${esc(sign(mfe) + mfe.toFixed(2))}R</dd>` : ''}
-        ${mae != null ? `<dt>Worst it went</dt><dd>${esc(sign(mae) + mae.toFixed(2))}R</dd>` : ''}
+        ${mae != null ? `<dt>Went against it</dt><dd>${esc(mae.toFixed(2))}R${mae > 0 ? ' at its worst' : ''}</dd>` : ''}
         ${x.confidence != null ? `<dt>Confidence</dt><dd>${esc(x.confidence)}</dd>` : ''}
         ${x.regime ? `<dt>Regime</dt><dd>${esc(x.regime)}</dd>` : ''}
       </dl>
       <p style="margin-top:10px">${open
         ? 'Still running, so it counts for nothing yet.'
         : R > 0
-          ? `Closed ${esc(sign(R) + R.toFixed(2))}R.${!x.tpReached ? ' It never reached a target — it timed out while ahead, which is why the two win rates on the Ledger differ.' : ''}${mae != null && mae < -0.5 ? ` It first went ${esc(mae.toFixed(2))}R against you.` : ''}`
+          ? `Closed ${esc(sign(R) + R.toFixed(2))}R.${!x.tpReached ? ' It never reached a target — it timed out while ahead, which is why the two win rates on the Ledger differ.' : ''}${mae != null && mae > 0.5 ? ` It first went ${esc(mae.toFixed(2))}R against you.` : ''}`
           : `Closed ${esc(sign(R) + R.toFixed(2))}R.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : ''}`}</p>
     </div>
   </details>`;
