@@ -192,7 +192,10 @@ function renderCards() {
   const feed = S.latestSignals, box = el('cards');
   const all = (feed && feed.signals) || [];
   const cfg = S.cfg || {};
-  const sigs = window.FS ? window.FS.apply(all, cfg, READ) : all;
+  let sigs = window.FS ? window.FS.apply(all, cfg, READ) : all;
+  const closed = closedBook();
+  const closedHere = sigs.filter((x) => closed[sigKey(x)]).length;
+  sigs = sigs.filter((x) => !closed[sigKey(x)]);
 
   document.body.dataset.density = cfg.density || 'normal';
 
@@ -251,9 +254,11 @@ function renderCards() {
     try { window.FSCHART.prefetch(sigs.map(x => pick(x, 'pair')).filter(Boolean)); } catch (_) {}
   }
   if (all.length !== sigs.length) {
+    const byOrders = all.length - sigs.length - closedHere;
     box.insertAdjacentHTML('beforeend',
-      `<div class="empty" style="padding:16px"><strong>${esc(all.length - sigs.length)} hidden by your orders</strong>
-       ${esc(sigs.length)} of ${esc(all.length)} shown. Type <code>reset</code> to see them all.</div>`);
+      `<div class="empty" style="padding:16px"><strong>${esc(all.length - sigs.length)} not shown</strong>
+       ${byOrders > 0 ? `${esc(byOrders)} hidden by your orders — type <code>reset</code> to see them. ` : ''}
+       ${closedHere > 0 ? `${esc(closedHere)} closed by you, listed under History.` : ''}</div>`);
   }
 }
 
@@ -332,6 +337,8 @@ function card(s) {
       </div>
       <span class="c-dir ${buy ? 'buy' : 'sell'}">${esc(dir || '?')}</span>
       <span class="c-chart-i" aria-hidden="true">chart</span>
+      <button class="c-close" data-close="${esc(sigKey(s))}" title="Close this signal and record where it stood"
+              aria-label="Close this signal">close</button>
     </div>
     <div class="c-levels five">
       ${lvl('Entry', entry, null, '')}
@@ -770,6 +777,71 @@ function livePrice(pair) {
   if (!c || !c.length) return null;
   const last = c[c.length - 1];
   return last && typeof last.c === 'number' ? { price: last.c, at: last.t } : null;
+}
+
+/* ─────────────── closing a signal yourself ───────────────
+   The watcher decides when a setup is finished. This lets you decide instead,
+   which is a different thing and is recorded as a different thing: the status is
+   "closed by you", never merged into the engine's own won/lost/expired counts,
+   because the engine's record has to stay a record of the ENGINE.
+
+   The result is worked out at the live price the moment you close, by the same
+   arithmetic the glance line uses, and the entry is kept rather than deleted so
+   it can be reopened. A mis-tap costs one tap to undo.
+   ------------------------------------------------------------------- */
+function closedBook() {
+  const c = S.cfg || {};
+  if (!c.closedByMe || typeof c.closedByMe !== 'object') c.closedByMe = {};
+  return c.closedByMe;
+}
+
+function closeSignal(key) {
+  const feed = S.latestSignals, all = (feed && feed.signals) || [];
+  const sig = all.find((x) => sigKey(x) === key);
+  if (!sig) return;
+  const entry = num(pick(sig, 'entry')), sl = num(pick(sig, 'sl'));
+  const dirUp = /^(BUY|LONG)/i.test(String(pick(sig, 'direction') || ''));
+  const live = livePrice(pick(sig, 'pair'));
+  let r = null;
+  if (entry != null && sl != null && Math.abs(entry - sl) > 0 && live) {
+    r = ((live.price - entry) * (dirUp ? 1 : -1)) / Math.abs(entry - sl);
+  }
+  closedBook()[key] = {
+    key, pair: pick(sig, 'pair'), direction: pick(sig, 'direction'),
+    entry, sl, tp1: num(pick(sig, 'tp1')), tp2: num(pick(sig, 'tp2')), tp3: num(pick(sig, 'tp3')),
+    firedAt: pick(sig, 'detectedAt') || null,
+    closedAt: new Date().toISOString(),
+    // null rather than 0 when no live price is known — a stand-in zero here
+    // would read as "it broke even", which is a claim about money.
+    closedPrice: live ? live.price : null,
+    resultR: r == null ? null : +r.toFixed(3),
+  };
+  if (window.FS) window.FS.save(S.cfg);
+  render();
+}
+
+function reopenSignal(key) {
+  const b = closedBook();
+  delete b[key];
+  if (window.FS) window.FS.save(S.cfg);
+  render();
+}
+
+function installClose() {
+  if (S._closeBound) return;
+  S._closeBound = true;
+  // Delegated, because the cards are rewritten every two minutes.
+  document.addEventListener('click', (e) => {
+    const close = e.target.closest && e.target.closest('[data-close]');
+    if (close) {
+      // The whole card head opens the chart, so this must not reach it.
+      e.preventDefault(); e.stopPropagation();
+      closeSignal(close.dataset.close);
+      return;
+    }
+    const open = e.target.closest && e.target.closest('[data-reopen]');
+    if (open) { e.preventDefault(); e.stopPropagation(); reopenSignal(open.dataset.reopen); }
+  }, true);
 }
 
 /* ─────────────── the one line that replaces four blocks ───────────────
@@ -1229,6 +1301,7 @@ function renderHistory() {
     expired: rows.filter(isExpired).length,
     open: rows.filter(isOpen).length,
     target: rows.filter(x => (x.tpReached || 0) >= 1).length,
+    mine: Object.keys(closedBook()).length,
   };
 
   let shown = rows;
@@ -1236,6 +1309,7 @@ function renderHistory() {
   else if (filter === 'lost') shown = rows.filter(isLoss);
   else if (filter === 'expired') shown = rows.filter(isExpired);
   else if (filter === 'open') shown = rows.filter(isOpen);
+  else if (filter === 'mine') shown = [];   // drawn from your own book, below
   else if (filter === 'target') shown = rows.filter(x => (x.tpReached || 0) >= 1);
 
   // Respect the pair/direction orders already in force, so "only gold" narrows
@@ -1278,9 +1352,16 @@ function renderHistory() {
       ${chip('expired', 'Ran out of time', counts.expired, 'exp')}
       ${chip('target', 'Hit a target', counts.target)}
       ${chip('open', 'Still open', counts.open, 'open')}
+      ${counts.mine ? chip('mine', 'Closed by you', counts.mine, 'exp') : ''}
     </div>
 
-    ${shown.length ? `<div class="hist">${shown.map(historyRow).join('')}</div>`
+    ${filter === 'mine'
+      ? (counts.mine
+          ? `<div class="hist">${Object.values(closedBook())
+              .sort((a, b) => String(b.closedAt).localeCompare(String(a.closedAt)))
+              .map(myRow).join('')}</div>`
+          : `<div class="empty"><strong>You have not closed any signals</strong>Use the close button on a card to finish one yourself.</div>`)
+      : shown.length ? `<div class="hist">${shown.map(historyRow).join('')}</div>`
       : `<div class="empty"><strong>Nothing matches</strong>No signals in this view. Try Everything, or clear your orders.</div>`}
 
     <p style="font-size:11.5px;color:var(--text-faint);margin-top:14px;line-height:1.6">
@@ -1329,6 +1410,42 @@ function histDur(fromIso, toIso) {
   if (h < 48) return rm ? `${h}h ${rm}m` : `${h}h`;
   const d = Math.floor(h / 24), rh = h % 24;
   return rh ? `${d}d ${rh}h` : `${d}d`;
+}
+
+/* A signal you closed yourself. Deliberately a different shape from
+   historyRow: these are NOT part of the engine's record and must never be
+   counted into its won/lost/expired totals, or the page would be grading the
+   engine on decisions you made. */
+function myRow(x) {
+  const R = num(x.resultR);
+  const cls = R == null ? 'open' : R > 0 ? 'win' : 'loss';
+  const started = histTime(x.firedAt), ended = histTime(x.closedAt);
+  const dur = x.firedAt ? histDur(x.firedAt, x.closedAt) : null;
+  return `<details class="hrow">
+    <summary>
+      <span class="h-caret">&#9656;</span>
+      <span class="h-res ${cls}">BY YOU</span>
+      <span class="h-mid">
+        <span class="h-top"><span class="h-pair">${esc(x.pair || '—')}</span>
+          <span class="h-when">${esc(String(x.direction || '').toUpperCase())}</span></span>
+        <span class="h-span">${started ? `<b>${esc(started)}</b> &rarr; ` : ''}<b>${esc(ended || '—')}</b>${dur ? ` &middot; held ${esc(dur)}` : ''}</span>
+      </span>
+      <span class="h-r ${R == null ? '' : R > 0 ? 'pos' : 'neg'}">${R == null ? 'no price' : esc(sign(R) + R.toFixed(2)) + 'R'}</span>
+    </summary>
+    <div class="h-body">
+      <dl class="kv">
+        <dt>Closed by</dt><dd>you, not the engine</dd>
+        <dt>Closed at</dt><dd>${x.closedPrice != null ? esc(price(x.closedPrice, x.pair)) : 'no live price was loaded, so no result was recorded'}</dd>
+        <dt>Entry</dt><dd>${esc(price(x.entry, x.pair))}</dd>
+        <dt>Stop</dt><dd>${esc(price(x.sl, x.pair))}</dd>
+        <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} &middot; ${esc(price(x.tp2, x.pair))} &middot; ${esc(price(x.tp3, x.pair))}</dd>
+      </dl>
+      <p style="margin-top:10px">This is your decision, not the engine's, so it is kept out of the won / lost /
+        ran-out-of-time figures above — otherwise the engine would be scored on when you chose to step in.
+        ${R == null ? 'No live price was loaded when you closed it, so no result is claimed.' : ''}</p>
+      <button class="hf" data-reopen="${esc(x.key)}" style="margin-top:10px">Reopen this signal</button>
+    </div>
+  </details>`;
 }
 
 function historyRow(x) {
@@ -2289,6 +2406,7 @@ function bootConfig() {
   installSignalBalance();
   installUpdates();
   installDismiss();
+  installClose();
   installChart();
   installReorder();
   installTabs(); if (!S.cfg) S.cfg = window.FS ? window.FS.load() : {}; }

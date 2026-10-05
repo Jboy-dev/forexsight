@@ -1024,7 +1024,14 @@ t('pan and pinch both persist the view, not just wheel zoom', () => {
   // `return` two lines in, before the save, and failed correct code.
   const pinchBlock = (js.match(/if \(mode === 'pinch'\) \{[\s\S]*?\n    \}/) || [''])[0];
   if (!/chSavePref/.test(pinchBlock)) return 'pinch does not persist the view — the phone would reset every time';
-  const panBlock = (js.match(/const barsMoved[\s\S]{0,300}/) || [''])[0];
+  // Match the whole pan branch, not a fixed window of characters after it. A
+  // 300-char window failed correct code the moment velocity tracking was added
+  // between the move and the save — the same brittleness the pinch match above
+  // was already fixed for.
+  const panStart = js.indexOf('const barsMoved');
+  const panEnd = js.indexOf('}, { passive: false });', panStart);
+  const panBlock = panStart >= 0 && panEnd > panStart ? js.slice(panStart, panEnd) : '';
+  if (!panBlock) return 'the pan branch could not be located';
   if (!/chSavePref/.test(panBlock)) return 'pan does not persist the view';
   return true;
 });
@@ -1700,6 +1707,43 @@ t('the measured cost of the watch window is published, not just chosen', () => {
         return `the verdict claims the longer window is established although the sign flips: "${d.verdict.slice(Math.max(0, m.index - 35), m.index + 25).trim()}"`;
     }
   }
+  return true;
+});
+
+
+
+t('you can close a signal, and it never contaminates the engine record', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  if (!/data-close=/.test(src)) return 'no close control on the card';
+  if (!/function closeSignal/.test(src)) return 'nothing implements closing';
+  if (!/function reopenSignal/.test(src)) return 'closing cannot be undone';
+  // The close button sits inside the card head, which opens the chart. Without
+  // stopping propagation, closing a signal would also open its chart.
+  const inst = src.slice(src.indexOf('function installClose'), src.indexOf('function installClose') + 1200);
+  if (!/stopPropagation/.test(inst)) return 'closing would also trigger the card head (which opens the chart)';
+  // Your decision must never be counted into the engine's won/lost/expired.
+  const hist = src.slice(src.indexOf('function renderHistory'), src.indexOf('\nfunction myRow'));
+  if (/isWin|isLoss|isExpired/.test(hist) && /closedBook\(\)\)\.length/.test(hist)) {
+    if (/rows\.concat\(.*closedBook|\.\.\.Object\.values\(closedBook\(\)\)/.test(hist))
+      return 'signals you closed are merged into the rows the engine is scored on';
+  }
+  const my = src.slice(src.indexOf('function myRow'), src.indexOf('function historyRow'));
+  if (!/not the engine/i.test(my)) return 'a signal you closed is not distinguished from one the engine closed';
+  // A missing live price must not be recorded as a break-even result.
+  if (!/resultR: r == null \? null/.test(src)) return 'a close with no live price would record a stand-in result';
+  return true;
+});
+
+t('the chart keeps moving after a flick, and stops when touched', () => {
+  const src = readFileSync('v2/chart.js', 'utf8');
+  if (!/startFling/.test(src)) return 'the chart stops dead on release — no momentum';
+  const f = src.slice(src.indexOf('const fling ='), src.indexOf('let lastCleanTap'));
+  // Friction must not depend on frame rate, or the glide differs between devices.
+  if (!/Math\.pow\(0\.9\d, dt \/ 16\.7\)/.test(src)) return 'friction is applied per frame, so it varies with refresh rate';
+  // A new touch must cancel the glide or it fights the hand.
+  if (!/addEventListener\('pointerdown', stopFling/.test(src)) return 'a new touch does not stop the glide';
+  // And it must stop at the edges rather than grinding.
+  if (!/stopFling\(\); chSavePref\(\); return;/.test(src)) return 'the glide does not stop when the view is clamped';
   return true;
 });
 

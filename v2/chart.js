@@ -699,6 +699,7 @@ function chInstallInteraction(cv) {
       mode = onAxis ? 'axis' : 'pan';
       anchor = { x: e.clientX, y: e.clientY, view: { ...CH.view },
                  yZoom: CH.yZoom, yCenter: CH.yCenter, moved: false };
+      fling.v = 0; fling.lastT = 0; fling.lastFrom = CH.view.from;
     }
   });
 
@@ -737,10 +738,52 @@ function chInstallInteraction(cv) {
       const w = anchor.view.to - anchor.view.from;
       const barsMoved = (dx / plotW()) * w;
       CH.view = chClampView(anchor.view.from - barsMoved, anchor.view.to - barsMoved);
+      // Remember the last moments of the drag, in BARS per millisecond, so the
+      // glide after release is in chart units and does not change meaning when
+      // the zoom does. Two samples is enough and ignores the stalled frames that
+      // happen when a finger pauses before lifting.
+      const nowT = performance.now();
+      if (fling.lastT) {
+        const dtv = nowT - fling.lastT;
+        if (dtv > 0 && dtv < 120) fling.v = ((CH.view.from - fling.lastFrom) / dtv) * 0.6 + fling.v * 0.4;
+      }
+      fling.lastT = nowT; fling.lastFrom = CH.view.from;
       chSavePrefSoon();
       chRequestDraw();
     }
   }, { passive: false });
+
+  /* ─── momentum ───
+     The chart drew at 50fps with the draw itself costing 0.3ms of a 20ms frame,
+     so it was never slow — it just stopped dead the instant a finger lifted,
+     which is what made it feel unlike TradingView. A flick now carries on and
+     decays, and any new touch kills it immediately so it never fights the hand.
+     Velocity is in bars per millisecond, so it behaves the same at every zoom. */
+  const fling = { v: 0, lastT: 0, lastFrom: 0, raf: 0 };
+  const stopFling = () => { if (fling.raf) cancelAnimationFrame(fling.raf); fling.raf = 0; fling.v = 0; };
+  function startFling() {
+    stopFling();
+    // Below this a flick is indistinguishable from a slow drag ending, and
+    // gliding then feels like the chart is drifting on its own.
+    if (Math.abs(fling.v) < 0.0008) return;
+    let v = Math.max(-0.9, Math.min(0.9, fling.v));
+    let prev = performance.now();
+    const step = (t) => {
+      const dt = Math.min(48, t - prev); prev = t;
+      const w = CH.view.to - CH.view.from;
+      const from = CH.view.from + v * dt;
+      const next = chClampView(from, from + w);
+      // Clamping means an edge was hit; stop rather than grind against it.
+      if (Math.abs(next.from - CH.view.from) < 1e-9) { stopFling(); chSavePref(); return; }
+      CH.view = next;
+      chRequestDraw();
+      v *= Math.pow(0.94, dt / 16.7);          // frame-rate independent friction
+      if (Math.abs(v) < 0.0004) { stopFling(); chSavePref(); return; }
+      fling.raf = requestAnimationFrame(step);
+    };
+    fling.raf = requestAnimationFrame(step);
+  }
+  cv.addEventListener('pointerdown', stopFling, true);
 
   let lastCleanTap = 0;
   const release = (e) => {
@@ -754,7 +797,10 @@ function chInstallInteraction(cv) {
       const cleanTap = e.pointerType === 'touch'
         && pointersThisGesture === 1
         && !(anchor && anchor.moved);
+      const wasPan = mode === 'pan' || (mode && mode !== 'pinch' && mode !== 'axis');
+      const flung = wasPan && anchor && anchor.moved;
       mode = null; anchor = null;
+      if (flung) startFling(); else { fling.v = 0; fling.lastT = 0; }
       if (cleanTap) {
         const now = Date.now();
         if (now - lastCleanTap < 320) { lastCleanTap = 0; chResetView(); }

@@ -269,6 +269,16 @@ details.fold > summary:hover { color: var(--text-dim); }
 .h-res.open { color: var(--warn); background: var(--warn-soft); border: 1px solid #ffb63d40; }
 /* "Ran out of time" is its own ending, not a quiet win or a quiet loss. It is
    the commonest one here, so it gets its own colour rather than borrowing. */
+/* close a signal yourself — small, in the head, but outside the chart tap area */
+.c-close {
+  margin-left: 8px; flex: 0 0 auto; cursor: pointer;
+  font: 600 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase;
+  padding: 7px 9px; border-radius: 5px; color: var(--text-faint);
+  background: #0d1220; border: 1px solid var(--line);
+}
+.c-close:hover { color: var(--down); border-color: #ff5f6d55; background: var(--down-soft); }
+@media (pointer: coarse) { .c-close { min-height: 40px; padding: 11px 12px; } }
+
 .h-res.exp  { color: var(--text-dim); background: #121826; border: 1px solid var(--line); }
 
 /* summary layout: pair and direction on top, the span of time underneath */
