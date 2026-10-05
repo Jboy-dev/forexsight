@@ -1,20 +1,20 @@
 {
-  "ts": 1791156674117,
-  "isoTime": "2026-10-04T23:31:14.117Z",
+  "ts": 1791166712918,
+  "isoTime": "2026-10-05T02:18:32.918Z",
   "builtBy": "tools/engine-sealed-test.mjs",
   "instruments": 19,
-  "barsScanned": 286842,
-  "signalsFired": 3648,
-  "fireRatePct": 1.272,
+  "barsScanned": 286797,
+  "signalsFired": 3650,
+  "fireRatePct": 1.273,
   "train": {
-    "n": 1875,
-    "avgR": 0.0142,
-    "t": 0.51,
+    "n": 1877,
+    "avgR": 0.0108,
+    "t": 0.39,
     "ci": [
-      -0.0405,
-      0.0689
+      -0.0438,
+      0.0654
     ],
-    "winRate": 45.8
+    "winRate": 45.7
   },
   "validate": {
     "n": 953,
@@ -28,47 +28,47 @@
   },
   "sealed": {
     "n": 820,
-    "avgR": 0.019,
-    "t": 0.45,
+    "avgR": 0.0229,
+    "t": 0.55,
     "ci": [
-      -0.0631,
-      0.101
+      -0.0593,
+      0.1051
     ],
-    "winRate": 46.2
+    "winRate": 46.3
   },
   "overall": {
-    "n": 3648,
-    "avgR": -0.0014,
-    "t": -0.07,
+    "n": 3650,
+    "avgR": -0.0022,
+    "t": -0.11,
     "ci": [
-      -0.0403,
-      0.0376
+      -0.0411,
+      0.0367
     ],
-    "winRate": 45.4
+    "winRate": 45.3
   },
   "confidenceSplit": {
     "low": {
-      "n": 1824,
-      "avgR": -0.0316,
-      "t": -1.12,
+      "n": 1825,
+      "avgR": -0.0339,
+      "t": -1.2,
       "ci": [
-        -0.0868,
-        0.0236
+        -0.089,
+        0.0213
       ],
       "winRate": 43.5
     },
     "high": {
-      "n": 1824,
-      "avgR": 0.0288,
-      "t": 1.03,
+      "n": 1825,
+      "avgR": 0.0294,
+      "t": 1.05,
       "ci": [
-        -0.0261,
-        0.0837
+        -0.0255,
+        0.0844
       ],
       "winRate": 47.2
     },
     "separates": true
   },
   "method": "strictAnalyze replayed bar by bar over hourly history with a 300-bar rolling window. The engine never sees a bar after the one it is judging. Resolved with ITS OWN entry, stop and targets under the managed ladder, costs charged, stop checked before targets within a bar, non-overlapping. Train 0-50%, validate 50-75%, sealed 75-100%.",
-  "verdict": "The engine does not establish an edge on held-out data. Sealed: 0.019R over 820 signals, interval [-0.0631, 0.101], which includes zero."
+  "verdict": "The engine does not establish an edge on held-out data. Sealed: 0.0229R over 820 signals, interval [-0.0593, 0.1051], which includes zero."
 }
