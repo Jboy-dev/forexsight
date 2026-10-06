@@ -1737,6 +1737,12 @@ t('you can close a signal, and it never contaminates the engine record', () => {
   if (!/not the engine/i.test(my)) return 'a signal you closed is not distinguished from one the engine closed';
   // A missing live price must not be recorded as a break-even result.
   if (!/resultR: r == null \? null/.test(src)) return 'a close with no live price would record a stand-in result';
+  // The "Closed by you" chip only exists while it has contents. A saved filter
+  // pointing at it after the last one is reopened leaves an empty list with no
+  // visible control to leave it.
+  const rh = src.slice(src.indexOf('function renderHistory'), src.indexOf('function renderHistory') + 900);
+  if (!/filter === 'mine' && !Object\.keys\(closedBook\(\)\)\.length/.test(rh))
+    return 'reopening your last closed signal would strand the view on an empty filter';
   return true;
 });
 

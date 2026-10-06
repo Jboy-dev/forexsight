@@ -1296,7 +1296,15 @@ function renderHistory() {
 
   const rows = L.history;
   const cfg = S.cfg || {};
-  const filter = cfg.histFilter || 'all';
+  let filter = cfg.histFilter || 'all';
+  // The "Closed by you" chip is only drawn when there is something in it. If you
+  // were viewing it and then reopened the last one, the chip vanishes while the
+  // filter stays — an empty list with no visible way back to it. Fall back.
+  if (filter === 'mine' && !Object.keys(closedBook()).length) {
+    filter = 'all';
+    cfg.histFilter = 'all';
+    if (window.FS) window.FS.save(cfg);
+  }
 
   // Categories come from the ledger's own status. Splitting on the sign of the
   // result instead put every expired signal into Won or Lost, which is the
