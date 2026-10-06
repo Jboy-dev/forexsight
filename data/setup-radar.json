@@ -1,12 +1,61 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-06T10:30:34.195Z",
+  "timestamp": "2026-10-06T16:00:46.894Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "SPX500",
+      "direction": "BUY",
+      "confidence": 68,
+      "strength": 66,
+      "verdict": "MODERATE LONG — 68% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 7839.6,
+      "sl": 7808.3,
+      "tp1": 7883,
+      "tp3": 7991.3,
+      "slPips": 31,
+      "tp1Pips": 43,
+      "tp3Pips": 152,
+      "rrTP1": 1.38,
+      "rrTP3": 4.84,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — uptrend (HH+HL)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 65,
+        "bear": 15,
+        "marginPct": 63
+      },
+      "reasoning": "Weighted consensus favors LONG with 68% conviction. Top drivers: Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF up. Structure uptrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
