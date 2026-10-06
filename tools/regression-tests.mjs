@@ -676,10 +676,16 @@ t('iOS: every input is 16px on touch, so focusing one does not zoom the page', (
     return 'the 16px rule is gated on an iOS-only @supports query — it cannot be verified anywhere '
          + 'and silently did nothing when measured';
   }
-  const m = css.match(/@media \(pointer: coarse\)[^{]*\{([\s\S]{0,700}?)\n\}/);
-  if (!m || !/font-size: 16px !important/.test(m[1])) return 'no coarse-pointer rule setting inputs to 16px';
+  // Search EVERY coarse-pointer block, not the first one. There are several now,
+  // and matching only the first meant that adding an unrelated touch rule above
+  // this one failed correct CSS — the rule was still there, the test just stopped
+  // looking. Same brittleness as the fixed-window pan match.
+  const blocks = [...css.matchAll(/@media \(pointer: coarse\)[^{]*\{([\s\S]{0,900}?)\n\}/g)].map(x => x[1]);
+  if (!blocks.length) return 'there is no coarse-pointer block at all';
+  const inputBlock = blocks.find(b => /font-size: 16px !important/.test(b));
+  if (!inputBlock) return 'no coarse-pointer rule setting inputs to 16px';
   for (const sel of ['#cmd-input', '#calc-in', '#rs-q', '.mny-bal', '.mny-pct', '.mny-amt']) {
-    if (!m[1].includes(sel)) return `${sel} is not covered by the 16px rule`;
+    if (!inputBlock.includes(sel)) return `${sel} is not covered by the 16px rule`;
   }
   return true;
 });
@@ -1749,6 +1755,29 @@ t('the chart keeps moving after a flick, and stops when touched', () => {
   const start = src.slice(src.indexOf('function startFling'), src.indexOf('Math.abs(fling.v) <'));
   if (/fling\.v\s*=\s*0/.test(start) || /\bstopFling\(\)/.test(start))
     return 'startFling erases its own velocity before testing it, so no glide can ever start';
+  return true;
+});
+
+
+
+t('every price on the page can be copied, wherever it is drawn', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  // The copy handler must match anything carrying data-copy. Scoping it to the
+  // big level tiles meant the same number was copyable on the card and dead in
+  // History, inside a fold, or in the tracker.
+  const inst = src.slice(src.indexOf('function installCopy'), src.indexOf('function installCopy') + 900);
+  if (/\.lvl\.copyable'\)/.test(inst)) return 'the copy handler still only matches the level tiles';
+  if (!/closest\('\[data-copy\]'\)/.test(inst)) return 'the copy handler does not match every data-copy element';
+  // And no level may be rendered as plain text any more.
+  const leftover = src.match(/esc\(price\((?:x\.(?:entry|sl|tp[123])|tp[123]|st\.price)[^)]*\)\)/g);
+  if (leftover) return `${leftover.length} level(s) still rendered without a copy target: ${leftover[0]}`;
+  // A missing level must not render as a tappable value.
+  const fn = src.slice(src.indexOf('function cp('), src.indexOf('function sigKey'));
+  if (!/shown === '—'/.test(fn)) return 'cp() would make a missing level tappable';
+  if (!/data-copy="\$\{esc\(shown\)\}"/.test(fn)) return 'cp() does not set the copied value';
+  // The copied text must be the bare number — a currency mark or separator is
+  // a rejected order.
+  if (/toLocaleString|SYM\[/.test(fn)) return 'cp() formats the copied value, which would break an order ticket';
   return true;
 });
 

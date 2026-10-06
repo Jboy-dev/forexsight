@@ -359,9 +359,9 @@ function card(s) {
 
           <div class="sub-k">The whole ladder and what it pays</div>
           <dl class="kv">
-            <dt>TP1</dt><dd>${esc(price(tp1, pair))} · ${r1 != null ? esc(r1.toFixed(2)) + 'R' : '—'} · bank a third</dd>
-            <dt>TP2</dt><dd>${esc(price(tp2, pair))} · ${r2v != null ? esc(r2v.toFixed(2)) + 'R' : '—'} · bank a third, stop to entry</dd>
-            <dt>TP3</dt><dd>${esc(price(tp3, pair))} · ${r3 != null ? esc(r3.toFixed(2)) + 'R' : '—'} · final third, stop to TP1</dd>
+            <dt>TP1</dt><dd>${cp(tp1, 'TP1', pair)} · ${r1 != null ? esc(r1.toFixed(2)) + 'R' : '—'} · bank a third</dd>
+            <dt>TP2</dt><dd>${cp(tp2, 'TP2', pair)} · ${r2v != null ? esc(r2v.toFixed(2)) + 'R' : '—'} · bank a third, stop to entry</dd>
+            <dt>TP3</dt><dd>${cp(tp3, 'TP3', pair)} · ${r3 != null ? esc(r3.toFixed(2)) + 'R' : '—'} · final third, stop to TP1</dd>
             <dt>Full run</dt><dd>${perfect != null ? esc(sign(perfect) + perfect.toFixed(3)) + 'R' : '—'}</dd>
             <dt>Full stop-out</dt><dd>&minus;1.000R</dd>
           </dl>
@@ -478,9 +478,9 @@ function histRow(x) {
     </summary>
     <div class="h-body">
       <dl class="kv">
-        <dt>Entry</dt><dd>${esc(price(x.entry, x.pair))}</dd>
-        <dt>Stop</dt><dd>${esc(price(x.sl, x.pair))}</dd>
-        <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} · ${esc(price(x.tp2, x.pair))} · ${esc(price(x.tp3, x.pair))}</dd>
+        <dt>Entry</dt><dd>${cp(x.entry, 'entry', x.pair)}</dd>
+        <dt>Stop</dt><dd>${cp(x.sl, 'stop', x.pair)}</dd>
+        <dt>TP1 / TP2 / TP3</dt><dd>${cp(x.tp1, 'TP1', x.pair)} · ${cp(x.tp2, 'TP2', x.pair)} · ${cp(x.tp3, 'TP3', x.pair)}</dd>
         <dt>Furthest reached</dt><dd>${x.tpReached ? esc('TP' + x.tpReached) : 'no target reached'}</dd>
         ${mfe != null ? `<dt>Best it went</dt><dd>${esc(sign(mfe) + mfe.toFixed(2))}R</dd>` : ''}
         ${mae != null ? `<dt>Went against it</dt><dd>${esc(mae.toFixed(2))}R${mae > 0 ? ' at its worst' : ''}</dd>` : ''}
@@ -937,7 +937,7 @@ function trackerBlock(sig) {
   return `<div class="trk${imminent ? ' trk-near' : ''}">
     <div class="trk-top">
       <span class="trk-state ${cls}">${esc(dir)} &middot; ${esc(sign > 0 ? 'running' : 'running')} ${esc((runR >= 0 ? '+' : '') + runR.toFixed(2))}R</span>
-      <span class="trk-px">${esc(price(live.price, pair))}<i>${ageMin < 90 ? esc(ageMin) + 'm ago' : esc(Math.round(ageMin / 60)) + 'h ago'}</i></span>
+      <span class="trk-px">${cp(live.price, 'price', pair)}<i>${ageMin < 90 ? esc(ageMin) + 'm ago' : esc(Math.round(ageMin / 60)) + 'h ago'}</i></span>
     </div>
     <div class="trk-bar">
       ${[['sl', sl], ['t1', tp1], ['t2', tp2], ['t3', tp3]].map(([k, v]) => {
@@ -949,8 +949,8 @@ function trackerBlock(sig) {
     </div>
     <div class="trk-foot">
       ${imminent
-        ? `<b class="trk-alert">About to hit ${esc(nearest.name)}</b> — ${esc(nearest.away.toFixed(2))}R away at ${esc(price(nearest.price, pair))}.`
-        : `Nearest level is <b>${esc(nearest.name)}</b>, ${esc(nearest.away.toFixed(2))}R away at ${esc(price(nearest.price, pair))}.`}
+        ? `<b class="trk-alert">About to hit ${esc(nearest.name)}</b> — ${esc(nearest.away.toFixed(2))}R away at ${cp(nearest.price, nearest.name, pair)}.`
+        : `Nearest level is <b>${esc(nearest.name)}</b>, ${esc(nearest.away.toFixed(2))}R away at ${cp(nearest.price, nearest.name, pair)}.`}
       ${runR <= -1 ? ' <b class="trk-alert">Stop level reached.</b>' : ''}
     </div>
   </div>`;
@@ -961,6 +961,20 @@ function trackerBlock(sig) {
    and how much do I lose" is the first question and should not need a click.
    ----------------------------------------------------------------------- */
 /** A stable id for a signal, so a per-signal balance survives a re-render. */
+/**
+ * An inline price you can tap to copy. The copied text is the bare number with
+ * no currency mark or separators, because it is going into an order ticket
+ * where anything else is a rejected order — the same rule the big level tiles
+ * already follow. Returns a plain dash when there is nothing to copy, so a
+ * missing level never renders as a tappable zero.
+ */
+function cp(v, label, pair) {
+  const shown = price(v, pair);
+  if (shown === '—') return '<span class="nocopy">—</span>';
+  return `<span class="cpn" data-copy="${esc(shown)}" data-label="${esc(label)}" role="button" tabindex="0"`
+       + ` title="Tap to copy ${esc(label)}">${esc(shown)}</span>`;
+}
+
 function sigKey(sig) {
   return [pick(sig, 'pair'), pick(sig, 'direction'), num(pick(sig, 'entry')) ?? ''].join('|');
 }
@@ -1025,7 +1039,7 @@ function moneyBlock(sig) {
         ${r.ladder && r.ladder.length ? `<div class="mny-steps">
           ${r.ladder.map(st => `<div class="mny-step">
             <span class="ms-n">${esc(st.name)}</span>
-            <span class="ms-p">${esc(price(st.price, pick(sig, 'pair')))}</span>
+            <span class="ms-p">${cp(st.price, st.name, pick(sig, 'pair'))}</span>
             <span class="ms-b">+${esc(M(st.bankedMoney))}<i>banked</i></span>
             <span class="ms-r">${esc(M(st.runningMoney))}<i>total so far</i></span>
           </div>`).join('')}
@@ -1435,10 +1449,10 @@ function myRow(x) {
     <div class="h-body">
       <dl class="kv">
         <dt>Closed by</dt><dd>you, not the engine</dd>
-        <dt>Closed at</dt><dd>${x.closedPrice != null ? esc(price(x.closedPrice, x.pair)) : 'no live price was loaded, so no result was recorded'}</dd>
-        <dt>Entry</dt><dd>${esc(price(x.entry, x.pair))}</dd>
-        <dt>Stop</dt><dd>${esc(price(x.sl, x.pair))}</dd>
-        <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} &middot; ${esc(price(x.tp2, x.pair))} &middot; ${esc(price(x.tp3, x.pair))}</dd>
+        <dt>Closed at</dt><dd>${x.closedPrice != null ? cp(x.closedPrice, 'close price', x.pair) : 'no live price was loaded, so no result was recorded'}</dd>
+        <dt>Entry</dt><dd>${cp(x.entry, 'entry', x.pair)}</dd>
+        <dt>Stop</dt><dd>${cp(x.sl, 'stop', x.pair)}</dd>
+        <dt>TP1 / TP2 / TP3</dt><dd>${cp(x.tp1, 'TP1', x.pair)} &middot; ${cp(x.tp2, 'TP2', x.pair)} &middot; ${cp(x.tp3, 'TP3', x.pair)}</dd>
       </dl>
       <p style="margin-top:10px">This is your decision, not the engine's, so it is kept out of the won / lost /
         ran-out-of-time figures above — otherwise the engine would be scored on when you chose to step in.
@@ -1487,9 +1501,9 @@ function historyRow(x) {
           : st === 'won' ? 'closed ahead' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)}` : '')
           : st === 'lost' ? 'closed behind' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)} first` : ', without reaching a target')
           : `ran out of time after ${dur ? esc(dur) : 'its watch window'}${x.tpReached ? `, having reached TP${esc(x.tpReached)}` : ', without reaching a target'}`}</dd>
-        <dt>Entry</dt><dd>${esc(price(x.entry, x.pair))}</dd>
-        <dt>Stop</dt><dd>${esc(price(x.sl, x.pair))}</dd>
-        <dt>TP1 / TP2 / TP3</dt><dd>${esc(price(x.tp1, x.pair))} &middot; ${esc(price(x.tp2, x.pair))} &middot; ${esc(price(x.tp3, x.pair))}</dd>
+        <dt>Entry</dt><dd>${cp(x.entry, 'entry', x.pair)}</dd>
+        <dt>Stop</dt><dd>${cp(x.sl, 'stop', x.pair)}</dd>
+        <dt>TP1 / TP2 / TP3</dt><dd>${cp(x.tp1, 'TP1', x.pair)} &middot; ${cp(x.tp2, 'TP2', x.pair)} &middot; ${cp(x.tp3, 'TP3', x.pair)}</dd>
         <dt>Furthest reached</dt><dd>${x.tpReached ? 'TP' + esc(x.tpReached) : 'no target reached'}</dd>
         ${mfe != null ? `<dt>Best it went</dt><dd>${esc(sign(mfe) + mfe.toFixed(2))}R</dd>` : ''}
         ${mae != null ? `<dt>Went against it</dt><dd>${esc(mae.toFixed(2))}R${mae > 0 ? ' at its worst' : ''}</dd>` : ''}
@@ -2335,12 +2349,16 @@ function installCopy() {
   if (window._fsCopyInstalled) return;
   window._fsCopyInstalled = true;
   document.addEventListener('click', (e) => {
-    const n = e.target.closest('.lvl.copyable');
+    // Anything carrying data-copy, wherever it is drawn. These numbers go
+    // straight into a broker ticket, and having them copyable on the card but
+    // not in History or inside a fold is the kind of inconsistency you only
+    // discover at the moment you need it.
+    const n = e.target.closest('[data-copy]');
     if (n) { e.preventDefault(); copyLevel(n); }
   });
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
-    const n = e.target.closest && e.target.closest('.lvl.copyable');
+    const n = e.target.closest && e.target.closest('[data-copy]');
     if (n) { e.preventDefault(); copyLevel(n); }
   });
   if (!document.getElementById('copy-tip')) {
