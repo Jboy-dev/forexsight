@@ -1788,5 +1788,47 @@ t('every price on the page can be copied, wherever it is drawn', () => {
 });
 
 
+
+t('a running signal says whether it is still worth entering', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  const i = src.indexOf('function entryWindow');
+  if (i < 0) return 'nothing tells you whether it is too late to enter';
+  const fn = src.slice(i, src.indexOf('function entryChip'));
+  // It must read the LIVE price, not the published entry, or it is just
+  // restating the card.
+  if (!/livePrice\(/.test(fn)) return 'the entry window ignores the live price';
+  // The judgement must be the R available from here, which is arithmetic, not a
+  // forecast of whether the level will be reached.
+  if (!/rNow/.test(fn) || !/rOrig/.test(fn)) return 'it does not compare the reward from here with the reward at publication';
+  // The two cases where there is nothing left to take must be handled.
+  if (!/beyondStop/.test(fn)) return 'price already past the stop is not handled';
+  if (!/travelled >= 1/.test(fn)) return 'price already past TP1 is not handled';
+  // And it must not claim to know the outcome.
+  if (/\b(will reach|will hit|guaranteed|sure)\b/i.test(fn)) return 'the entry window predicts the outcome';
+  if (!/\$\{entryChip\(|g-ew/.test(src)) return 'the verdict is never shown on the card';
+  return true;
+});
+
+t('the watcher remembers where it got to, and will not close against stale bars', () => {
+  const src = readFileSync('tools/watch-setups.mjs', 'utf8');
+  // A feed outage must never manufacture results: a setup can only be closed at
+  // market against bars that are actually current.
+  if (!/STALE_BARS_MS/.test(src)) return 'nothing stops a setup being expired against a stale price';
+  if (!/freshEnough/.test(src)) return 'the expiry decision does not check bar freshness';
+  const exp = src.match(/if \(ageH >= EXPIRY_HOURS[^)]*\)/);
+  if (!exp || !/freshEnough/.test(exp[0])) return 'the freshness check is not part of the expiry condition';
+  // And each run must record what it managed to see, so the next one can resume.
+  if (!/watchState/.test(src)) return 'the watcher keeps no record of its runs';
+  if (!/writeFileSync\(STATE/.test(src)) return 'the run state is never written';
+  if (!/lastBarAt/.test(src)) return 'per-pair progress is not recorded';
+  if (existsSync('data/watch-state.json')) {
+    const st = JSON.parse(readFileSync('data/watch-state.json', 'utf8'));
+    if (!st.lastRunAt) return 'the written state has no lastRunAt';
+    if (st.expiryHours == null) return 'the written state does not record the window in force';
+  }
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);

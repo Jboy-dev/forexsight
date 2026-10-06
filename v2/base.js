@@ -369,6 +369,11 @@ function card(s) {
             ? `A completed run pays ${esc(perfect.toFixed(2))}R against ${esc((1).toFixed(2))}R risked, so the geometry is the right way round. That is arithmetic about this ladder — not a claim about how often it completes.`
             : 'This ladder does not pay more than it risks on a full run. It should not have been published.'}</p>
 
+          ${(() => { const w = entryWindow(s); return w
+            ? `<div class="sub-k" style="margin-top:14px">Can you still take it?</div>
+               <p class="c-why">${esc(w.note)} This is arithmetic on the live price — it says what the trade is
+               worth from here, not whether it will get there.</p>` : ''; })()}
+
           ${trackerBlock(s)}
           ${moneyBlock(s)}
 
@@ -855,10 +860,72 @@ function installClose() {
    running, how far has it gone, and what is it worth to me. Everything else is
    detail you go looking for, not detail you scroll past nine times.
    ------------------------------------------------------------------- */
+/* ─────────────── is it too late to take this one? ───────────────
+   A setup published four hours ago may already have travelled most of the way
+   to its first target. Taking it then is not the trade that was published: the
+   stop is the same distance away but there is far less left to win, so the
+   reward for the risk has quietly collapsed.
+   
+   This is arithmetic on the live price, not a prediction. Entering NOW at the
+   live price with the SAME stop and the SAME first target gives a different
+   R — that number, and nothing about whether it will get there.
+   ------------------------------------------------------------------- */
+function entryWindow(sig) {
+  const entry = num(pick(sig, 'entry')), sl = num(pick(sig, 'sl')), tp1 = num(pick(sig, 'tp1'));
+  if (entry == null || sl == null || tp1 == null) return null;
+  const buy = /^(BUY|LONG)/i.test(String(pick(sig, 'direction') || ''));
+  const sgn = buy ? 1 : -1;
+  const live = livePrice(pick(sig, 'pair'));
+  if (!live) return null;
+  const px = live.price;
+
+  const origRisk = Math.abs(entry - sl);
+  if (!(origRisk > 0)) return null;
+
+  // Where price sits between the original entry and the first target.
+  const travelled = ((px - entry) * sgn) / Math.abs(tp1 - entry);
+
+  // Gone the wrong way, past the stop: the trade is simply over.
+  const beyondStop = buy ? px <= sl : px >= sl;
+  if (beyondStop) return { state: 'gone', travelled, note: 'Price is already past the stop. This one is finished.' };
+
+  // Already past the first target.
+  if (travelled >= 1) return { state: 'gone', travelled,
+    note: 'Price has already passed TP1. Entering now would risk the same distance for what is left of TP2 and TP3 only.' };
+
+  const riskNow = Math.abs(px - sl);
+  if (!(riskNow > 0)) return null;
+  const rNow = ((tp1 - px) * sgn) / riskNow;              // reward to TP1 if you entered here
+  const rOrig = ((tp1 - entry) * sgn) / origRisk;         // what it was worth at publication
+
+  // Thirds of the original reward is the line between "still roughly the trade
+  // that was published" and "a materially worse one".
+  const state = rNow >= rOrig * 0.66 ? 'open' : rNow >= rOrig * 0.33 ? 'late' : 'gone';
+  return { state, travelled, rNow, rOrig, riskNow, px,
+    note: state === 'open'
+      ? `Still close to where it was published — entering now pays about ${rNow.toFixed(2)}R to TP1 against ${rOrig.toFixed(2)}R at publication.`
+      : state === 'late'
+      ? `It has moved. Entering now pays about ${rNow.toFixed(2)}R to TP1 instead of ${rOrig.toFixed(2)}R, for the same stop.`
+      : `Most of the move to TP1 has gone. Entering now pays about ${rNow.toFixed(2)}R against ${rOrig.toFixed(2)}R at publication, so you would be taking nearly the same risk for a fraction of the reward.` };
+}
+
+function entryChip(sig) {
+  const w = entryWindow(sig);
+  if (!w) return '';
+  const label = w.state === 'open' ? 'can still enter' : w.state === 'late' ? 'late to enter' : 'too late';
+  return `<span class="ew ${esc(w.state)}" title="${esc(w.note)}">${esc(label)}</span>`;
+}
+
 function glanceLine(sig) {
   const entry = num(pick(sig, 'entry')), sl = num(pick(sig, 'sl'));
   const dir = String(pick(sig, 'direction') || '').toUpperCase();
   const bits = [];
+  const win = entryWindow(sig);
+  if (win) {
+    const label = win.state === 'open' ? 'ENTER' : win.state === 'late' ? 'LATE' : 'TOO LATE';
+    bits.push(`<span class="g-ew ${esc(win.state)}">${esc(label)}`
+      + `<i>${win.rNow != null ? esc(win.rNow.toFixed(2)) + 'R to TP1 now' : 'past the level'}</i></span>`);
+  }
 
   if (entry != null && sl != null && Math.abs(entry - sl) > 0) {
     const live = livePrice(pick(sig, 'pair'));

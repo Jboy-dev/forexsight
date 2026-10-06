@@ -208,7 +208,9 @@ h2.sec::after { content: ''; flex: 1; height: 1px; background: linear-gradient(9
 /* Three equal cells, value over label — the same shape as the price row above,
    so the eye reads them as one table. Side by side with the label inline they
    did not fit 375px and wrapped to two rows, which cost more than it showed. */
-.c-glance { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px;
+/* Four cells now that "can you still enter" leads the row; auto-fit so they sit
+   two-by-two on a phone rather than being crushed into one line. */
+.c-glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 7px;
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 .c-glance > span { font: 620 13px/1 var(--mono); letter-spacing: -.03em; text-align: center;
   padding: 8px 5px; border-radius: 5px; border: 1px solid var(--line-soft); background: #0a0e1a;
@@ -218,6 +220,9 @@ h2.sec::after { content: ''; flex: 1; height: 1px; background: linear-gradient(9
 .c-glance .g-run { color: var(--text-dim); }
 .c-glance .g-run.up { color: var(--up);   background: var(--up-soft);   border-color: #2fd98a35; }
 .c-glance .g-run.dn { color: var(--down); background: var(--down-soft); border-color: #ff5f6d35; }
+.c-glance .g-ew.open  { color: var(--up);   background: var(--up-soft);   border-color: #2fd98a45; }
+.c-glance .g-ew.late  { color: var(--warn); background: var(--warn-soft); border-color: #ffb63d45; }
+.c-glance .g-ew.gone  { color: var(--down); background: var(--down-soft); border-color: #ff5f6d45; }
 .c-glance .g-win  { color: var(--up);   background: var(--up-soft);   border-color: #2fd98a35; }
 .c-glance .g-lose { color: var(--down); background: var(--down-soft); border-color: #ff5f6d35; }
 

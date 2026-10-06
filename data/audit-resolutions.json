@@ -1,0 +1,247 @@
+{
+  "ts": 1791245421432,
+  "isoTime": "2026-10-06T00:10:21.432Z",
+  "builtBy": "tools/audit-resolutions.mjs",
+  "question": "When the book says a signal won or lost, did the price actually do that?",
+  "method": "Each resolved signal replayed from published hourly bars between firedAt and resolvedAt, by code written independently of the watcher. Status and furthest target compared.",
+  "caveat": "On an hourly bar containing both a target and the stop, neither the replay nor the watcher can know which came first. Those are counted and reported, not scored.",
+  "checked": 397,
+  "agree": 376,
+  "disagree": 21,
+  "uncheckable": 8,
+  "agreementPct": 94.7,
+  "ambiguousBarCases": 0,
+  "rDifference": {
+    "median": 0.001,
+    "p90": 0.258,
+    "worst": 1.001
+  },
+  "problems": [
+    {
+      "pair": "BTC/USD",
+      "direction": "BUY",
+      "firedAt": "2026-10-03T23:34:15.596Z",
+      "recorded": {
+        "status": "won",
+        "tpReached": 3,
+        "resultR": 2.23
+      },
+      "replayed": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.544
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "BTC/USD",
+      "direction": "BUY",
+      "firedAt": "2026-10-03T22:04:00.659Z",
+      "recorded": {
+        "status": "won",
+        "tpReached": 3,
+        "resultR": 2.23
+      },
+      "replayed": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.666
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "BTC/USD",
+      "direction": "BUY",
+      "firedAt": "2026-10-03T21:09:06.967Z",
+      "recorded": {
+        "status": "won",
+        "tpReached": 3,
+        "resultR": 2.23
+      },
+      "replayed": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.599
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "BTC/USD",
+      "direction": "BUY",
+      "firedAt": "2026-10-03T14:44:25.875Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.3
+      },
+      "replayed": {
+        "status": "expired",
+        "tpReached": 0,
+        "resultR": 0.299
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "ETH/USD",
+      "direction": "SELL",
+      "firedAt": "2026-10-02T23:48:09.723Z",
+      "recorded": {
+        "status": "lost",
+        "tpReached": 0,
+        "resultR": -1
+      },
+      "replayed": {
+        "status": "expired",
+        "tpReached": 0,
+        "resultR": -0.477
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "USD/CHF",
+      "direction": "SELL",
+      "firedAt": "2026-10-01T19:22:39.785Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.38
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.464
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "EUR/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-30T16:55:50.849Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.84
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.467
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "NZD/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-30T16:55:50.849Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.42
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.471
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "AUD/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-30T00:09:41.748Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.82
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.472
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "XAU/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-25T19:27:27.091Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 0,
+        "resultR": 0.28
+      },
+      "replayed": {
+        "status": "expired",
+        "tpReached": 1,
+        "resultR": 1.162
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "GBP/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-22T06:19:20.904Z",
+      "recorded": {
+        "status": "won",
+        "tpReached": 3,
+        "resultR": 2.24
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.469
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "EUR/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-21T13:46:04.996Z",
+      "recorded": {
+        "status": "won",
+        "tpReached": 3,
+        "resultR": 2.24
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.47
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "ETH/USD",
+      "direction": "BUY",
+      "firedAt": "2026-09-21T06:54:50.122Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 1.46
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.467
+      },
+      "ambiguousBars": 0
+    },
+    {
+      "pair": "GBP/USD",
+      "direction": "SELL",
+      "firedAt": "2026-09-21T01:25:46.821Z",
+      "recorded": {
+        "status": "expired",
+        "tpReached": 2,
+        "resultR": 2
+      },
+      "replayed": {
+        "status": "won",
+        "tpReached": 2,
+        "resultR": 1.466
+      },
+      "ambiguousBars": 0
+    }
+  ],
+  "established": false,
+  "verdict": "21 of 397 resolved signals replay to a DIFFERENT outcome than the book records (94.7% agree). 0 involved an hourly bar holding both a target and the stop, where the bar genuinely cannot say which came first; the rest need explaining."
+}

@@ -61,6 +61,7 @@ const PAIR_SYMBOLS = {
   'BTC/USD': 'BTC-USD', 'ETH/USD': 'ETH-USD',
 };
 
+const STATE = 'data/watch-state.json';
 const readJson = (p, fb) => { try { return JSON.parse(readFileSync(p, 'utf8')); } catch { return fb; } };
 
 async function fetchBars(symbol) {
@@ -124,7 +125,11 @@ function walk(s, bars) {
   }
 
   const ageH = (Date.now() - Date.parse(s.firedAt)) / 3600000;
-  if (ageH >= EXPIRY_HOURS && lastClose != null) {
+  // Closing at market needs a price that is actually current. Without this a
+  // feed outage would eventually mark everything expired against a stale close,
+  // inventing results for trades nobody could see.
+  const freshEnough = bars.length && (Date.now() - bars[bars.length - 1].t) < STALE_BARS_MS;
+  if (ageH >= EXPIRY_HOURS && lastClose != null && freshEnough) {
     const moved = isBuy ? lastClose - s.entry : s.entry - lastClose;
     banked += open * (moved / slDist);
     return { status: 'expired', tpReached: tp, resultR: banked,
@@ -204,11 +209,31 @@ if (book.length > WORKING) {
 
 // ── Re-walk every setup that is still open ────────────────────────────────
 const pairs = [...new Set(book.filter(s => s.status === 'open').map(s => s.pair))];
+// ── resuming after a bad run ──────────────────────────────────────────────
+// A run can die part way through: a fetch hangs, the job is killed, the
+// network drops. The book is the memory, and it is written at the end, so a
+// dead run simply loses that tick and the next one carries on from the same
+// state. What was NOT safe is what happens when a pair's bars go missing for
+// long enough that its setups age past the expiry while nothing can be seen:
+// they would then be closed "at market" against whatever stale price finally
+// arrived. A setup is only ever expired against bars that are actually current.
+const STALE_BARS_MS = 6 * 3600000;        // bars older than this cannot close anything
+const watchState = readJson(STATE, { runs: 0, lastRunAt: null, pairs: {} });
+watchState.runs = (watchState.runs || 0) + 1;
 const barsByPair = {};
 await Promise.all(pairs.map(async p => {
   const sym = PAIR_SYMBOLS[p];
   if (!sym) return;
-  try { barsByPair[p] = await fetchBars(sym); } catch (e) { console.error(`  bars ${p}: ${e.message}`); }
+  try {
+    barsByPair[p] = await fetchBars(sym);
+    const last = barsByPair[p].length ? barsByPair[p][barsByPair[p].length - 1].t : null;
+    watchState.pairs[p] = { ok: true, lastBarAt: last, at: Date.now() };
+  } catch (e) {
+    console.error(`  bars ${p}: ${e.message}`);
+    // Keep the previous record rather than erasing it — "we last saw this pair
+    // an hour ago" is the fact the expiry decision needs.
+    watchState.pairs[p] = { ...(watchState.pairs[p] || {}), ok: false, failedAt: Date.now(), lastError: String(e.message).slice(0, 120) };
+  }
 }));
 
 let resolvedNow = 0;
@@ -317,6 +342,11 @@ if (accounted.length) {
 
 if (!DRY) {
   mkdirSync('data', { recursive: true });
+  watchState.lastRunAt = new Date().toISOString();
+  watchState.expiryHours = EXPIRY_HOURS;
+  // Written every run, including a run where some pairs failed, so the next one
+  // can see exactly where this one got to.
+  writeFileSync(STATE, JSON.stringify(watchState, null, 2));
   writeFileSync(BOOK, JSON.stringify(book, null, 2));
   writeFileSync(OUT, JSON.stringify(payload, null, 2));
   console.log(`  wrote ${BOOK} and ${OUT}`);
