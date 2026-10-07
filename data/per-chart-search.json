@@ -1,13 +1,13 @@
 {
-  "ts": 1791350510538,
-  "isoTime": "2026-10-07T05:21:50.538Z",
+  "ts": 1791374233356,
+  "isoTime": "2026-10-07T11:57:13.356Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 54,
+  "survivedTrainAndValidate": 59,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -138,27 +138,6 @@
       "passes": false
     },
     {
-      "pair": "NAS100",
-      "tf": "1h",
-      "combo": "ma-cross-20-50 × none",
-      "train": {
-        "n": 44,
-        "avgR": 0.3161,
-        "t": 1.72
-      },
-      "validate": {
-        "n": 23,
-        "avgR": 0.3925,
-        "t": 1.46
-      },
-      "sealed": {
-        "n": 30,
-        "avgR": 0.3615,
-        "t": 1.43
-      },
-      "passes": false
-    },
-    {
       "pair": "XAU/USD",
       "tf": "daily",
       "combo": "momentum-120 × with-200",
@@ -222,6 +201,27 @@
       "passes": false
     },
     {
+      "pair": "NAS100",
+      "tf": "1h",
+      "combo": "ma-cross-20-50 × none",
+      "train": {
+        "n": 44,
+        "avgR": 0.3161,
+        "t": 1.72
+      },
+      "validate": {
+        "n": 24,
+        "avgR": 0.4688,
+        "t": 1.74
+      },
+      "sealed": {
+        "n": 29,
+        "avgR": 0.3237,
+        "t": 1.25
+      },
+      "passes": false
+    },
+    {
       "pair": "XAG/USD",
       "tf": "daily",
       "combo": "momentum-120 × none",
@@ -239,6 +239,27 @@
         "n": 166,
         "avgR": 0.1247,
         "t": 1.21
+      },
+      "passes": false
+    },
+    {
+      "pair": "ETH/USD",
+      "tf": "1h",
+      "combo": "rsi-trend × vol-high",
+      "train": {
+        "n": 247,
+        "avgR": 0.1299,
+        "t": 1.6
+      },
+      "validate": {
+        "n": 126,
+        "avgR": 0.2224,
+        "t": 1.97
+      },
+      "sealed": {
+        "n": 95,
+        "avgR": 0.1552,
+        "t": 1.18
       },
       "passes": false
     },
@@ -514,29 +535,8 @@
         "t": 0.35
       },
       "passes": false
-    },
-    {
-      "pair": "NZD/USD",
-      "tf": "daily",
-      "combo": "rsi-trend × vol-low",
-      "train": {
-        "n": 56,
-        "avgR": 0.3069,
-        "t": 1.88
-      },
-      "validate": {
-        "n": 45,
-        "avgR": 0.2579,
-        "t": 1.39
-      },
-      "sealed": {
-        "n": 30,
-        "avgR": 0.0394,
-        "t": 0.18
-      },
-      "passes": false
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 54 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 59 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
