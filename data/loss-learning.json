@@ -1,31 +1,31 @@
 {
-  "ts": 1791513062943,
-  "isoTime": "2026-10-09T02:31:02.943Z",
+  "ts": 1791525406151,
+  "isoTime": "2026-10-09T05:56:46.151Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 294,
-  "won": 125,
-  "lost": 160,
+  "signalsAnalysed": 300,
+  "won": 127,
+  "lost": 164,
   "slicesClearingZero": 4,
   "chanceBaseline": {
-    "mean": 2,
-    "sd": 1.6,
+    "mean": 2.6,
+    "sd": 1.8,
     "range": [
       0,
-      6
+      7
     ],
     "shuffles": 30
   },
-  "threshold": 3.7,
-  "beatsChance": true,
+  "threshold": 4.4,
+  "beatsChance": false,
   "findings": [
     {
       "feature": "pair",
       "value": "ETH/USD",
-      "n": 30,
-      "avgR": -0.427,
+      "n": 31,
+      "avgR": -0.36,
       "ci": [
-        -0.74,
-        -0.066
+        -0.688,
+        -0.001
       ],
       "direction": "negative"
     },
@@ -35,8 +35,8 @@
       "n": 47,
       "avgR": -0.326,
       "ci": [
-        -0.564,
-        -0.042
+        -0.563,
+        -0.054
       ],
       "direction": "negative"
     },
@@ -46,19 +46,19 @@
       "n": 78,
       "avgR": -0.245,
       "ci": [
-        -0.434,
-        -0.033
+        -0.427,
+        -0.035
       ],
       "direction": "negative"
     },
     {
       "feature": "pair",
       "value": "NZD/USD",
-      "n": 25,
-      "avgR": 0.526,
+      "n": 27,
+      "avgR": 0.424,
       "ci": [
-        0.226,
-        0.83
+        0.093,
+        0.731
       ],
       "direction": "positive"
     }
@@ -67,21 +67,21 @@
     {
       "feature": "pair",
       "value": "NZD/USD",
-      "n": 25,
-      "avgR": 0.526,
+      "n": 27,
+      "avgR": 0.424,
       "ci": [
-        0.226,
-        0.83
+        0.093,
+        0.731
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 160,
-    "fullStopOuts": 124,
-    "partial": 36,
+    "total": 164,
+    "fullStopOuts": 127,
+    "partial": 37,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "4 slices clear zero against a chance baseline of 2.0, including 1 positive — worth investigating, not yet worth trading."
+  "verdict": "4 slices cleared zero, but shuffled outcomes produce 2.6 on average (up to 7). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
