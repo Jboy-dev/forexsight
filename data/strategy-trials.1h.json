@@ -1,86 +1,86 @@
 {
-  "ts": 1791512889885,
-  "isoTime": "2026-10-09T02:28:09.885Z",
+  "ts": 1791538230475,
+  "isoTime": "2026-10-09T09:30:30.475Z",
   "builtBy": "tools/strategy-trials.mjs",
   "instruments": 19,
-  "totalDailyBars": 296508,
+  "totalDailyBars": 296762,
   "hypotheses": 72,
   "bonferroniBarT": 3.39,
   "method": "daily bars, entry at next open, v442 managed ladder, costs charged, NON-OVERLAPPING trades, three-way split with the newest 25% opened once, random-entry null at matched trade count",
   "trainTop": [
     {
       "name": "pullback-trend × vol-low",
-      "n": 529,
-      "avgR": 0.0967,
-      "t": 1.78
+      "n": 526,
+      "avgR": 0.0958,
+      "t": 1.77
+    },
+    {
+      "name": "pullback-trend × with-200",
+      "n": 936,
+      "avgR": 0.0207,
+      "t": 0.51
     },
     {
       "name": "rsi-reversion × with-200",
       "n": 428,
-      "avgR": 0.031,
-      "t": 0.51
-    },
-    {
-      "name": "pullback-trend × with-200",
-      "n": 938,
-      "avgR": 0.0206,
-      "t": 0.51
-    },
-    {
-      "name": "pullback-trend × none",
-      "n": 1333,
-      "avgR": 0.0039,
-      "t": 0.12
-    },
-    {
-      "name": "pullback-trend × above-200",
-      "n": 699,
-      "avgR": 0.0029,
-      "t": 0.06
+      "avgR": 0.0286,
+      "t": 0.47
     },
     {
       "name": "pullback-trend × below-200",
-      "n": 645,
-      "avgR": 0.0031,
-      "t": 0.06
+      "n": 644,
+      "avgR": 0.0087,
+      "t": 0.18
+    },
+    {
+      "name": "pullback-trend × none",
+      "n": 1331,
+      "avgR": 0.0042,
+      "t": 0.13
     },
     {
       "name": "pullback-trend × contracting",
-      "n": 709,
-      "avgR": 0.0015,
-      "t": 0.03
+      "n": 710,
+      "avgR": 0.0028,
+      "t": 0.06
+    },
+    {
+      "name": "pullback-trend × above-200",
+      "n": 698,
+      "avgR": -0.0017,
+      "t": -0.04
     },
     {
       "name": "pullback-trend × expanding",
-      "n": 803,
-      "avgR": -0.0179,
-      "t": -0.42
-    },
-    {
-      "name": "ma-cross-20-50 × contracting",
-      "n": 1588,
+      "n": 799,
       "avgR": -0.0156,
-      "t": -0.5
+      "t": -0.36
     },
     {
       "name": "ma-cross-20-50 × above-200",
-      "n": 1536,
-      "avgR": -0.0166,
-      "t": -0.54
+      "n": 1539,
+      "avgR": -0.0169,
+      "t": -0.55
+    },
+    {
+      "name": "ma-cross-20-50 × contracting",
+      "n": 1587,
+      "avgR": -0.0209,
+      "t": -0.68
     }
   ],
   "survivors": [
     {
       "name": "pullback-trend × vol-low",
       "train": {
-        "n": 529,
-        "avgR": 0.0967,
-        "t": 1.78
+        "n": 526,
+        "avgR": 0.0958,
+        "t": 1.77
       },
       "validate": {
-        "n": 268,
-        "avgR": 0.1485,
-        "t": 1.85
+        "n": 267,
+        "avgR": 0.1322,
+        "t": 1.65
       }
     }
   ],
@@ -90,20 +90,20 @@
       "entry": "pullback-trend",
       "filter": "vol-low",
       "train": {
-        "n": 529,
-        "avgR": 0.0967,
-        "t": 1.78
+        "n": 526,
+        "avgR": 0.0958,
+        "t": 1.77
       },
       "validate": {
-        "n": 268,
-        "avgR": 0.1485,
-        "t": 1.85
+        "n": 267,
+        "avgR": 0.1322,
+        "t": 1.65
       },
       "sealed": {
-        "n": 289,
-        "avgR": -0.2751,
-        "t": -4.24,
-        "nullP95": 0.5296,
+        "n": 286,
+        "avgR": -0.2711,
+        "t": -4.14,
+        "nullP95": 0.3034,
         "beatsNull": false,
         "clearsBar": false,
         "passes": false

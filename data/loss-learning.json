@@ -1,42 +1,97 @@
 {
-  "ts": 1791525436630,
-  "isoTime": "2026-10-09T05:57:16.630Z",
+  "ts": 1791538403618,
+  "isoTime": "2026-10-09T09:33:23.618Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 300,
-  "won": 127,
-  "lost": 164,
-  "slicesClearingZero": 3,
+  "signalsAnalysed": 293,
+  "won": 121,
+  "lost": 163,
+  "slicesClearingZero": 8,
   "chanceBaseline": {
-    "mean": 2.6,
-    "sd": 1.8,
+    "mean": 3.1,
+    "sd": 2.5,
     "range": [
       0,
-      7
+      9
     ],
     "shuffles": 30
   },
-  "threshold": 3.6,
-  "beatsChance": false,
+  "threshold": 5.5,
+  "beatsChance": true,
   "findings": [
+    {
+      "feature": "strategy",
+      "value": "SMC",
+      "n": 23,
+      "avgR": -0.49,
+      "ci": [
+        -0.765,
+        -0.171
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "pair",
+      "value": "USD/JPY",
+      "n": 25,
+      "avgR": -0.431,
+      "ci": [
+        -0.686,
+        -0.164
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "pair",
+      "value": "ETH/USD",
+      "n": 30,
+      "avgR": -0.385,
+      "ci": [
+        -0.713,
+        -0.024
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "session",
+      "value": "08-11 UTC",
+      "n": 34,
+      "avgR": -0.356,
+      "ci": [
+        -0.606,
+        -0.069
+      ],
+      "direction": "negative"
+    },
     {
       "feature": "pair",
       "value": "BTC/USD",
-      "n": 47,
-      "avgR": -0.326,
+      "n": 46,
+      "avgR": -0.342,
       "ci": [
-        -0.573,
-        -0.055
+        -0.581,
+        -0.066
       ],
       "direction": "negative"
     },
     {
       "feature": "htfAlignment",
       "value": "neutral",
-      "n": 78,
-      "avgR": -0.245,
+      "n": 79,
+      "avgR": -0.255,
       "ci": [
-        -0.435,
-        -0.038
+        -0.443,
+        -0.06
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "regime",
+      "value": "MIXED",
+      "n": 121,
+      "avgR": -0.206,
+      "ci": [
+        -0.379,
+        -0.023
       ],
       "direction": "negative"
     },
@@ -46,8 +101,8 @@
       "n": 27,
       "avgR": 0.424,
       "ci": [
-        0.106,
-        0.744
+        0.127,
+        0.741
       ],
       "direction": "positive"
     }
@@ -59,18 +114,18 @@
       "n": 27,
       "avgR": 0.424,
       "ci": [
-        0.106,
-        0.744
+        0.127,
+        0.741
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 164,
-    "fullStopOuts": 127,
+    "total": 163,
+    "fullStopOuts": 126,
     "partial": 37,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices cleared zero, but shuffled outcomes produce 2.0 on average (up to 6). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "8 slices clear zero against a chance baseline of 3.1, including 1 positive — worth investigating, not yet worth trading."
 }
