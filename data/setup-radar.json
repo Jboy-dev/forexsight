@@ -1,12 +1,61 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-09T13:05:53.381Z",
+  "timestamp": "2026-10-09T18:49:39.309Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "SPX500",
+      "direction": "BUY",
+      "confidence": 69,
+      "strength": 66,
+      "verdict": "MODERATE LONG — 69% conviction",
+      "timeHorizon": "30 min",
+      "entry": 7813.7,
+      "sl": 7782.4,
+      "tp1": 7848.5,
+      "tp3": 7935.6,
+      "slPips": 31,
+      "tp1Pips": 35,
+      "tp3Pips": 122,
+      "rrTP1": 1.11,
+      "rrTP3": 3.9,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "ADX 17 < 20 (choppy)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 60.3 — bullish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 60,
+        "bear": 15,
+        "marginPct": 60
+      },
+      "reasoning": "Weighted consensus favors LONG with 69% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); MACD histogram positive (bullish momentum). HTF up. Structure downtrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
