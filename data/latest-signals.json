@@ -1,33 +1,33 @@
 {
-  "ts": 1791681048976,
-  "isoTime": "2026-10-11T01:10:48.976Z",
-  "count": 1,
+  "ts": 1791728404061,
+  "isoTime": "2026-10-11T14:20:04.061Z",
+  "count": 2,
   "signals": [
     {
-      "pair": "ETH/USD",
+      "pair": "SOL/USD",
       "direction": "SELL",
-      "confidence": 47,
+      "confidence": 99,
       "tier": "best",
       "chartStudy": {
-        "score": 70,
+        "score": 75,
         "reasons": [
-          "Trend clean: 7/20 bars in direction (+10)",
-          "Pullback to EMA20 (+8)",
-          "Candle conviction: 52% body (+12)",
-          "Compression 24% (+10)",
+          "Trend clean: 12/20 bars in direction (+17)",
+          "Pullback to EMA20 (+15)",
+          "Candle conviction: 29% body (+6)",
+          "Compression 23% (+10)",
           "HTF alignment (EMA50 vs EMA200) (+20)",
-          "Rejection wicks (+0)",
-          "Momentum (RSI) (+10)"
+          "Rejection wicks (+3)",
+          "Momentum (RSI) (+4)"
         ]
       },
       "htfStudy": {
         "direction": "SELL",
-        "strength": 91,
+        "strength": 88,
         "alignment": "aligned",
         "score": 100,
-        "adx4h": 41,
+        "adx4h": 38,
         "reasons": [
-          "4H trend DOWN (price < EMA20 < EMA50, ADX 41)",
+          "4H trend DOWN (price < EMA20 < EMA50, ADX 38)",
           "✓ Signal direction matches 4H trend (+50)"
         ]
       },
@@ -39,38 +39,50 @@
       },
       "regime": {
         "label": "MIXED",
-        "adx": 20,
-        "atrRatio": 1.01,
-        "compression": 0.97
+        "adx": 14,
+        "atrRatio": 0.94,
+        "compression": 0.94
       },
-      "entry": 2501.73999,
-      "sl": 2520.7128,
-      "tp1": 2478.97261,
-      "tp2": 2463.79436,
-      "tp3": 2435.33514,
-      "adx": 20,
-      "agreement": 50,
-      "indicators": 2,
-      "strategies": 0,
-      "namedStrategies": [],
-      "comboKey": "SELL_",
-      "independentFamilies": 0,
-      "familyBreakdown": {},
-      "dominantFamily": null,
-      "redundantCount": 0,
+      "entry": 109.35,
+      "sl": 110.775,
+      "tp1": 107.64,
+      "tp2": 106.49999,
+      "tp3": 104.36249,
+      "adx": 14,
+      "agreement": 100,
+      "indicators": 7,
+      "strategies": 4,
+      "namedStrategies": [
+        "MOMENTUM",
+        "TREND",
+        "VWAP",
+        "ICHIMOKU"
+      ],
+      "comboKey": "SELL_ICHIMOKU+MOMENTUM+TREND+VWAP",
+      "independentFamilies": 1,
+      "familyBreakdown": {
+        "moving-average": [
+          "MOMENTUM",
+          "TREND",
+          "VWAP",
+          "ICHIMOKU"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 3,
       "isEliteBrainPattern": false,
       "eliteBrainWR": null,
-      "inKillzone": false,
-      "weakSignal": true,
+      "inKillzone": true,
+      "weakSignal": false,
       "bigMove": false,
       "bigMoveHunt": false,
-      "atrExpansion": 0.98,
-      "pipPotential": 664,
-      "pipsToTp1": 228,
-      "pipsToTp2": 379,
-      "pipsToTp3": 664,
-      "pipsToSl": 190,
-      "atrV": 6.324271065848214,
+      "atrExpansion": 1.08,
+      "pipPotential": 499,
+      "pipsToTp1": 171,
+      "pipsToTp2": 285,
+      "pipsToTp3": 499,
+      "pipsToSl": 143,
+      "atrV": 0.4750006539481027,
       "slDistAtr": 3,
       "tp1DistAtr": 3.6,
       "tp2DistAtr": 6,
@@ -78,29 +90,29 @@
       "slMethod": "atr-floor",
       "slSavedPips": 0,
       "trailStops": {
-        "afterTp1": 2501.73999,
-        "afterTp2": 2478.97261,
+        "afterTp1": 109.35,
+        "afterTp2": 107.64,
         "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
       },
-      "detectedAt": "2026-10-11T01:10:48.715Z",
+      "detectedAt": "2026-10-11T14:20:03.370Z",
       "monteCarloOutcome": {
         "runs": 1000,
-        "expectedR": 0.04,
-        "hitTp1Pct": 41,
-        "hitTp2Pct": 24,
-        "hitTp3Pct": 6,
-        "hitSlPct": 52,
-        "undecidedPct": 24,
-        "winProbability": 41,
+        "expectedR": 0.03,
+        "hitTp1Pct": 42,
+        "hitTp2Pct": 25,
+        "hitTp3Pct": 4,
+        "hitSlPct": 51,
+        "undecidedPct": 25,
+        "winProbability": 42,
         "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
       },
       "generatedOffline": true,
       "barAgeMinutes": 0,
-      "brainNote": "only 7 episode(s) for this combination — below the 20 needed to quote a win chance",
+      "brainNote": "only 2 episode(s) for this combination — below the 20 needed to quote a win chance",
       "newsCheck": {
-        "verdict": "uncovered",
-        "note": "the economic calendar only publishes the current week and its last high-impact release was 37h ago — news risk beyond that point is unverified, not confirmed clear",
-        "coverageUntil": 1791549000000,
+        "verdict": "clear",
+        "note": null,
+        "coverageUntil": 1792121400000,
         "events": [],
         "windows": {
           "BLOCK_MIN": 30,
@@ -108,20 +120,147 @@
         }
       },
       "costProfile": {
-        "spreadPips": 15,
-        "riskPips": 189.7,
-        "spreadAsPctOfRisk": 7.9,
-        "tp1NetR": 1.04,
-        "grade": "high",
-        "note": "The spread costs 7.9% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+        "spreadPips": 1.5,
+        "riskPips": 14250,
+        "spreadAsPctOfRisk": 0,
+        "tp1NetR": 1.2,
+        "grade": "low",
+        "note": "The spread costs 0.0% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
       },
       "repeatOf": {
         "count": 1,
-        "runningForHours": 6.4,
+        "runningForHours": 16,
         "stillOpen": 1,
         "alreadyResolved": 0,
         "alreadyLost": 0,
-        "note": "Same ETH/USD SELL has been signalled 1 time(s) over the last 6.4h and 1 is still open. This is that setup continuing, not a new one."
+        "note": "Same SOL/USD SELL has been signalled 1 time(s) over the last 16h and 1 is still open. This is that setup continuing, not a new one."
+      }
+    },
+    {
+      "pair": "XRP/USD",
+      "direction": "SELL",
+      "confidence": 99,
+      "tier": "best",
+      "chartStudy": {
+        "score": 67,
+        "reasons": [
+          "Trend clean: 10/20 bars in direction (+14)",
+          "Pullback to EMA20 (+8)",
+          "Candle conviction: 40% body (+9)",
+          "Compression 25% (+10)",
+          "HTF alignment (EMA50 vs EMA200) (+20)",
+          "Rejection wicks (+6)",
+          "Momentum (RSI) (+0)"
+        ]
+      },
+      "htfStudy": {
+        "direction": "SELL",
+        "strength": 90,
+        "alignment": "aligned",
+        "score": 100,
+        "adx4h": 40,
+        "reasons": [
+          "4H trend DOWN (price < EMA20 < EMA50, ADX 40)",
+          "✓ Signal direction matches 4H trend (+50)"
+        ]
+      },
+      "dailyHtf": {
+        "aligned": "aligned",
+        "trend": "down",
+        "bias": 10,
+        "daysAnalysed": 20
+      },
+      "regime": {
+        "label": "MIXED",
+        "adx": 22,
+        "atrRatio": 0.98,
+        "compression": 0.98
+      },
+      "entry": 1.3946,
+      "sl": 1.41273,
+      "tp1": 1.37285,
+      "tp2": 1.35834,
+      "tp3": 1.33115,
+      "adx": 22,
+      "agreement": 100,
+      "indicators": 4,
+      "strategies": 1,
+      "namedStrategies": [
+        "TREND"
+      ],
+      "comboKey": "SELL_TREND",
+      "independentFamilies": 1,
+      "familyBreakdown": {
+        "moving-average": [
+          "TREND"
+        ]
+      },
+      "dominantFamily": "moving-average",
+      "redundantCount": 0,
+      "isEliteBrainPattern": false,
+      "eliteBrainWR": null,
+      "inKillzone": true,
+      "weakSignal": false,
+      "bigMove": false,
+      "bigMoveHunt": false,
+      "atrExpansion": 1.22,
+      "pipPotential": 635,
+      "pipsToTp1": 218,
+      "pipsToTp2": 363,
+      "pipsToTp3": 635,
+      "pipsToSl": 181,
+      "atrV": 0.006042863641466413,
+      "slDistAtr": 3,
+      "tp1DistAtr": 3.6,
+      "tp2DistAtr": 6,
+      "tp3DistAtr": 10.5,
+      "slMethod": "atr-floor",
+      "slSavedPips": 0,
+      "trailStops": {
+        "afterTp1": 1.3946,
+        "afterTp2": 1.37285,
+        "protocol": "After TP1 → SL to breakeven. After TP2 → SL to TP1. After TP3 → closed."
+      },
+      "detectedAt": "2026-10-11T14:20:03.418Z",
+      "monteCarloOutcome": {
+        "runs": 1000,
+        "expectedR": 0.06,
+        "hitTp1Pct": 42,
+        "hitTp2Pct": 24,
+        "hitTp3Pct": 6,
+        "hitSlPct": 51,
+        "undecidedPct": 25,
+        "winProbability": 42,
+        "models": "v442 managed ladder — thirds at each target, stop to entry after TP1, to TP1 after TP2"
+      },
+      "generatedOffline": true,
+      "barAgeMinutes": 0,
+      "brainNote": "no resolved history for this setup yet",
+      "newsCheck": {
+        "verdict": "clear",
+        "note": null,
+        "coverageUntil": 1792121400000,
+        "events": [],
+        "windows": {
+          "BLOCK_MIN": 30,
+          "WARN_MIN": 120
+        }
+      },
+      "costProfile": {
+        "spreadPips": 1.5,
+        "riskPips": 181.3,
+        "spreadAsPctOfRisk": 0.8,
+        "tp1NetR": 1.18,
+        "grade": "low",
+        "note": "The spread costs 0.8% of what you are risking on this trade. This is charged whether it wins or loses, and it is one of the few things separating these setups that is actually measurable."
+      },
+      "repeatOf": {
+        "count": 2,
+        "runningForHours": 24,
+        "stillOpen": 2,
+        "alreadyResolved": 0,
+        "alreadyLost": 0,
+        "note": "Same XRP/USD SELL has been signalled 2 time(s) over the last 24h and 2 is still open. This is that setup continuing, not a new one."
       }
     }
   ],
@@ -129,20 +268,20 @@
   "correlationFiltered": 1,
   "note": "Generated by tools/generate-signals.mjs (GitHub Actions) using the same strictAnalyze() the live endpoint uses. Produced independently of Cloudflare so signals stay current when Functions are unavailable.",
   "errors": [
-    "US30: market closed for the weekend (last bar 29h old) — not a fault",
-    "XAU/USD: market closed for the weekend (last bar 29h old) — not a fault",
-    "EUR/USD: market closed for the weekend (last bar 28h old) — not a fault",
-    "EUR/JPY: market closed for the weekend (last bar 26h old) — not a fault",
-    "NZD/USD: market closed for the weekend (last bar 26h old) — not a fault",
-    "USD/JPY: market closed for the weekend (last bar 29h old) — not a fault",
-    "AUD/JPY: market closed for the weekend (last bar 28h old) — not a fault",
-    "XAG/USD: market closed for the weekend (last bar 29h old) — not a fault",
-    "AUD/USD: market closed for the weekend (last bar 26h old) — not a fault",
-    "NAS100: market closed for the weekend (last bar 29h old) — not a fault",
-    "GBP/USD: market closed for the weekend (last bar 26h old) — not a fault",
-    "USD/CHF: market closed for the weekend (last bar 29h old) — not a fault",
-    "GBP/JPY: market closed for the weekend (last bar 28h old) — not a fault",
-    "USD/CAD: market closed for the weekend (last bar 26h old) — not a fault",
-    "EUR/GBP: market closed for the weekend (last bar 27h old) — not a fault"
+    "US30: market closed for the weekend (last bar 42h old) — not a fault",
+    "NAS100: market closed for the weekend (last bar 42h old) — not a fault",
+    "EUR/USD: market closed for the weekend (last bar 41h old) — not a fault",
+    "USD/CHF: market closed for the weekend (last bar 42h old) — not a fault",
+    "AUD/USD: market closed for the weekend (last bar 41h old) — not a fault",
+    "EUR/JPY: market closed for the weekend (last bar 41h old) — not a fault",
+    "AUD/JPY: market closed for the weekend (last bar 41h old) — not a fault",
+    "GBP/USD: market closed for the weekend (last bar 41h old) — not a fault",
+    "XAG/USD: market closed for the weekend (last bar 41h old) — not a fault",
+    "NZD/USD: market closed for the weekend (last bar 41h old) — not a fault",
+    "GBP/JPY: market closed for the weekend (last bar 41h old) — not a fault",
+    "USD/JPY: market closed for the weekend (last bar 42h old) — not a fault",
+    "XAU/USD: market closed for the weekend (last bar 41h old) — not a fault",
+    "EUR/GBP: market closed for the weekend (last bar 40h old) — not a fault",
+    "USD/CAD: market closed for the weekend (last bar 41h old) — not a fault"
   ]
 }
