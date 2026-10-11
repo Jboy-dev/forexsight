@@ -1,83 +1,83 @@
 {
-  "ts": 1791746756679,
-  "isoTime": "2026-10-11T19:25:56.679Z",
+  "ts": 1791759935908,
+  "isoTime": "2026-10-11T23:05:35.908Z",
   "randomEntries": {
     "n": 4000,
-    "avgR": -0.043,
+    "avgR": 0.011,
     "ci": [
-      -0.081,
-      -0.007
+      -0.027,
+      0.048
     ],
-    "episodeAvgR": -0.013,
-    "behavesAsNull": false
+    "episodeAvgR": 0.012,
+    "behavesAsNull": true
   },
   "measuredOn": "every signal, not episode averages — collapsing overlapping signals hides clustered losses",
   "perStrategy": {
     "RSI mean reversion": {
-      "n": 3927,
-      "avgR": -0.063,
+      "n": 3919,
+      "avgR": -0.064,
       "ci": [
-        -0.099,
-        -0.025
+        -0.1,
+        -0.026
       ],
-      "episodeAvgR": 0.18,
+      "episodeAvgR": 0.179,
       "episodeCi": [
-        0.134,
-        0.232
+        0.13,
+        0.229
       ],
-      "episodes": 1672,
-      "edgeOverRandom": -0.02,
+      "episodes": 1667,
+      "edgeOverRandom": -0.075,
       "passes": false
     },
     "RSI trend filter": {
-      "n": 2893,
-      "avgR": -0.055,
+      "n": 2886,
+      "avgR": -0.057,
       "ci": [
-        -0.097,
-        -0.013
+        -0.1,
+        -0.016
       ],
-      "episodeAvgR": 0.043,
+      "episodeAvgR": 0.042,
       "episodeCi": [
-        -0.014,
-        0.099
+        -0.02,
+        0.104
       ],
-      "episodes": 1192,
-      "edgeOverRandom": -0.012,
+      "episodes": 1191,
+      "edgeOverRandom": -0.067,
       "passes": false
     },
     "Bollinger reversion": {
-      "n": 4682,
-      "avgR": -0.023,
+      "n": 4665,
+      "avgR": -0.021,
       "ci": [
-        -0.057,
-        0.01
+        -0.055,
+        0.014
       ],
-      "episodeAvgR": 0.116,
+      "episodeAvgR": 0.119,
       "episodeCi": [
         0.076,
-        0.159
+        0.161
       ],
-      "episodes": 2352,
-      "edgeOverRandom": 0.021,
+      "episodes": 2345,
+      "edgeOverRandom": -0.032,
       "passes": false
     },
     "MACD cross": {
-      "n": 4486,
-      "avgR": -0.013,
+      "n": 4469,
+      "avgR": -0.014,
       "ci": [
-        -0.047,
+        -0.05,
         0.021
       ],
-      "episodeAvgR": 0.11,
+      "episodeAvgR": 0.109,
       "episodeCi": [
-        0.067,
-        0.153
+        0.069,
+        0.151
       ],
-      "episodes": 2648,
-      "edgeOverRandom": 0.03,
+      "episodes": 2637,
+      "edgeOverRandom": -0.025,
       "passes": false
     }
   },
   "passes": false,
-  "verdict": "CONTROL FAILED — random entries did not score about zero, so the simulator is producing the number rather than any strategy. No claim may be shown."
+  "verdict": "Random entries score 0.011R with the interval straddling zero, as they must. 0 of 4 strategies clear it."
 }
