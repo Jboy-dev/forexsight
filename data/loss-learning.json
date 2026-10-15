@@ -1,22 +1,22 @@
 {
-  "ts": 1792102231090,
-  "isoTime": "2026-10-15T22:10:31.090Z",
+  "ts": 1792103772424,
+  "isoTime": "2026-10-15T22:36:12.424Z",
   "measuredOn": "every signal, not episode averages",
   "signalsAnalysed": 196,
   "won": 76,
   "lost": 117,
-  "slicesClearingZero": 17,
+  "slicesClearingZero": 16,
   "chanceBaseline": {
-    "mean": 14.6,
-    "sd": 2.3,
+    "mean": 14.5,
+    "sd": 2,
     "range": [
-      9,
-      21
+      10,
+      20
     ],
     "shuffles": 30
   },
-  "threshold": 16.9,
-  "beatsChance": true,
+  "threshold": 16.5,
+  "beatsChance": false,
   "findings": [
     {
       "feature": "confidenceBand",
@@ -24,8 +24,8 @@
       "n": 38,
       "avgR": -0.569,
       "ci": [
-        -0.767,
-        -0.344
+        -0.786,
+        -0.337
       ],
       "direction": "negative"
     },
@@ -35,8 +35,8 @@
       "n": 28,
       "avgR": -0.537,
       "ci": [
-        -0.793,
-        -0.245
+        -0.797,
+        -0.25
       ],
       "direction": "negative"
     },
@@ -46,8 +46,8 @@
       "n": 21,
       "avgR": -0.519,
       "ci": [
-        -0.765,
-        -0.246
+        -0.773,
+        -0.25
       ],
       "direction": "negative"
     },
@@ -57,8 +57,8 @@
       "n": 34,
       "avgR": -0.505,
       "ci": [
-        -0.734,
-        -0.249
+        -0.738,
+        -0.253
       ],
       "direction": "negative"
     },
@@ -68,8 +68,8 @@
       "n": 20,
       "avgR": -0.499,
       "ci": [
-        -0.794,
-        -0.165
+        -0.803,
+        -0.167
       ],
       "direction": "negative"
     },
@@ -79,8 +79,8 @@
       "n": 80,
       "avgR": -0.432,
       "ci": [
-        -0.597,
-        -0.258
+        -0.6,
+        -0.263
       ],
       "direction": "negative"
     },
@@ -90,19 +90,8 @@
       "n": 81,
       "avgR": -0.397,
       "ci": [
-        -0.574,
-        -0.213
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "BOLLINGER",
-      "n": 30,
-      "avgR": -0.367,
-      "ci": [
-        -0.684,
-        -0.022
+        -0.572,
+        -0.216
       ],
       "direction": "negative"
     },
@@ -112,7 +101,7 @@
       "n": 47,
       "avgR": -0.354,
       "ci": [
-        -0.563,
+        -0.578,
         -0.121
       ],
       "direction": "negative"
@@ -123,8 +112,8 @@
       "n": 83,
       "avgR": -0.35,
       "ci": [
-        -0.528,
-        -0.169
+        -0.53,
+        -0.162
       ],
       "direction": "negative"
     },
@@ -135,7 +124,7 @@
       "avgR": -0.321,
       "ci": [
         -0.468,
-        -0.163
+        -0.169
       ],
       "direction": "negative"
     },
@@ -145,8 +134,8 @@
       "n": 62,
       "avgR": -0.299,
       "ci": [
-        -0.527,
-        -0.052
+        -0.528,
+        -0.066
       ],
       "direction": "negative"
     },
@@ -156,8 +145,8 @@
       "n": 102,
       "avgR": -0.264,
       "ci": [
-        -0.432,
-        -0.086
+        -0.43,
+        -0.089
       ],
       "direction": "negative"
     },
@@ -167,8 +156,8 @@
       "n": 75,
       "avgR": -0.231,
       "ci": [
-        -0.425,
-        -0.023
+        -0.426,
+        -0.037
       ],
       "direction": "negative"
     },
@@ -178,8 +167,8 @@
       "n": 162,
       "avgR": -0.217,
       "ci": [
-        -0.358,
-        -0.074
+        -0.356,
+        -0.071
       ],
       "direction": "negative"
     },
@@ -189,8 +178,8 @@
       "n": 79,
       "avgR": -0.213,
       "ci": [
-        -0.395,
-        -0.021
+        -0.397,
+        -0.026
       ],
       "direction": "negative"
     },
@@ -200,8 +189,8 @@
       "n": 113,
       "avgR": -0.19,
       "ci": [
-        -0.355,
-        -0.011
+        -0.359,
+        -0.006
       ],
       "direction": "negative"
     }
@@ -214,5 +203,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "17 slices clear zero against a chance baseline of 14.6, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
+  "verdict": "16 slices cleared zero, but shuffled outcomes produce 14.5 on average (up to 20). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
