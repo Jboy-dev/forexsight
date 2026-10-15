@@ -1,6 +1,6 @@
 {
-  "ts": 1792028667519,
-  "isoTime": "2026-10-15T01:44:27.519Z",
+  "ts": 1792048430734,
+  "isoTime": "2026-10-15T07:13:50.734Z",
   "builtBy": "tools/adaptive-engine.mjs",
   "instruments": 19,
   "rules": 8,
@@ -10,13 +10,13 @@
   "adaptive": {
     "train": {
       "n": 7735,
-      "avgR": -0.0571,
-      "t": -4.14,
+      "avgR": -0.0566,
+      "t": -4.1,
       "ci": [
-        -0.0842,
-        -0.0301
+        -0.0836,
+        -0.0295
       ],
-      "winRate": 44.3
+      "winRate": 44.4
     },
     "validate": {
       "n": 3954,
@@ -29,17 +29,17 @@
       "winRate": 45.6
     },
     "sealed": {
-      "n": 3460,
-      "avgR": -0.0714,
-      "t": -3.52,
+      "n": 3464,
+      "avgR": -0.0727,
+      "t": -3.59,
       "ci": [
-        -0.1112,
-        -0.0316
+        -0.1124,
+        -0.033
       ],
-      "winRate": 45.1
+      "winRate": 45
     },
     "all": {
-      "n": 15149,
+      "n": 15153,
       "avgR": -0.0522,
       "t": -5.31,
       "ci": [
@@ -51,37 +51,37 @@
   },
   "staticBaseline": {
     "sealed": {
-      "n": 216057,
-      "avgR": -0.0605,
-      "t": -23.28,
+      "n": 216125,
+      "avgR": -0.0606,
+      "t": -23.33,
       "ci": [
-        -0.0656,
-        -0.0554
+        -0.0657,
+        -0.0555
       ],
       "winRate": 45.2
     },
     "all": {
-      "n": 908244,
-      "avgR": -0.0417,
-      "t": -32.63,
+      "n": 908415,
+      "avgR": -0.0416,
+      "t": -32.55,
       "ci": [
-        -0.0442,
-        -0.0392
+        -0.0441,
+        -0.0391
       ],
       "winRate": 45.2
     }
   },
-  "selectionGainR": -0.0109,
+  "selectionGainR": -0.0121,
   "ruleUsage": {
-    "momentum-60": 6723,
-    "momentum-120": 1966,
-    "ma-cross": 911,
-    "rsi-reversion": 1637,
-    "rsi-trend": 1238,
+    "momentum-60": 6725,
+    "momentum-120": 1969,
+    "ma-cross": 912,
+    "rsi-reversion": 1633,
+    "rsi-trend": 1239,
     "donchian-20": 1323,
     "pullback": 422,
-    "trend-with-vol": 929
+    "trend-with-vol": 930
   },
   "method": "Online learning with no lookahead. At each bar a rule is traded only if its own recently RESOLVED trades (closed strictly before that bar) average above an ABSOLUTE positive bar. Non-overlapping. Compared against the same rules with no selection at all.",
-  "verdict": "Adapting does not rescue it. On the sealed quarter the adaptive engine returned -0.0714R against -0.0605R for no selection at all — a difference of -0.0109R with the interval [-0.1112, -0.0316] including zero. Choosing rules by their recent record does not predict their next trade."
+  "verdict": "Adapting does not rescue it. On the sealed quarter the adaptive engine returned -0.0727R against -0.0606R for no selection at all — a difference of -0.0121R with the interval [-0.1124, -0.033] including zero. Choosing rules by their recent record does not predict their next trade."
 }
