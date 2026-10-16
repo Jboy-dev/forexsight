@@ -1,12 +1,99 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-16T10:07:19.746Z",
+  "timestamp": "2026-10-16T14:20:47.551Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 2,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 2,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "NAS100",
+      "direction": "SELL",
+      "confidence": 66,
+      "strength": 64,
+      "verdict": "MODERATE SHORT — 66% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 29667.7,
+      "sl": 29845.7,
+      "tp1": 29358.7,
+      "tp3": 28586.1,
+      "slPips": 178,
+      "tp1Pips": 309,
+      "tp3Pips": 1082,
+      "rrTP1": 1.74,
+      "rrTP3": 6.08,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 32.4 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 15,
+        "bear": 60,
+        "marginPct": 60
+      },
+      "reasoning": "Weighted consensus favors SHORT with 66% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF down. Structure downtrend. Manage risk with the levels below."
+    },
+    {
+      "pair": "SPX500",
+      "direction": "SELL",
+      "confidence": 55,
+      "strength": 49,
+      "verdict": "WEAK SHORT — 55% conviction",
+      "timeHorizon": "1-2 hours",
+      "entry": 7739,
+      "sl": 7769.9,
+      "tp1": 7697.3,
+      "tp3": 7593.3,
+      "slPips": 31,
+      "tp1Pips": 42,
+      "tp3Pips": 146,
+      "rrTP1": 1.34,
+      "rrTP3": 4.71,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · chart score 44 < 48",
+      "topFactors": [
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 15,
+        "bear": 30,
+        "marginPct": 33
+      },
+      "reasoning": "Weighted consensus favors SHORT with 55% conviction. Top drivers: Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF flat. Structure downtrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
