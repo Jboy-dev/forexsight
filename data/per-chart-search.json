@@ -1,13 +1,13 @@
 {
-  "ts": 1792173326314,
-  "isoTime": "2026-10-16T17:55:26.314Z",
+  "ts": 1792183686223,
+  "isoTime": "2026-10-16T20:48:06.223Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 60,
+  "survivedTrainAndValidate": 59,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -405,8 +405,8 @@
       },
       "sealed": {
         "n": 96,
-        "avgR": 0.0818,
-        "t": 0.61
+        "avgR": 0.0897,
+        "t": 0.67
       },
       "passes": false
     },
@@ -453,6 +453,27 @@
       "passes": false
     },
     {
+      "pair": "EUR/USD",
+      "tf": "15m",
+      "combo": "rsi-reversion × vol-high",
+      "train": {
+        "n": 35,
+        "avgR": 0.3167,
+        "t": 1.51
+      },
+      "validate": {
+        "n": 19,
+        "avgR": 0.1353,
+        "t": 0.5
+      },
+      "sealed": {
+        "n": 26,
+        "avgR": 0.0905,
+        "t": 0.35
+      },
+      "passes": false
+    },
+    {
       "pair": "ETH/USD",
       "tf": "daily",
       "combo": "momentum-120 × with-200",
@@ -470,27 +491,6 @@
         "n": 56,
         "avgR": 0.0476,
         "t": 0.3
-      },
-      "passes": false
-    },
-    {
-      "pair": "EUR/USD",
-      "tf": "15m",
-      "combo": "rsi-reversion × vol-high",
-      "train": {
-        "n": 35,
-        "avgR": 0.3167,
-        "t": 1.51
-      },
-      "validate": {
-        "n": 19,
-        "avgR": 0.1353,
-        "t": 0.5
-      },
-      "sealed": {
-        "n": 26,
-        "avgR": 0.0665,
-        "t": 0.26
       },
       "passes": false
     },
@@ -538,5 +538,5 @@
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 60 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 59 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
