@@ -1,13 +1,13 @@
 {
-  "ts": 1792281250736,
-  "isoTime": "2026-10-17T23:54:10.736Z",
+  "ts": 1792295913511,
+  "isoTime": "2026-10-18T03:58:33.511Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 58,
+  "survivedTrainAndValidate": 59,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -222,6 +222,27 @@
       "passes": false
     },
     {
+      "pair": "NAS100",
+      "tf": "1h",
+      "combo": "ma-cross-20-50 × none",
+      "train": {
+        "n": 44,
+        "avgR": 0.2921,
+        "t": 1.61
+      },
+      "validate": {
+        "n": 24,
+        "avgR": 0.545,
+        "t": 1.95
+      },
+      "sealed": {
+        "n": 29,
+        "avgR": 0.2902,
+        "t": 1.15
+      },
+      "passes": false
+    },
+    {
       "pair": "EUR/USD",
       "tf": "daily",
       "combo": "momentum-60 × with-200",
@@ -259,27 +280,6 @@
       "sealed": {
         "n": 52,
         "avgR": 0.1706,
-        "t": 1
-      },
-      "passes": false
-    },
-    {
-      "pair": "NAS100",
-      "tf": "1h",
-      "combo": "ma-cross-20-50 × none",
-      "train": {
-        "n": 44,
-        "avgR": 0.2921,
-        "t": 1.61
-      },
-      "validate": {
-        "n": 23,
-        "avgR": 0.472,
-        "t": 1.68
-      },
-      "sealed": {
-        "n": 30,
-        "avgR": 0.2469,
         "t": 1
       },
       "passes": false
@@ -399,13 +399,13 @@
         "t": 2.12
       },
       "validate": {
-        "n": 124,
-        "avgR": 0.1525,
-        "t": 1.34
+        "n": 123,
+        "avgR": 0.162,
+        "t": 1.42
       },
       "sealed": {
         "n": 95,
-        "avgR": 0.0936,
+        "avgR": 0.0937,
         "t": 0.7
       },
       "passes": false
@@ -538,5 +538,5 @@
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 58 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 59 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
