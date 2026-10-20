@@ -1,11 +1,11 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-20T14:27:49.583Z",
+  "timestamp": "2026-10-20T15:20:51.400Z",
   "scanned": 15,
-  "setupsFound": 2,
+  "setupsFound": 3,
   "passedMainGate": 0,
-  "heldBackButValid": 2,
+  "heldBackButValid": 3,
   "minStrengthFilter": 30,
   "radar": [
     {
@@ -15,18 +15,18 @@
       "strength": 87,
       "verdict": "STRONG LONG — 82% conviction",
       "timeHorizon": "2-4 hours",
-      "entry": 52504.8,
-      "sl": 52242.2,
-      "tp1": 52844.2,
-      "tp3": 53692.6,
-      "slPips": 263,
-      "tp1Pips": 339,
-      "tp3Pips": 1188,
-      "rrTP1": 1.29,
-      "rrTP3": 4.52,
+      "entry": 52499.9,
+      "sl": 52237.4,
+      "tp1": 52860.6,
+      "tp3": 53762.5,
+      "slPips": 262,
+      "tp1Pips": 361,
+      "tp3Pips": 1263,
+      "rrTP1": 1.37,
+      "rrTP3": 4.81,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 32% < 58%",
+      "heldBackReason": "chart score 46 < 48",
       "topFactors": [
         {
           "name": "Correlation basket supports BUY (100/100)",
@@ -39,6 +39,11 @@
           "note": ""
         },
         {
+          "name": "Market structure — uptrend (HH+HL)",
+          "weight": 15,
+          "note": ""
+        },
+        {
           "name": "Price > EMA20 > EMA50 (bullish stack)",
           "weight": 15,
           "note": ""
@@ -47,39 +52,34 @@
           "name": "MACD histogram positive (bullish momentum)",
           "weight": 15,
           "note": ""
-        },
-        {
-          "name": "RSI 68.2 — bullish momentum zone",
-          "weight": 10,
-          "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 85,
+        "bull": 100,
         "bear": 0,
         "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors LONG with 82% conviction. Top drivers: Correlation basket supports BUY (100/100); Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack). HTF up. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 82% conviction. Top drivers: Correlation basket supports BUY (100/100); Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL). HTF up. Structure uptrend. Manage risk with the levels below."
     },
     {
       "pair": "SPX500",
       "direction": "BUY",
-      "confidence": 57,
-      "strength": 54,
-      "verdict": "WEAK LONG — 57% conviction",
+      "confidence": 70,
+      "strength": 79,
+      "verdict": "MODERATE LONG — 70% conviction",
       "timeHorizon": "1-2 hours",
-      "entry": 7736.4,
-      "sl": 7705.5,
-      "tp1": 7789.7,
-      "tp3": 7922.9,
+      "entry": 7724.5,
+      "sl": 7693.7,
+      "tp1": 7780,
+      "tp3": 7918.8,
       "slPips": 31,
-      "tp1Pips": 53,
-      "tp3Pips": 187,
-      "rrTP1": 1.72,
-      "rrTP3": 6.03,
+      "tp1Pips": 55,
+      "tp3Pips": 194,
+      "rrTP1": 1.8,
+      "rrTP3": 6.29,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "daily HTF opposed",
+      "heldBackReason": "only lagging strategies fired (TREND, MACD, VWAP) — no predictive edge",
       "topFactors": [
         {
           "name": "Correlation basket supports BUY (100/100)",
@@ -94,10 +94,58 @@
       ],
       "bullVsBear": {
         "bull": 40,
-        "bear": 15,
-        "marginPct": 45
+        "bear": 0,
+        "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors LONG with 57% conviction. Top drivers: Correlation basket supports BUY (100/100); MACD histogram positive (bullish momentum). HTF flat. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 70% conviction. Top drivers: Correlation basket supports BUY (100/100); MACD histogram positive (bullish momentum). HTF flat. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "NAS100",
+      "direction": "SELL",
+      "confidence": 56,
+      "strength": 45,
+      "verdict": "WEAK SHORT — 56% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 29590.2,
+      "sl": 29767.7,
+      "tp1": 29234.7,
+      "tp3": 28345.9,
+      "slPips": 178,
+      "tp1Pips": 355,
+      "tp3Pips": 1244,
+      "rrTP1": 2,
+      "rrTP3": 7.01,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "chart score 47 < 48",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 45.0 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 40,
+        "bear": 60,
+        "marginPct": 20
+      },
+      "reasoning": "Weighted consensus favors SHORT with 56% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF down. Structure downtrend. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
