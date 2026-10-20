@@ -1,12 +1,104 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-20T10:22:40.671Z",
+  "timestamp": "2026-10-20T14:27:49.583Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 2,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 2,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "US30",
+      "direction": "BUY",
+      "confidence": 82,
+      "strength": 87,
+      "verdict": "STRONG LONG — 82% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 52504.8,
+      "sl": 52242.2,
+      "tp1": 52844.2,
+      "tp3": 53692.6,
+      "slPips": 263,
+      "tp1Pips": 339,
+      "tp3Pips": 1188,
+      "rrTP1": 1.29,
+      "rrTP3": 4.52,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 32% < 58%",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports BUY (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 68.2 — bullish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 85,
+        "bear": 0,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors LONG with 82% conviction. Top drivers: Correlation basket supports BUY (100/100); Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack). HTF up. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "SPX500",
+      "direction": "BUY",
+      "confidence": 57,
+      "strength": 54,
+      "verdict": "WEAK LONG — 57% conviction",
+      "timeHorizon": "1-2 hours",
+      "entry": 7736.4,
+      "sl": 7705.5,
+      "tp1": 7789.7,
+      "tp3": 7922.9,
+      "slPips": 31,
+      "tp1Pips": 53,
+      "tp3Pips": 187,
+      "rrTP1": 1.72,
+      "rrTP3": 6.03,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "daily HTF opposed",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports BUY (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 40,
+        "bear": 15,
+        "marginPct": 45
+      },
+      "reasoning": "Weighted consensus favors LONG with 57% conviction. Top drivers: Correlation basket supports BUY (100/100); MACD histogram positive (bullish momentum). HTF flat. Structure downtrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
