@@ -1637,6 +1637,26 @@ t('the four history outcomes account for every signal', () => {
 
 
 
+t('the audit that proves these tests actually guard something is kept', () => {
+  /* 118 tests passed here for months while nothing checked that any of them
+     FAILS when the fix it guards is removed. A test that passes either way is
+     decoration. tools/regression-audit.sh reverts each fix in its own copy of
+     the repo and reports any whose return nobody would notice — and it was
+     proved by neutering this very test: the suite still said "118 passed"
+     while the audit correctly reported UNGUARDED. */
+  if (!existsSync('tools/regression-audit.sh')) return 'the regression audit is gone';
+  const a = readFileSync('tools/regression-audit.sh', 'utf8');
+  const cases = (a.match(/^try /gm) || []).length;
+  if (cases < 5) return `only ${cases} audit case(s); it needs to cover the fixes that matter`;
+  /* The hard-won properties, carried from Quorum's audit after it was rebuilt:
+     a crash is not a guard, and a case that cannot apply is not a case. */
+  if (!/A CRASH IS NOT A GUARD/.test(a)) return 'a crashing suite could count as a guard again';
+  if (!/A CASE THAT CANNOT APPLY/.test(a)) return 'a stale case could pass quietly again';
+  if (!/EVERY CASE RUNS IN ITS OWN COPY/.test(a)) return 'the audit could leave the tree mutated';
+  if (!/INCONCLUSIVE/.test(a)) return 'a verdict-less run would not be reported';
+  return true;
+});
+
 t('adverse movement is never rendered as if it were a gain', () => {
   const src = readFileSync('v2/base.js', 'utf8');
   // maeR is published as a POSITIVE magnitude of how far price went AGAINST the
