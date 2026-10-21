@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-21T16:08:31.133Z",
+  "timestamp": "2026-10-21T19:39:29.831Z",
   "scanned": 15,
   "setupsFound": 1,
   "passedMainGate": 0,
@@ -11,25 +11,35 @@
     {
       "pair": "SPX500",
       "direction": "BUY",
-      "confidence": 73,
-      "strength": 81,
-      "verdict": "MODERATE LONG — 73% conviction",
+      "confidence": 81,
+      "strength": 87,
+      "verdict": "STRONG LONG — 81% conviction",
       "timeHorizon": "30 min",
-      "entry": 7749.9,
-      "sl": 7718.9,
-      "tp1": 7794.4,
-      "tp3": 7905.8,
+      "entry": 7755.5,
+      "sl": 7724.5,
+      "tp1": 7797.3,
+      "tp3": 7901.8,
       "slPips": 31,
-      "tp1Pips": 45,
-      "tp3Pips": 156,
-      "rrTP1": 1.44,
-      "rrTP3": 5.03,
+      "tp1Pips": 42,
+      "tp3Pips": 146,
+      "rrTP1": 1.35,
+      "rrTP3": 4.72,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "heldBackReason": "only 1 strategies (need ≥2 with 1 leading) · chart score 45 < 48 · 4H HTF opposed",
       "topFactors": [
         {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
           "name": "Market structure — uptrend (HH+HL)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
           "weight": 15,
           "note": ""
         },
@@ -39,17 +49,17 @@
           "note": ""
         },
         {
-          "name": "RSI 58.3 — bullish momentum zone",
+          "name": "RSI 57.7 — bullish momentum zone",
           "weight": 10,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 40,
+        "bull": 75,
         "bear": 0,
         "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors LONG with 73% conviction. Top drivers: Market structure — uptrend (HH+HL); MACD histogram positive (bullish momentum); RSI 58.3 — bullish momentum zone. HTF flat. Structure uptrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 81% conviction. Top drivers: Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF up. Structure uptrend. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
