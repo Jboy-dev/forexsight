@@ -104,6 +104,18 @@ open(p,'w').write(s.replace(a,'const STALE_BARS_MS = Infinity;'))"
 # ---- the deploy must stamp code but NEVER the manifest or icons ----
 # An unkeyed manifest link made iOS treat the home-screen app as a different
 # app; a stamped one is just as bad in the other direction.
+# The panel that had never drawn. histRow used `ended` and `dur` and bound
+# neither, so every resolved row threw ReferenceError and "Every signal,
+# judged" — reachable in the Ledger tab — rendered "This panel failed to draw".
+# 119 tests passed over it because every one of them read the source as TEXT.
+# The guard is a test that RUNS the renderers, so planting the fault again must
+# turn it red.
+try "a row renderer uses a name it never binds again" v2/base.js "
+p='v2/base.js';s=open(p).read()
+a='  const endedAt = x.resolvedAt || x.closedAt || null;\\n  const ended = histTime(endedAt);\\n'
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,''))"
+
 try "the deploy stops stamping the service worker build id" tools/deploy.sh "
 p='tools/deploy.sh';s=open(p).read()
 a='BUILD=\"\$(date -u +%Y%m%d-%H%M%S)'
