@@ -471,6 +471,22 @@ function histRow(x) {
   const label = open ? 'OPEN' : R > 0 ? 'WIN' : 'LOSS';
   const mae = num(x.maeR), mfe = num(x.mfeR);
 
+  /* These two were USED below and never bound, so every resolved row threw
+     ReferenceError and the whole panel rendered "This panel failed to draw".
+     It was reachable the whole time — the seg sits in the Ledger tab — and the
+     test suite never called a renderer, so 119 tests passed over a panel that
+     had not drawn once.
+
+     The shadow-tracker feed carries firedAt and no end stamp at all, so both
+     resolve to null here and the `${ended ? ... : ''}` guards below print
+     nothing. That is the intended reading: absence is printed as absence. dur
+     is deliberately null rather than histDur(firedAt, undefined) — that form
+     measures to NOW, which for a trade that closed days ago would state a
+     duration it never ran for. */
+  const endedAt = x.resolvedAt || x.closedAt || null;
+  const ended = histTime(endedAt);
+  const dur = x.firedAt && endedAt ? histDur(x.firedAt, endedAt) : null;
+
   return `<details class="hrow" ${S.cfg && S.cfg.expand ? "open" : ""}>
     <summary>
       <span class="h-caret">▸</span>

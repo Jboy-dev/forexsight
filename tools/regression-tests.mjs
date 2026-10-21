@@ -1850,5 +1850,78 @@ t('the watcher remembers where it got to, and will not close against stale bars'
 });
 
 
+/* ── BUG: histRow used `ended` and `dur` and never bound either. Every
+   resolved row threw ReferenceError, so "Every signal, judged" — a real panel
+   in the Ledger tab — rendered "This panel failed to draw" and had never once
+   drawn. 119 tests passed over it, because not one of them CALLED a renderer:
+   they all read the source as text. Reading source cannot catch an unbound
+   name; only running the code can.
+
+   So this runs them. Each row renderer is lifted out of v2/base.js and called
+   through `new Function`, whose parameters are the only names in scope — any
+   free identifier that is neither a parameter nor declared inside throws
+   ReferenceError exactly as the browser did. Every row of the real published
+   feed is passed through every renderer, so the won, lost, expired and open
+   branches all execute. ─────────────────────────────────────────────────── */
+t('every history row renderer actually runs, on every branch', () => {
+  const v2 = readFileSync('v2/base.js', 'utf8');
+  const lift = (n) => {
+    const i = v2.indexOf(`function ${n}(`);
+    if (i < 0) return null;
+    const r = v2.slice(i);
+    const end = r.indexOf('\n}\n');
+    return end < 0 ? null : r.slice(0, end + 3);
+  };
+
+  // Faithful stand-ins for the small helpers, so the renderers themselves are
+  // the only thing under test. cp() returns a string like the real one does.
+  const esc = (x) => String(x ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const sign = (n) => (n == null ? '' : n > 0 ? '+' : '');
+  const ago = () => '2h ago';
+  const price = (v) => (v == null ? '—' : String(v));
+  const cp = (v) => (v == null ? '—' : `<span>${v}</span>`);
+  const pick = (o, ...k) => { for (const x of k) { const v = x.split('.').reduce((a, b) => (a == null ? a : a[b]), o); if (v != null && v !== '') return v; } return null; };
+  const r2 = (n) => (n == null ? null : Math.round(n * 100) / 100);
+  const S = { cfg: { expand: false }, shadowTracker: null };
+
+  const helpers = lift('histTime') + lift('histDur');
+  if (!helpers.includes('function histTime')) return 'histTime/histDur could not be lifted — the test cannot run';
+
+  const feed = existsSync('data/shadow-tracker.json')
+    ? (JSON.parse(readFileSync('data/shadow-tracker.json', 'utf8')).feed || []) : [];
+  const ledger = existsSync('data/ledger.json')
+    ? (JSON.parse(readFileSync('data/ledger.json', 'utf8')).history || []) : [];
+  const rows = [...feed, ...ledger];
+  if (!rows.length) return 'skipped: no published rows to render';
+
+  // Every branch must be exercised, or a renderer could pass by never reaching
+  // the line that throws.
+  const seen = new Set(rows.map((r) => String(r.status || '').toLowerCase()));
+  for (const need of ['won', 'lost', 'expired', 'open']) {
+    if (!seen.has(need)) return `the sample never contains a ${need} row, so that branch is untested`;
+  }
+
+  for (const name of ['histRow', 'myRow', 'historyRow']) {
+    const body = lift(name);
+    if (!body) return `${name} could not be lifted from v2/base.js`;
+    let fn;
+    try {
+      fn = new Function('esc', 'num', 'sign', 'ago', 'cp', 'price', 'pick', 'r2', 'S',
+        `${helpers}\n${body}\n; return ${name};`)(esc, num, sign, ago, cp, price, pick, r2, S);
+    } catch (e) { return `${name} could not be compiled: ${e.message}`; }
+    for (const row of rows) {
+      try {
+        const out = fn(row);
+        if (typeof out !== 'string' || !out.length) return `${name} returned no markup for a ${row.status} row`;
+      } catch (e) {
+        return `${name} threw on a ${row.status} row (${row.pair}): ${e.message}`;
+      }
+    }
+  }
+  return true;
+});
+
+
 console.log(`\n  ${pass} passed, ${fail} failed, ${skip} skipped\n`);
 process.exit(fail ? 1 : 0);
