@@ -1,13 +1,13 @@
 {
-  "ts": 1792541033962,
-  "isoTime": "2026-10-21T00:03:53.962Z",
+  "ts": 1792556940960,
+  "isoTime": "2026-10-21T04:29:00.960Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 56,
+  "survivedTrainAndValidate": 55,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -390,27 +390,6 @@
       "passes": false
     },
     {
-      "pair": "ETH/USD",
-      "tf": "1h",
-      "combo": "rsi-trend × vol-high",
-      "train": {
-        "n": 248,
-        "avgR": 0.1663,
-        "t": 2.05
-      },
-      "validate": {
-        "n": 123,
-        "avgR": 0.162,
-        "t": 1.42
-      },
-      "sealed": {
-        "n": 97,
-        "avgR": 0.0788,
-        "t": 0.59
-      },
-      "passes": false
-    },
-    {
       "pair": "SOL/USD",
       "tf": "daily",
       "combo": "momentum-60 × with-200",
@@ -427,6 +406,27 @@
       "sealed": {
         "n": 31,
         "avgR": 0.1038,
+        "t": 0.48
+      },
+      "passes": false
+    },
+    {
+      "pair": "ETH/USD",
+      "tf": "1h",
+      "combo": "rsi-trend × vol-high",
+      "train": {
+        "n": 248,
+        "avgR": 0.1663,
+        "t": 2.05
+      },
+      "validate": {
+        "n": 124,
+        "avgR": 0.1635,
+        "t": 1.45
+      },
+      "sealed": {
+        "n": 97,
+        "avgR": 0.0641,
         "t": 0.48
       },
       "passes": false
@@ -538,5 +538,5 @@
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 56 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 55 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
