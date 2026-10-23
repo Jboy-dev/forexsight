@@ -1,21 +1,21 @@
 {
-  "ts": 1792759840848,
-  "isoTime": "2026-10-23T12:50:40.848Z",
+  "ts": 1792759867430,
+  "isoTime": "2026-10-23T12:51:07.430Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 137,
+  "signalsAnalysed": 139,
   "won": 56,
-  "lost": 76,
-  "slicesClearingZero": 3,
+  "lost": 78,
+  "slicesClearingZero": 6,
   "chanceBaseline": {
-    "mean": 4.9,
-    "sd": 2.6,
+    "mean": 4.3,
+    "sd": 2.1,
     "range": [
       1,
-      11
+      9
     ],
     "shuffles": 30
   },
-  "threshold": 7.5,
+  "threshold": 6.3,
   "beatsChance": false,
   "findings": [
     {
@@ -24,8 +24,19 @@
       "n": 24,
       "avgR": -0.616,
       "ci": [
-        -0.845,
-        -0.327
+        -0.86,
+        -0.368
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategyCount",
+      "value": "5 strategies",
+      "n": 20,
+      "avgR": -0.488,
+      "ci": [
+        -0.778,
+        -0.175
       ],
       "direction": "negative"
     },
@@ -35,8 +46,19 @@
       "n": 43,
       "avgR": -0.456,
       "ci": [
-        -0.682,
-        -0.218
+        -0.684,
+        -0.221
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "BOLLINGER",
+      "n": 25,
+      "avgR": -0.348,
+      "ci": [
+        -0.633,
+        -0.058
       ],
       "direction": "negative"
     },
@@ -46,19 +68,30 @@
       "n": 57,
       "avgR": -0.244,
       "ci": [
-        -0.462,
-        -0.016
+        -0.481,
+        -0.028
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "confidenceBand",
+      "value": "conf 85+",
+      "n": 72,
+      "avgR": -0.199,
+      "ci": [
+        -0.39,
+        -0.009
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 76,
-    "fullStopOuts": 59,
+    "total": 78,
+    "fullStopOuts": 61,
     "partial": 17,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices cleared zero, but shuffled outcomes produce 4.9 on average (up to 11). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "6 slices cleared zero, but shuffled outcomes produce 4.3 on average (up to 9). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
