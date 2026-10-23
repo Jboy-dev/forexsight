@@ -1,64 +1,87 @@
 {
-  "ts": 1792776678876,
-  "isoTime": "2026-10-23T17:31:18.876Z",
+  "ts": 1792777937183,
+  "isoTime": "2026-10-23T17:52:17.183Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 140,
-  "won": 59,
-  "lost": 76,
-  "slicesClearingZero": 3,
+  "signalsAnalysed": 136,
+  "won": 57,
+  "lost": 74,
+  "slicesClearingZero": 4,
   "chanceBaseline": {
-    "mean": 1.4,
-    "sd": 1.4,
+    "mean": 1.9,
+    "sd": 1.7,
     "range": [
       0,
-      5
+      7
     ],
     "shuffles": 30
   },
-  "threshold": 2.9,
+  "threshold": 3.6,
   "beatsChance": true,
   "findings": [
     {
       "feature": "regime",
       "value": "TRENDING",
-      "n": 24,
-      "avgR": -0.616,
+      "n": 22,
+      "avgR": -0.675,
       "ci": [
-        -0.854,
-        -0.337
+        -0.893,
+        -0.425
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 30+",
-      "n": 43,
-      "avgR": -0.456,
+      "n": 41,
+      "avgR": -0.48,
       "ci": [
-        -0.664,
-        -0.207
+        -0.697,
+        -0.253
       ],
       "direction": "negative"
     },
     {
-      "feature": "direction",
-      "value": "BUY",
-      "n": 57,
-      "avgR": -0.244,
+      "feature": "strategy",
+      "value": "ICT",
+      "n": 21,
+      "avgR": -0.32,
       "ci": [
-        -0.461,
-        -0.009
+        -0.62,
+        -0.019
       ],
       "direction": "negative"
+    },
+    {
+      "feature": "adxBand",
+      "value": "ADX<20",
+      "n": 40,
+      "avgR": 0.349,
+      "ci": [
+        0.005,
+        0.71
+      ],
+      "direction": "positive"
     }
   ],
-  "positiveFindings": [],
+  "positiveFindings": [
+    {
+      "feature": "adxBand",
+      "value": "ADX<20",
+      "n": 40,
+      "avgR": 0.349,
+      "ci": [
+        0.005,
+        0.71
+      ],
+      "direction": "positive"
+    }
+  ],
   "lossShape": {
-    "total": 76,
-    "fullStopOuts": 59,
+    "total": 74,
+    "fullStopOuts": 57,
     "partial": 17,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices clear zero against a chance baseline of 1.4, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
+  "verdict": "4 slices clear zero against a chance baseline of 1.9, including 1 positive — worth investigating, not yet worth trading."
 }
