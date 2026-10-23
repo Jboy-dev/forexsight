@@ -1,22 +1,22 @@
 {
-  "ts": 1792780677364,
-  "isoTime": "2026-10-23T18:37:57.364Z",
+  "ts": 1792787843190,
+  "isoTime": "2026-10-23T20:37:23.190Z",
   "measuredOn": "every signal, not episode averages",
   "signalsAnalysed": 136,
   "won": 57,
   "lost": 74,
-  "slicesClearingZero": 3,
+  "slicesClearingZero": 4,
   "chanceBaseline": {
-    "mean": 1.7,
-    "sd": 1.7,
+    "mean": 2.1,
+    "sd": 1.5,
     "range": [
       0,
-      9
+      5
     ],
     "shuffles": 30
   },
-  "threshold": 3.4,
-  "beatsChance": false,
+  "threshold": 3.6,
+  "beatsChance": true,
   "findings": [
     {
       "feature": "regime",
@@ -24,8 +24,8 @@
       "n": 22,
       "avgR": -0.675,
       "ci": [
-        -0.88,
-        -0.433
+        -0.881,
+        -0.425
       ],
       "direction": "negative"
     },
@@ -35,8 +35,19 @@
       "n": 41,
       "avgR": -0.48,
       "ci": [
-        -0.695,
-        -0.245
+        -0.698,
+        -0.255
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "ICT",
+      "n": 21,
+      "avgR": -0.32,
+      "ci": [
+        -0.62,
+        -0.02
       ],
       "direction": "negative"
     },
@@ -46,8 +57,8 @@
       "n": 40,
       "avgR": 0.349,
       "ci": [
-        0.018,
-        0.706
+        0.024,
+        0.7
       ],
       "direction": "positive"
     }
@@ -59,8 +70,8 @@
       "n": 40,
       "avgR": 0.349,
       "ci": [
-        0.018,
-        0.706
+        0.024,
+        0.7
       ],
       "direction": "positive"
     }
@@ -72,5 +83,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices cleared zero, but shuffled outcomes produce 1.7 on average (up to 9). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "4 slices clear zero against a chance baseline of 2.1, including 1 positive — worth investigating, not yet worth trading."
 }
