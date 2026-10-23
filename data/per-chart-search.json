@@ -1,13 +1,13 @@
 {
-  "ts": 1792710478342,
-  "isoTime": "2026-10-22T23:07:58.342Z",
+  "ts": 1792720123812,
+  "isoTime": "2026-10-23T01:48:43.812Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 57,
+  "survivedTrainAndValidate": 59,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -415,9 +415,9 @@
       "tf": "1h",
       "combo": "rsi-trend × vol-high",
       "train": {
-        "n": 246,
-        "avgR": 0.1619,
-        "t": 1.99
+        "n": 244,
+        "avgR": 0.156,
+        "t": 1.91
       },
       "validate": {
         "n": 125,
@@ -510,7 +510,7 @@
       },
       "sealed": {
         "n": 39,
-        "avgR": 0.0525,
+        "avgR": 0.0519,
         "t": 0.28
       },
       "passes": false
@@ -538,5 +538,5 @@
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 57 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 59 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
