@@ -1,9 +1,9 @@
 {
-  "ts": 1792799849595,
-  "isoTime": "2026-10-23T23:57:29.595Z",
+  "ts": 1792814722076,
+  "isoTime": "2026-10-24T04:05:22.076Z",
   "builtBy": "tools/strategy-trials.mjs",
   "instruments": 19,
-  "totalDailyBars": 297611,
+  "totalDailyBars": 296669,
   "hypotheses": 288,
   "bonferroniBarT": 3.75,
   "method": "daily bars, entry at next open, v442 managed ladder, costs charged, NON-OVERLAPPING trades, three-way split with the newest 25% opened once, random-entry null at matched trade count",
@@ -28,9 +28,15 @@
     },
     {
       "name": "pullback-trend × none × SL3",
-      "n": 1096,
-      "avgR": 0.0665,
-      "t": 1.77
+      "n": 1095,
+      "avgR": 0.0675,
+      "t": 1.8
+    },
+    {
+      "name": "rsi-trend × above-200 × SL4",
+      "n": 1259,
+      "avgR": 0.0577,
+      "t": 1.68
     },
     {
       "name": "pullback-trend × above-200 × SL2.25",
@@ -39,34 +45,28 @@
       "t": 1.68
     },
     {
-      "name": "rsi-trend × above-200 × SL4",
-      "n": 1265,
-      "avgR": 0.0571,
+      "name": "rsi-trend × above-200 × SL3",
+      "n": 1871,
+      "avgR": 0.0473,
       "t": 1.67
     },
     {
-      "name": "rsi-trend × above-200 × SL3",
-      "n": 1881,
-      "avgR": 0.0452,
-      "t": 1.6
+      "name": "rsi-trend × contracting × SL4",
+      "n": 1683,
+      "avgR": 0.0453,
+      "t": 1.54
     },
     {
-      "name": "rsi-trend × contracting × SL4",
-      "n": 1689,
-      "avgR": 0.0456,
-      "t": 1.55
+      "name": "rsi-trend × vol-low × SL3",
+      "n": 1927,
+      "avgR": 0.0423,
+      "t": 1.51
     },
     {
       "name": "donchian-20 × against-200 × SL4",
-      "n": 1085,
-      "avgR": 0.0572,
-      "t": 1.53
-    },
-    {
-      "name": "donchian-20 × vol-low × SL4",
-      "n": 1130,
-      "avgR": 0.0534,
-      "t": 1.47
+      "n": 1080,
+      "avgR": 0.0566,
+      "t": 1.51
     }
   ],
   "survivors": [
@@ -78,9 +78,9 @@
         "t": 2.62
       },
       "validate": {
-        "n": 240,
-        "avgR": 0.1862,
-        "t": 2.2
+        "n": 237,
+        "avgR": 0.1957,
+        "t": 2.3
       }
     },
     {
@@ -91,9 +91,9 @@
         "t": 2.14
       },
       "validate": {
-        "n": 231,
-        "avgR": 0.1249,
-        "t": 1.49
+        "n": 228,
+        "avgR": 0.1401,
+        "t": 1.66
       }
     },
     {
@@ -104,22 +104,35 @@
         "t": 1.95
       },
       "validate": {
-        "n": 255,
-        "avgR": 0.1684,
-        "t": 2.05
+        "n": 252,
+        "avgR": 0.1676,
+        "t": 2.02
       }
     },
     {
       "name": "pullback-trend × none × SL3",
       "train": {
-        "n": 1096,
-        "avgR": 0.0665,
-        "t": 1.77
+        "n": 1095,
+        "avgR": 0.0675,
+        "t": 1.8
       },
       "validate": {
-        "n": 554,
-        "avgR": 0.1339,
-        "t": 2.51
+        "n": 548,
+        "avgR": 0.1375,
+        "t": 2.57
+      }
+    },
+    {
+      "name": "rsi-trend × above-200 × SL4",
+      "train": {
+        "n": 1259,
+        "avgR": 0.0577,
+        "t": 1.68
+      },
+      "validate": {
+        "n": 671,
+        "avgR": 0.0811,
+        "t": 1.78
       }
     },
     {
@@ -130,48 +143,48 @@
         "t": 1.68
       },
       "validate": {
-        "n": 346,
-        "avgR": 0.0977,
-        "t": 1.45
-      }
-    },
-    {
-      "name": "rsi-trend × above-200 × SL4",
-      "train": {
-        "n": 1265,
-        "avgR": 0.0571,
-        "t": 1.67
-      },
-      "validate": {
-        "n": 675,
-        "avgR": 0.0777,
-        "t": 1.72
+        "n": 342,
+        "avgR": 0.1027,
+        "t": 1.51
       }
     },
     {
       "name": "rsi-trend × above-200 × SL3",
       "train": {
-        "n": 1881,
-        "avgR": 0.0452,
-        "t": 1.6
+        "n": 1871,
+        "avgR": 0.0473,
+        "t": 1.67
       },
       "validate": {
-        "n": 975,
-        "avgR": 0.1643,
-        "t": 4.1
+        "n": 984,
+        "avgR": 0.1594,
+        "t": 4.01
       }
     },
     {
       "name": "rsi-trend × contracting × SL4",
       "train": {
-        "n": 1689,
-        "avgR": 0.0456,
-        "t": 1.55
+        "n": 1683,
+        "avgR": 0.0453,
+        "t": 1.54
       },
       "validate": {
-        "n": 864,
-        "avgR": 0.0729,
-        "t": 1.78
+        "n": 857,
+        "avgR": 0.0647,
+        "t": 1.57
+      }
+    },
+    {
+      "name": "rsi-trend × vol-low × SL3",
+      "train": {
+        "n": 1927,
+        "avgR": 0.0423,
+        "t": 1.51
+      },
+      "validate": {
+        "n": 986,
+        "avgR": 0.0905,
+        "t": 2.25
       }
     }
   ],
@@ -186,17 +199,17 @@
         "t": 2.62
       },
       "validate": {
-        "n": 240,
-        "avgR": 0.1862,
-        "t": 2.2
+        "n": 237,
+        "avgR": 0.1957,
+        "t": 2.3
       },
       "sealed": {
-        "n": 286,
-        "avgR": -0.2539,
-        "t": -3.78,
-        "nullP95": 0.0878,
-        "nullMean": -0.0429,
-        "nullP05": -0.1622,
+        "n": 285,
+        "avgR": -0.2461,
+        "t": -3.65,
+        "nullP95": 0.0942,
+        "nullMean": -0.0335,
+        "nullP05": -0.1346,
         "nullTrades": 285,
         "beatsNull": false,
         "clearsBar": false,
@@ -213,17 +226,17 @@
         "t": 2.14
       },
       "validate": {
-        "n": 231,
-        "avgR": 0.1249,
-        "t": 1.49
+        "n": 228,
+        "avgR": 0.1401,
+        "t": 1.66
       },
       "sealed": {
-        "n": 277,
-        "avgR": -0.2218,
-        "t": -3.38,
-        "nullP95": 0.0868,
-        "nullMean": -0.0285,
-        "nullP05": -0.1611,
+        "n": 276,
+        "avgR": -0.2135,
+        "t": -3.2,
+        "nullP95": 0.1037,
+        "nullMean": -0.0199,
+        "nullP05": -0.1329,
         "nullTrades": 285,
         "beatsNull": false,
         "clearsBar": false,
@@ -240,17 +253,17 @@
         "t": 1.95
       },
       "validate": {
-        "n": 255,
-        "avgR": 0.1684,
-        "t": 2.05
+        "n": 252,
+        "avgR": 0.1676,
+        "t": 2.02
       },
       "sealed": {
-        "n": 296,
-        "avgR": -0.2821,
-        "t": -4.45,
-        "nullP95": 0.0571,
-        "nullMean": -0.0579,
-        "nullP05": -0.1547,
+        "n": 295,
+        "avgR": -0.2753,
+        "t": -4.33,
+        "nullP95": 0.0476,
+        "nullMean": -0.0492,
+        "nullP05": -0.1653,
         "nullTrades": 304,
         "beatsNull": false,
         "clearsBar": false,
@@ -262,22 +275,49 @@
       "entry": "pullback-trend",
       "filter": "none",
       "train": {
-        "n": 1096,
-        "avgR": 0.0665,
-        "t": 1.77
+        "n": 1095,
+        "avgR": 0.0675,
+        "t": 1.8
       },
       "validate": {
-        "n": 554,
-        "avgR": 0.1339,
-        "t": 2.51
+        "n": 548,
+        "avgR": 0.1375,
+        "t": 2.57
       },
       "sealed": {
-        "n": 550,
-        "avgR": -0.0818,
-        "t": -1.64,
-        "nullP95": 0.0526,
-        "nullMean": -0.0365,
-        "nullP05": -0.1181,
+        "n": 546,
+        "avgR": -0.0717,
+        "t": -1.41,
+        "nullP95": 0.0504,
+        "nullMean": -0.0333,
+        "nullP05": -0.1169,
+        "nullTrades": 551,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    },
+    {
+      "name": "rsi-trend × above-200 × SL4",
+      "entry": "rsi-trend",
+      "filter": "above-200",
+      "train": {
+        "n": 1259,
+        "avgR": 0.0577,
+        "t": 1.68
+      },
+      "validate": {
+        "n": 671,
+        "avgR": 0.0811,
+        "t": 1.78
+      },
+      "sealed": {
+        "n": 551,
+        "avgR": 0.0435,
+        "t": 0.85,
+        "nullP95": 0.0837,
+        "nullMean": -0.0163,
+        "nullP05": -0.0962,
         "nullTrades": 551,
         "beatsNull": false,
         "clearsBar": false,
@@ -294,45 +334,18 @@
         "t": 1.68
       },
       "validate": {
-        "n": 346,
-        "avgR": 0.0977,
-        "t": 1.45
+        "n": 342,
+        "avgR": 0.1027,
+        "t": 1.51
       },
       "sealed": {
-        "n": 316,
-        "avgR": -0.106,
-        "t": -1.58,
-        "nullP95": 0.0743,
-        "nullMean": -0.0397,
-        "nullP05": -0.1498,
-        "nullTrades": 323,
-        "beatsNull": false,
-        "clearsBar": false,
-        "passes": false
-      }
-    },
-    {
-      "name": "rsi-trend × above-200 × SL4",
-      "entry": "rsi-trend",
-      "filter": "above-200",
-      "train": {
-        "n": 1265,
-        "avgR": 0.0571,
-        "t": 1.67
-      },
-      "validate": {
-        "n": 675,
-        "avgR": 0.0777,
-        "t": 1.72
-      },
-      "sealed": {
-        "n": 552,
-        "avgR": 0.0164,
-        "t": 0.32,
-        "nullP95": 0.0643,
-        "nullMean": -0.0229,
-        "nullP05": -0.1183,
-        "nullTrades": 551,
+        "n": 313,
+        "avgR": -0.1046,
+        "t": -1.55,
+        "nullP95": 0.0842,
+        "nullMean": -0.0348,
+        "nullP05": -0.1267,
+        "nullTrades": 304,
         "beatsNull": false,
         "clearsBar": false,
         "passes": false
@@ -343,22 +356,22 @@
       "entry": "rsi-trend",
       "filter": "above-200",
       "train": {
-        "n": 1881,
-        "avgR": 0.0452,
-        "t": 1.6
+        "n": 1871,
+        "avgR": 0.0473,
+        "t": 1.67
       },
       "validate": {
-        "n": 975,
-        "avgR": 0.1643,
-        "t": 4.1
+        "n": 984,
+        "avgR": 0.1594,
+        "t": 4.01
       },
       "sealed": {
-        "n": 864,
-        "avgR": -0.0525,
-        "t": -1.29,
-        "nullP95": 0.0411,
-        "nullMean": -0.0381,
-        "nullP05": -0.101,
+        "n": 856,
+        "avgR": -0.0474,
+        "t": -1.17,
+        "nullP95": 0.0308,
+        "nullMean": -0.0351,
+        "nullP05": -0.1006,
         "nullTrades": 855,
         "beatsNull": false,
         "clearsBar": false,
@@ -370,23 +383,50 @@
       "entry": "rsi-trend",
       "filter": "contracting",
       "train": {
-        "n": 1689,
-        "avgR": 0.0456,
-        "t": 1.55
+        "n": 1683,
+        "avgR": 0.0453,
+        "t": 1.54
       },
       "validate": {
-        "n": 864,
-        "avgR": 0.0729,
-        "t": 1.78
+        "n": 857,
+        "avgR": 0.0647,
+        "t": 1.57
       },
       "sealed": {
-        "n": 803,
-        "avgR": -0.0433,
-        "t": -1.05,
-        "nullP95": 0.057,
-        "nullMean": -0.0232,
-        "nullP05": -0.0878,
+        "n": 797,
+        "avgR": -0.0271,
+        "t": -0.65,
+        "nullP95": 0.0445,
+        "nullMean": -0.023,
+        "nullP05": -0.0857,
         "nullTrades": 798,
+        "beatsNull": false,
+        "clearsBar": false,
+        "passes": false
+      }
+    },
+    {
+      "name": "rsi-trend × vol-low × SL3",
+      "entry": "rsi-trend",
+      "filter": "vol-low",
+      "train": {
+        "n": 1927,
+        "avgR": 0.0423,
+        "t": 1.51
+      },
+      "validate": {
+        "n": 986,
+        "avgR": 0.0905,
+        "t": 2.25
+      },
+      "sealed": {
+        "n": 993,
+        "avgR": -0.0431,
+        "t": -1.16,
+        "nullP95": 0.0267,
+        "nullMean": -0.0306,
+        "nullP05": -0.0833,
+        "nullTrades": 988,
         "beatsNull": false,
         "clearsBar": false,
         "passes": false
@@ -394,6 +434,6 @@
     }
   ],
   "passed": [],
-  "verdict": "Nothing cleared. 288 combinations tested, 8 repeated on validation, 8 reached the sealed set, 0 passed it. On this evidence no combination here earns a place in the signal path.",
+  "verdict": "Nothing cleared. 288 combinations tested, 9 repeated on validation, 9 reached the sealed set, 0 passed it. On this evidence no combination here earns a place in the signal path.",
   "timeframe": "1h"
 }
