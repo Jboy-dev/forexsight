@@ -1,22 +1,22 @@
 {
-  "ts": 1792831915261,
-  "isoTime": "2026-10-24T08:51:55.261Z",
+  "ts": 1792832933733,
+  "isoTime": "2026-10-24T09:08:53.733Z",
   "measuredOn": "every signal, not episode averages",
   "signalsAnalysed": 125,
   "won": 55,
   "lost": 65,
-  "slicesClearingZero": 2,
+  "slicesClearingZero": 1,
   "chanceBaseline": {
-    "mean": 0.8,
-    "sd": 1,
+    "mean": 0.9,
+    "sd": 1.1,
     "range": [
       0,
-      3
+      4
     ],
     "shuffles": 30
   },
-  "threshold": 1.7,
-  "beatsChance": true,
+  "threshold": 2,
+  "beatsChance": false,
   "findings": [
     {
       "feature": "adxBand",
@@ -24,36 +24,13 @@
       "n": 33,
       "avgR": -0.354,
       "ci": [
-        -0.612,
-        -0.062
+        -0.609,
+        -0.078
       ],
       "direction": "negative"
-    },
-    {
-      "feature": "adxBand",
-      "value": "ADX<20",
-      "n": 39,
-      "avgR": 0.348,
-      "ci": [
-        0.01,
-        0.725
-      ],
-      "direction": "positive"
     }
   ],
-  "positiveFindings": [
-    {
-      "feature": "adxBand",
-      "value": "ADX<20",
-      "n": 39,
-      "avgR": 0.348,
-      "ci": [
-        0.01,
-        0.725
-      ],
-      "direction": "positive"
-    }
-  ],
+  "positiveFindings": [],
   "lossShape": {
     "total": 65,
     "fullStopOuts": 48,
@@ -61,5 +38,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "2 slices clear zero against a chance baseline of 0.8, including 1 positive — worth investigating, not yet worth trading."
+  "verdict": "1 slices cleared zero, but shuffled outcomes produce 0.9 on average (up to 4). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
