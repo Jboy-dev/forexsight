@@ -1,35 +1,68 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-10-25T21:53:05.451Z",
+  "timestamp": "2026-10-25T22:22:47.303Z",
   "algoWindow": {
-    "utcTime": "21:53",
-    "activeWindow": null,
-    "algoIntensity": "normal",
-    "note": "No specific algo window"
+    "utcTime": "22:22",
+    "activeWindow": {
+      "name": "Asian range compression",
+      "start": 1320,
+      "end": 1740,
+      "algo": "low"
+    },
+    "algoIntensity": "low",
+    "note": "🕒 Active: Asian range compression (low algo activity)"
   },
   "overallBias": "net-SELL",
   "pairsScanned": 9,
   "marketState": {
     "buyBiased": 0,
-    "sellBiased": 1,
+    "sellBiased": 2,
     "neutral": 0
   },
   "pairs": [
     {
       "pair": "XAU/USD",
-      "ok": false,
-      "error": "no bars"
+      "ok": true,
+      "price": 4007.39990234375,
+      "atr": 11.65716,
+      "vwap": {
+        "vwap": 4025.09385,
+        "price": 4007.39990234375,
+        "distanceATR": -1.52,
+        "position": "below",
+        "bias": "institutional-SELL",
+        "bars": 24
+      },
+      "absorption": {
+        "detected": false
+      },
+      "wick": null,
+      "roundNumber": {
+        "roundBelow": 4005,
+        "roundAbove": 4010,
+        "nearestLevel": 4005,
+        "distanceATR": 0.21,
+        "isMagnetized": true,
+        "note": "⚡ Price magnetized to roundBelow 4005 (0.21× ATR away)"
+      },
+      "rangeCompression": null,
+      "algoBias": "SELL",
+      "algoStrength": 2,
+      "votes": {
+        "BUY": 0,
+        "SELL": 2
+      }
     },
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 80259.0774629347,
-      "atr": 611.5664,
+      "price": 80371.5,
+      "atr": 274.31429,
       "vwap": {
-        "vwap": 80548.45389,
-        "price": 80259.0774629347,
-        "distanceATR": -0.47,
+        "vwap": 80470.91919,
+        "price": 80371.5,
+        "distanceATR": -0.36,
         "position": "below",
         "bias": "institutional-SELL",
         "bars": 23
@@ -44,9 +77,9 @@
         "roundBelow": 80000,
         "roundAbove": 80500,
         "nearestLevel": 80500,
-        "distanceATR": 0.39,
+        "distanceATR": 0.47,
         "isMagnetized": false,
-        "note": "Nearest round: 80500 (0.39× ATR away)"
+        "note": "Nearest round: 80500 (0.47× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "SELL",
@@ -92,6 +125,6 @@
       "error": "no bars"
     }
   ],
-  "interpretation": "Algo footprints across 1 pairs · 0 showing institutional BUY bias, 1 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 2 pairs · 0 showing institutional BUY bias, 2 SELL. Currently in \"Asian range compression\" window with low algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
