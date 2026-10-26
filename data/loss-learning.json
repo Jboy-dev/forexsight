@@ -1,42 +1,53 @@
 {
-  "ts": 1793013914062,
-  "isoTime": "2026-10-26T11:25:14.062Z",
+  "ts": 1793018425509,
+  "isoTime": "2026-10-26T12:40:25.509Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 111,
-  "won": 54,
-  "lost": 53,
-  "slicesClearingZero": 2,
+  "signalsAnalysed": 113,
+  "won": 53,
+  "lost": 56,
+  "slicesClearingZero": 3,
   "chanceBaseline": {
-    "mean": 0.9,
-    "sd": 1.4,
+    "mean": 0.4,
+    "sd": 0.6,
     "range": [
       0,
-      5
+      2
     ],
     "shuffles": 30
   },
-  "threshold": 2.3,
-  "beatsChance": false,
+  "threshold": 1,
+  "beatsChance": true,
   "findings": [
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 48,
-      "avgR": -0.277,
+      "n": 51,
+      "avgR": -0.32,
       "ci": [
-        -0.53,
-        -0.019
+        -0.552,
+        -0.07
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "confidenceBand",
+      "value": "conf 85+",
+      "n": 58,
+      "avgR": -0.234,
+      "ci": [
+        -0.453,
+        -0.006
       ],
       "direction": "negative"
     },
     {
       "feature": "direction",
       "value": "SELL",
-      "n": 63,
-      "avgR": 0.287,
+      "n": 62,
+      "avgR": 0.282,
       "ci": [
-        0.043,
-        0.54
+        0.029,
+        0.535
       ],
       "direction": "positive"
     }
@@ -45,21 +56,21 @@
     {
       "feature": "direction",
       "value": "SELL",
-      "n": 63,
-      "avgR": 0.287,
+      "n": 62,
+      "avgR": 0.282,
       "ci": [
-        0.043,
-        0.54
+        0.029,
+        0.535
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 53,
-    "fullStopOuts": 40,
+    "total": 56,
+    "fullStopOuts": 43,
     "partial": 13,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "2 slices cleared zero, but shuffled outcomes produce 0.9 on average (up to 5). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "3 slices clear zero against a chance baseline of 0.4, including 1 positive — worth investigating, not yet worth trading."
 }
