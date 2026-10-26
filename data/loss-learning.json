@@ -1,22 +1,22 @@
 {
-  "ts": 1793012308232,
-  "isoTime": "2026-10-26T10:58:28.232Z",
+  "ts": 1793013914062,
+  "isoTime": "2026-10-26T11:25:14.062Z",
   "measuredOn": "every signal, not episode averages",
   "signalsAnalysed": 111,
   "won": 54,
   "lost": 53,
   "slicesClearingZero": 2,
   "chanceBaseline": {
-    "mean": 0.7,
-    "sd": 0.8,
+    "mean": 0.9,
+    "sd": 1.4,
     "range": [
       0,
-      3
+      5
     ],
     "shuffles": 30
   },
-  "threshold": 1.5,
-  "beatsChance": true,
+  "threshold": 2.3,
+  "beatsChance": false,
   "findings": [
     {
       "feature": "direction",
@@ -25,7 +25,7 @@
       "avgR": -0.277,
       "ci": [
         -0.53,
-        -0.015
+        -0.019
       ],
       "direction": "negative"
     },
@@ -35,8 +35,8 @@
       "n": 63,
       "avgR": 0.287,
       "ci": [
-        0.047,
-        0.544
+        0.043,
+        0.54
       ],
       "direction": "positive"
     }
@@ -48,8 +48,8 @@
       "n": 63,
       "avgR": 0.287,
       "ci": [
-        0.047,
-        0.544
+        0.043,
+        0.54
       ],
       "direction": "positive"
     }
@@ -61,5 +61,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "2 slices clear zero against a chance baseline of 0.7, including 1 positive — worth investigating, not yet worth trading."
+  "verdict": "2 slices cleared zero, but shuffled outcomes produce 0.9 on average (up to 5). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
