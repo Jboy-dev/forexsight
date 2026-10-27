@@ -1,53 +1,64 @@
 {
-  "ts": 1793063876121,
-  "isoTime": "2026-10-27T01:17:56.121Z",
+  "ts": 1793066455407,
+  "isoTime": "2026-10-27T02:00:55.407Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 118,
-  "won": 52,
-  "lost": 63,
-  "slicesClearingZero": 2,
+  "signalsAnalysed": 113,
+  "won": 50,
+  "lost": 60,
+  "slicesClearingZero": 3,
   "chanceBaseline": {
-    "mean": 1.5,
-    "sd": 1.7,
+    "mean": 1,
+    "sd": 1.4,
     "range": [
       0,
       6
     ],
     "shuffles": 30
   },
-  "threshold": 3.2,
-  "beatsChance": false,
+  "threshold": 2.5,
+  "beatsChance": true,
   "findings": [
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 49,
-      "avgR": -0.358,
+      "n": 46,
+      "avgR": -0.377,
       "ci": [
-        -0.6,
-        -0.099
+        -0.617,
+        -0.098
       ],
       "direction": "negative"
     },
     {
       "feature": "confidenceBand",
       "value": "conf 85+",
-      "n": 58,
-      "avgR": -0.299,
+      "n": 54,
+      "avgR": -0.321,
       "ci": [
-        -0.509,
-        -0.083
+        -0.542,
+        -0.093
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "MACD",
+      "n": 31,
+      "avgR": -0.304,
+      "ci": [
+        -0.585,
+        -0.005
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 63,
-    "fullStopOuts": 50,
-    "partial": 13,
+    "total": 60,
+    "fullStopOuts": 49,
+    "partial": 11,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "2 slices cleared zero, but shuffled outcomes produce 1.5 on average (up to 6). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "3 slices clear zero against a chance baseline of 1.0, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
 }
