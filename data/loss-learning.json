@@ -1,31 +1,42 @@
 {
-  "ts": 1793081450079,
-  "isoTime": "2026-10-27T06:10:50.079Z",
+  "ts": 1793083255400,
+  "isoTime": "2026-10-27T06:40:55.400Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 113,
+  "signalsAnalysed": 114,
   "won": 50,
-  "lost": 60,
-  "slicesClearingZero": 2,
+  "lost": 61,
+  "slicesClearingZero": 3,
   "chanceBaseline": {
-    "mean": 0.9,
-    "sd": 1.1,
+    "mean": 1,
+    "sd": 0.9,
     "range": [
       0,
-      4
+      3
     ],
     "shuffles": 30
   },
-  "threshold": 1.9,
+  "threshold": 2,
   "beatsChance": true,
   "findings": [
+    {
+      "feature": "session",
+      "value": "16-19 UTC",
+      "n": 20,
+      "avgR": -0.413,
+      "ci": [
+        -0.759,
+        -0.007
+      ],
+      "direction": "negative"
+    },
     {
       "feature": "direction",
       "value": "BUY",
       "n": 46,
       "avgR": -0.377,
       "ci": [
-        -0.626,
-        -0.121
+        -0.622,
+        -0.107
       ],
       "direction": "negative"
     },
@@ -36,18 +47,18 @@
       "avgR": -0.321,
       "ci": [
         -0.538,
-        -0.096
+        -0.081
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 60,
-    "fullStopOuts": 49,
+    "total": 61,
+    "fullStopOuts": 50,
     "partial": 11,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "2 slices clear zero against a chance baseline of 0.9, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
+  "verdict": "3 slices clear zero against a chance baseline of 1.0, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
 }
