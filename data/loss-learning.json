@@ -1,21 +1,21 @@
 {
-  "ts": 1793083255400,
-  "isoTime": "2026-10-27T06:40:55.400Z",
+  "ts": 1793086665720,
+  "isoTime": "2026-10-27T07:37:45.720Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 114,
-  "won": 50,
-  "lost": 61,
-  "slicesClearingZero": 3,
+  "signalsAnalysed": 115,
+  "won": 49,
+  "lost": 63,
+  "slicesClearingZero": 4,
   "chanceBaseline": {
-    "mean": 1,
-    "sd": 0.9,
+    "mean": 1.6,
+    "sd": 1.3,
     "range": [
       0,
-      3
+      5
     ],
     "shuffles": 30
   },
-  "threshold": 2,
+  "threshold": 2.9,
   "beatsChance": true,
   "findings": [
     {
@@ -24,7 +24,7 @@
       "n": 20,
       "avgR": -0.413,
       "ci": [
-        -0.759,
+        -0.752,
         -0.007
       ],
       "direction": "negative"
@@ -32,11 +32,11 @@
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 46,
-      "avgR": -0.377,
+      "n": 47,
+      "avgR": -0.39,
       "ci": [
-        -0.622,
-        -0.107
+        -0.629,
+        -0.136
       ],
       "direction": "negative"
     },
@@ -47,18 +47,29 @@
       "avgR": -0.321,
       "ci": [
         -0.538,
-        -0.081
+        -0.09
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "MACD",
+      "n": 31,
+      "avgR": -0.304,
+      "ci": [
+        -0.594,
+        -0.006
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 61,
-    "fullStopOuts": 50,
+    "total": 63,
+    "fullStopOuts": 52,
     "partial": 11,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices clear zero against a chance baseline of 1.0, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
+  "verdict": "4 slices clear zero against a chance baseline of 1.6, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
 }
