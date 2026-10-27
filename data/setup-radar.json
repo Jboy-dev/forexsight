@@ -1,12 +1,94 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-27T12:42:05.864Z",
+  "timestamp": "2026-10-27T18:12:00.343Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 2,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 2,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "US30",
+      "direction": "BUY",
+      "confidence": 73,
+      "strength": 81,
+      "verdict": "MODERATE LONG — 73% conviction",
+      "timeHorizon": "30 min",
+      "entry": 52371.6,
+      "sl": 52109.7,
+      "tp1": 52667.2,
+      "tp3": 53406.3,
+      "slPips": 262,
+      "tp1Pips": 296,
+      "tp3Pips": 1035,
+      "rrTP1": 1.13,
+      "rrTP3": 3.95,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · chart score 35 < 48",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 35,
+        "bear": 0,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors LONG with 73% conviction. Top drivers: Higher timeframe (4H) trend UP; MACD histogram positive (bullish momentum). HTF up. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "SPX500",
+      "direction": "BUY",
+      "confidence": 73,
+      "strength": 81,
+      "verdict": "MODERATE LONG — 73% conviction",
+      "timeHorizon": "30 min",
+      "entry": 7718.6,
+      "sl": 7687.7,
+      "tp1": 7762,
+      "tp3": 7870.4,
+      "slPips": 31,
+      "tp1Pips": 43,
+      "tp3Pips": 152,
+      "rrTP1": 1.41,
+      "rrTP3": 4.92,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "topFactors": [
+        {
+          "name": "Market structure — uptrend (HH+HL)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 58.7 — bullish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 40,
+        "bear": 0,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors LONG with 73% conviction. Top drivers: Market structure — uptrend (HH+HL); MACD histogram positive (bullish momentum); RSI 58.7 — bullish momentum zone. HTF flat. Structure uptrend. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
