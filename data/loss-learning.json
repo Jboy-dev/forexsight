@@ -1,108 +1,130 @@
 {
-  "ts": 1793201072295,
-  "isoTime": "2026-10-28T15:24:32.295Z",
+  "ts": 1793216838588,
+  "isoTime": "2026-10-28T19:47:18.588Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 122,
-  "won": 47,
-  "lost": 75,
-  "slicesClearingZero": 7,
+  "signalsAnalysed": 130,
+  "won": 49,
+  "lost": 81,
+  "slicesClearingZero": 9,
   "chanceBaseline": {
-    "mean": 4.8,
-    "sd": 2,
+    "mean": 6.7,
+    "sd": 1.9,
     "range": [
-      2,
+      3,
       10
     ],
     "shuffles": 30
   },
-  "threshold": 6.8,
+  "threshold": 8.6,
   "beatsChance": true,
   "findings": [
     {
       "feature": "regime",
       "value": "TRENDING",
-      "n": 21,
-      "avgR": -0.635,
+      "n": 25,
+      "avgR": -0.637,
       "ci": [
-        -0.901,
-        -0.336
+        -0.888,
+        -0.36
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "MACD",
-      "n": 36,
-      "avgR": -0.456,
+      "n": 38,
+      "avgR": -0.448,
       "ci": [
-        -0.725,
-        -0.183
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "confidenceBand",
-      "value": "conf 85+",
-      "n": 58,
-      "avgR": -0.418,
-      "ci": [
-        -0.627,
-        -0.192
+        -0.682,
+        -0.184
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 20-30",
-      "n": 45,
-      "avgR": -0.404,
+      "n": 48,
+      "avgR": -0.441,
       "ci": [
-        -0.663,
-        -0.117
+        -0.688,
+        -0.162
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "confidenceBand",
+      "value": "conf 85+",
+      "n": 64,
+      "avgR": -0.429,
+      "ci": [
+        -0.622,
+        -0.214
       ],
       "direction": "negative"
     },
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 43,
-      "avgR": -0.343,
+      "n": 46,
+      "avgR": -0.386,
       "ci": [
-        -0.64,
-        -0.036
+        -0.663,
+        -0.096
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 30+",
-      "n": 39,
-      "avgR": -0.337,
+      "n": 44,
+      "avgR": -0.349,
       "ci": [
-        -0.607,
-        -0.026
+        -0.615,
+        -0.063
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "independence",
+      "value": "2 independent",
+      "n": 37,
+      "avgR": -0.319,
+      "ci": [
+        -0.605,
+        -0.029
       ],
       "direction": "negative"
     },
     {
       "feature": "htfAlignment",
       "value": "aligned",
-      "n": 90,
-      "avgR": -0.263,
+      "n": 92,
+      "avgR": -0.279,
       "ci": [
-        -0.469,
-        -0.056
+        -0.473,
+        -0.067
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "killzone",
+      "value": "outside killzone",
+      "n": 97,
+      "avgR": -0.234,
+      "ci": [
+        -0.452,
+        -0.025
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 75,
-    "fullStopOuts": 72,
+    "total": 81,
+    "fullStopOuts": 78,
     "partial": 3,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "7 slices clear zero against a chance baseline of 4.8, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
+  "verdict": "9 slices clear zero against a chance baseline of 6.7, but every one is NEGATIVE. The system loses broadly rather than in a removable subset."
 }
