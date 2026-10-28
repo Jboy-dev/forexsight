@@ -1,13 +1,13 @@
 {
-  "ts": 1793200931843,
-  "isoTime": "2026-10-28T15:22:11.843Z",
+  "ts": 1793219383589,
+  "isoTime": "2026-10-28T20:29:43.589Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 60,
+  "survivedTrainAndValidate": 61,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -306,27 +306,6 @@
       "passes": false
     },
     {
-      "pair": "NAS100",
-      "tf": "1h",
-      "combo": "ma-cross-20-50 × none",
-      "train": {
-        "n": 43,
-        "avgR": 0.29,
-        "t": 1.56
-      },
-      "validate": {
-        "n": 25,
-        "avgR": 0.5816,
-        "t": 2.15
-      },
-      "sealed": {
-        "n": 28,
-        "avgR": 0.2485,
-        "t": 0.96
-      },
-      "passes": false
-    },
-    {
       "pair": "XAG/USD",
       "tf": "daily",
       "combo": "rsi-trend × none",
@@ -344,6 +323,27 @@
         "n": 107,
         "avgR": 0.1105,
         "t": 0.92
+      },
+      "passes": false
+    },
+    {
+      "pair": "US30",
+      "tf": "15m",
+      "combo": "rsi-trend × none",
+      "train": {
+        "n": 32,
+        "avgR": 0.3137,
+        "t": 1.55
+      },
+      "validate": {
+        "n": 20,
+        "avgR": 0.0791,
+        "t": 0.29
+      },
+      "sealed": {
+        "n": 22,
+        "avgR": 0.2595,
+        "t": 0.9
       },
       "passes": false
     },
@@ -411,6 +411,27 @@
       "passes": false
     },
     {
+      "pair": "NAS100",
+      "tf": "1h",
+      "combo": "ma-cross-20-50 × none",
+      "train": {
+        "n": 43,
+        "avgR": 0.29,
+        "t": 1.56
+      },
+      "validate": {
+        "n": 25,
+        "avgR": 0.5816,
+        "t": 2.15
+      },
+      "sealed": {
+        "n": 29,
+        "avgR": 0.1572,
+        "t": 0.65
+      },
+      "passes": false
+    },
+    {
       "pair": "EUR/USD",
       "tf": "daily",
       "combo": "rsi-trend × expanding",
@@ -468,29 +489,8 @@
       },
       "sealed": {
         "n": 21,
-        "avgR": 0.0919,
-        "t": 0.37
-      },
-      "passes": false
-    },
-    {
-      "pair": "ETH/USD",
-      "tf": "1h",
-      "combo": "rsi-trend × vol-high",
-      "train": {
-        "n": 241,
-        "avgR": 0.1576,
-        "t": 1.92
-      },
-      "validate": {
-        "n": 125,
-        "avgR": 0.1735,
-        "t": 1.54
-      },
-      "sealed": {
-        "n": 99,
-        "avgR": 0.047,
-        "t": 0.36
+        "avgR": 0.1059,
+        "t": 0.42
       },
       "passes": false
     },
@@ -516,27 +516,27 @@
       "passes": false
     },
     {
-      "pair": "NZD/USD",
-      "tf": "daily",
-      "combo": "rsi-trend × vol-low",
+      "pair": "ETH/USD",
+      "tf": "1h",
+      "combo": "rsi-trend × vol-high",
       "train": {
-        "n": 56,
-        "avgR": 0.3069,
-        "t": 1.88
+        "n": 242,
+        "avgR": 0.166,
+        "t": 2.02
       },
       "validate": {
-        "n": 45,
-        "avgR": 0.2579,
-        "t": 1.39
+        "n": 128,
+        "avgR": 0.1753,
+        "t": 1.58
       },
       "sealed": {
-        "n": 30,
-        "avgR": 0.0444,
-        "t": 0.2
+        "n": 99,
+        "avgR": 0.0329,
+        "t": 0.25
       },
       "passes": false
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 60 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 61 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
