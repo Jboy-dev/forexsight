@@ -1,37 +1,56 @@
 {
-  "ts": 1793232985856,
-  "isoTime": "2026-10-29T00:16:25.856Z",
+  "ts": 1793254764536,
+  "isoTime": "2026-10-29T06:19:24.536Z",
   "method": "walk-forward, entry at next bar open with spread charged, v442 managed ladder, episodes not signals, 65/35 train-test split, textbook parameters only",
   "barsPerInstrument": {
-    "AUD/USD": 12379,
-    "BTC/USD": 17486,
-    "ETH/USD": 17483,
-    "EUR/USD": 12315,
-    "GBP/USD": 12318,
-    "NZD/USD": 12381,
-    "USD/CAD": 12380,
-    "USD/CHF": 12259,
-    "USD/JPY": 12247,
-    "XAU/USD": 11463
+    "AUD/USD": 12383,
+    "BTC/USD": 17489,
+    "ETH/USD": 17486,
+    "EUR/USD": 12319,
+    "GBP/USD": 12322,
+    "NZD/USD": 12385,
+    "USD/CAD": 12384,
+    "USD/CHF": 12263,
+    "USD/JPY": 12251,
+    "XAU/USD": 11461
   },
   "strategiesTested": 12,
   "results": [
     {
       "name": "RSI mean reversion",
       "inSample": {
-        "n": 1057,
-        "avgR": 0.128,
+        "n": 1056,
+        "avgR": 0.13,
         "ci": [
           0.071,
-          0.188
+          0.19
         ]
       },
       "outSample": {
-        "n": 613,
+        "n": 612,
         "avgR": 0.259,
         "ci": [
-          0.179,
-          0.345
+          0.181,
+          0.344
+        ]
+      }
+    },
+    {
+      "name": "RSI trend filter",
+      "inSample": {
+        "n": 762,
+        "avgR": -0.028,
+        "ci": [
+          -0.1,
+          0.049
+        ]
+      },
+      "outSample": {
+        "n": 427,
+        "avgR": 0.128,
+        "ci": [
+          0.03,
+          0.225
         ]
       }
     },
@@ -42,101 +61,82 @@
         "avgR": 0.088,
         "ci": [
           0.037,
-          0.14
+          0.142
         ]
       },
       "outSample": {
-        "n": 938,
-        "avgR": 0.126,
+        "n": 939,
+        "avgR": 0.125,
         "ci": [
-          0.056,
-          0.198
-        ]
-      }
-    },
-    {
-      "name": "RSI trend filter",
-      "inSample": {
-        "n": 761,
-        "avgR": -0.028,
-        "ci": [
-          -0.101,
-          0.048
-        ]
-      },
-      "outSample": {
-        "n": 428,
-        "avgR": 0.126,
-        "ci": [
-          0.029,
-          0.228
+          0.053,
+          0.194
         ]
       }
     },
     {
       "name": "Bollinger reversion",
       "inSample": {
-        "n": 1530,
+        "n": 1532,
         "avgR": 0.12,
         "ci": [
-          0.067,
-          0.173
+          0.069,
+          0.176
         ]
       },
       "outSample": {
-        "n": 828,
+        "n": 827,
         "avgR": 0.109,
         "ci": [
-          0.038,
-          0.181
+          0.039,
+          0.182
         ]
       }
     },
     {
       "name": "EMA cross 20/50",
       "inSample": {
-        "n": 1241,
-        "avgR": 0.036,
+        "n": 1242,
+        "avgR": 0.035,
         "ci": [
-          -0.027,
-          0.104
+          -0.03,
+          0.1
         ]
       },
       "outSample": {
-        "n": 740,
-        "avgR": 0.034,
+        "n": 742,
+        "avgR": 0.031,
         "ci": [
           -0.049,
-          0.112
+          0.114
         ]
       }
     },
     {
       "name": "Three-bar reversal",
       "inSample": {
-        "n": 1241,
+        "n": 1238,
         "avgR": 0.006,
         "ci": [
-          -0.03,
-          0.044
+          -0.029,
+          0.043
         ]
       },
       "outSample": {
-        "n": 697,
-        "avgR": -0.03,
+        "n": 699,
+        "avgR": -0.031,
         "ci": [
-          -0.078,
-          0.021
+          -0.081,
+          0.015
         ]
       }
     },
     {
       "name": "Golden cross 50/200",
       "inSample": {
-        "n": 512,
-        "avgR": 0.113,
+        "n": 510,
+        "avgR": 0.111,
         "ci": [
-          0.007,
+          0.005,
           0.219
         ]
       },
@@ -144,64 +144,64 @@
         "n": 264,
         "avgR": -0.039,
         "ci": [
-          -0.172,
-          0.103
+          -0.17,
+          0.101
         ]
       }
     },
     {
       "name": "Inside bar breakout",
       "inSample": {
-        "n": 1532,
-        "avgR": -0.054,
+        "n": 1526,
+        "avgR": -0.056,
         "ci": [
-          -0.096,
-          -0.012
+          -0.099,
+          -0.014
         ]
       },
       "outSample": {
-        "n": 826,
-        "avgR": -0.108,
+        "n": 825,
+        "avgR": -0.107,
         "ci": [
-          -0.161,
-          -0.057
+          -0.159,
+          -0.052
         ]
       }
     },
     {
       "name": "Trend pullback to EMA20",
       "inSample": {
-        "n": 915,
-        "avgR": -0.187,
+        "n": 916,
+        "avgR": -0.186,
         "ci": [
-          -0.241,
-          -0.139
+          -0.235,
+          -0.133
         ]
       },
       "outSample": {
         "n": 501,
-        "avgR": -0.123,
+        "avgR": -0.122,
         "ci": [
-          -0.196,
-          -0.055
+          -0.192,
+          -0.054
         ]
       }
     },
     {
       "name": "Bollinger breakout",
       "inSample": {
-        "n": 1607,
-        "avgR": -0.283,
+        "n": 1609,
+        "avgR": -0.284,
         "ci": [
-          -0.319,
-          -0.246
+          -0.32,
+          -0.247
         ]
       },
       "outSample": {
         "n": 886,
-        "avgR": -0.303,
+        "avgR": -0.302,
         "ci": [
-          -0.349,
+          -0.352,
           -0.257
         ]
       }
@@ -209,16 +209,16 @@
     {
       "name": "Donchian 20 breakout",
       "inSample": {
-        "n": 1569,
+        "n": 1571,
         "avgR": -0.312,
         "ci": [
-          -0.347,
-          -0.275
+          -0.349,
+          -0.277
         ]
       },
       "outSample": {
         "n": 874,
-        "avgR": -0.357,
+        "avgR": -0.355,
         "ci": [
           -0.4,
           -0.313
@@ -228,27 +228,27 @@
     {
       "name": "Donchian 55 breakout",
       "inSample": {
-        "n": 1174,
-        "avgR": -0.351,
+        "n": 1177,
+        "avgR": -0.352,
         "ci": [
-          -0.391,
+          -0.394,
           -0.309
         ]
       },
       "outSample": {
         "n": 664,
-        "avgR": -0.436,
+        "avgR": -0.434,
         "ci": [
-          -0.489,
-          -0.384
+          -0.486,
+          -0.383
         ]
       }
     }
   ],
   "survivors": [
     "RSI mean reversion",
-    "MACD cross",
     "RSI trend filter",
+    "MACD cross",
     "Bollinger reversion"
   ],
   "verdict": "4 strategy(ies) held a positive interval out of sample.",
