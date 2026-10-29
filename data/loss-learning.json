@@ -1,21 +1,21 @@
 {
-  "ts": 1793233072242,
-  "isoTime": "2026-10-29T00:17:52.242Z",
+  "ts": 1793242548986,
+  "isoTime": "2026-10-29T02:55:48.986Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 127,
+  "signalsAnalysed": 130,
   "won": 47,
-  "lost": 80,
-  "slicesClearingZero": 8,
+  "lost": 83,
+  "slicesClearingZero": 10,
   "chanceBaseline": {
-    "mean": 7.3,
-    "sd": 2.6,
+    "mean": 9.8,
+    "sd": 2.4,
     "range": [
-      3,
-      13
+      6,
+      14
     ],
     "shuffles": 30
   },
-  "threshold": 9.9,
+  "threshold": 12.2,
   "beatsChance": false,
   "findings": [
     {
@@ -25,62 +25,73 @@
       "avgR": -0.637,
       "ci": [
         -0.888,
-        -0.362
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "adxBand",
-      "value": "ADX 20-30",
-      "n": 48,
-      "avgR": -0.453,
-      "ci": [
-        -0.697,
-        -0.179
+        -0.357
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "MACD",
-      "n": 37,
-      "avgR": -0.433,
+      "n": 40,
+      "avgR": -0.476,
       "ci": [
-        -0.693,
-        -0.159
+        -0.716,
+        -0.229
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "adxBand",
+      "value": "ADX 20-30",
+      "n": 49,
+      "avgR": -0.464,
+      "ci": [
+        -0.711,
+        -0.194
       ],
       "direction": "negative"
     },
     {
       "feature": "confidenceBand",
       "value": "conf 85+",
-      "n": 61,
-      "avgR": -0.424,
+      "n": 64,
+      "avgR": -0.451,
       "ci": [
-        -0.626,
-        -0.201
+        -0.653,
+        -0.237
       ],
       "direction": "negative"
     },
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 44,
-      "avgR": -0.402,
+      "n": 47,
+      "avgR": -0.441,
       "ci": [
-        -0.676,
-        -0.091
+        -0.709,
+        -0.16
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 30+",
-      "n": 43,
-      "avgR": -0.379,
+      "n": 44,
+      "avgR": -0.393,
       "ci": [
-        -0.642,
-        -0.09
+        -0.648,
+        -0.115
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "independence",
+      "value": "2 independent",
+      "n": 36,
+      "avgR": -0.339,
+      "ci": [
+        -0.61,
+        -0.045
       ],
       "direction": "negative"
     },
@@ -90,30 +101,41 @@
       "n": 88,
       "avgR": -0.291,
       "ci": [
-        -0.495,
-        -0.07
+        -0.498,
+        -0.075
       ],
       "direction": "negative"
     },
     {
       "feature": "killzone",
       "value": "outside killzone",
-      "n": 95,
-      "avgR": -0.244,
+      "n": 97,
+      "avgR": -0.26,
       "ci": [
-        -0.462,
-        -0.017
+        -0.467,
+        -0.032
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "VWAP",
+      "n": 75,
+      "avgR": -0.246,
+      "ci": [
+        -0.469,
+        -0.015
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 80,
-    "fullStopOuts": 78,
+    "total": 83,
+    "fullStopOuts": 81,
     "partial": 2,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "8 slices cleared zero, but shuffled outcomes produce 7.3 on average (up to 13). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "10 slices cleared zero, but shuffled outcomes produce 9.8 on average (up to 14). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
