@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-10-30T19:30:38.349Z",
+  "timestamp": "2026-10-30T20:00:42.638Z",
   "scanned": 15,
   "setupsFound": 2,
   "passedMainGate": 0,
@@ -11,19 +11,19 @@
     {
       "pair": "SPX500",
       "direction": "SELL",
-      "confidence": 66,
-      "strength": 62,
-      "verdict": "MODERATE SHORT — 66% conviction",
+      "confidence": 78,
+      "strength": 85,
+      "verdict": "MODERATE SHORT — 78% conviction",
       "timeHorizon": "2-4 hours",
-      "entry": 7554.2,
-      "sl": 7584.4,
-      "tp1": 7499.1,
-      "tp3": 7361.2,
+      "entry": 7580,
+      "sl": 7610.4,
+      "tp1": 7523.3,
+      "tp3": 7381.6,
       "slPips": 30,
-      "tp1Pips": 55,
-      "tp3Pips": 193,
-      "rrTP1": 1.82,
-      "rrTP3": 6.39,
+      "tp1Pips": 57,
+      "tp3Pips": 198,
+      "rrTP1": 1.87,
+      "rrTP3": 6.55,
       "passedMainGate": false,
       "mainTier": null,
       "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
@@ -31,6 +31,11 @@
         {
           "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
           "note": ""
         },
         {
@@ -42,31 +47,36 @@
           "name": "MACD histogram negative (bearish momentum)",
           "weight": 15,
           "note": ""
+        },
+        {
+          "name": "RSI 34.2 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 15,
-        "bear": 50,
-        "marginPct": 54
+        "bull": 0,
+        "bear": 75,
+        "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 66% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 78% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF down. Structure downtrend. Manage risk with the levels below."
     },
     {
       "pair": "NAS100",
       "direction": "SELL",
-      "confidence": 61,
-      "strength": 59,
-      "verdict": "WEAK SHORT — 61% conviction",
+      "confidence": 68,
+      "strength": 66,
+      "verdict": "MODERATE SHORT — 68% conviction",
       "timeHorizon": "2-4 hours",
-      "entry": 28218,
-      "sl": 28387.3,
-      "tp1": 27878.6,
-      "tp3": 27030.1,
-      "slPips": 169,
-      "tp1Pips": 339,
-      "tp3Pips": 1188,
-      "rrTP1": 2,
-      "rrTP3": 7.02,
+      "entry": 28384.8,
+      "sl": 28555.2,
+      "tp1": 28034,
+      "tp3": 27156.8,
+      "slPips": 170,
+      "tp1Pips": 351,
+      "tp3Pips": 1228,
+      "rrTP1": 2.06,
+      "rrTP3": 7.21,
       "passedMainGate": false,
       "mainTier": null,
       "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
@@ -74,6 +84,11 @@
         {
           "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Market structure — downtrend (LL+LH)",
+          "weight": 15,
           "note": ""
         },
         {
@@ -89,10 +104,10 @@
       ],
       "bullVsBear": {
         "bull": 15,
-        "bear": 50,
-        "marginPct": 54
+        "bear": 65,
+        "marginPct": 63
       },
-      "reasoning": "Weighted consensus favors SHORT with 61% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 68% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); Price < EMA20 < EMA50 (bearish stack). HTF down. Structure downtrend. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
