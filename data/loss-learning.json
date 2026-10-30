@@ -1,21 +1,21 @@
 {
-  "ts": 1793348999983,
-  "isoTime": "2026-10-30T08:29:59.983Z",
+  "ts": 1793353798211,
+  "isoTime": "2026-10-30T09:49:58.211Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 150,
-  "won": 57,
-  "lost": 93,
-  "slicesClearingZero": 11,
+  "signalsAnalysed": 146,
+  "won": 54,
+  "lost": 92,
+  "slicesClearingZero": 15,
   "chanceBaseline": {
-    "mean": 9.5,
-    "sd": 2.7,
+    "mean": 13.2,
+    "sd": 2.1,
     "range": [
-      4,
-      15
+      8,
+      17
     ],
     "shuffles": 30
   },
-  "threshold": 12.2,
+  "threshold": 15.3,
   "beatsChance": false,
   "findings": [
     {
@@ -25,7 +25,7 @@
       "avgR": -0.79,
       "ci": [
         -1,
-        -0.51
+        -0.58
       ],
       "direction": "negative"
     },
@@ -36,7 +36,18 @@
       "avgR": -0.703,
       "ci": [
         -0.878,
-        -0.495
+        -0.496
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "adxBand",
+      "value": "ADX 20-30",
+      "n": 48,
+      "avgR": -0.589,
+      "ci": [
+        -0.807,
+        -0.333
       ],
       "direction": "negative"
     },
@@ -47,29 +58,18 @@
       "avgR": -0.582,
       "ci": [
         -0.813,
-        -0.326
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "adxBand",
-      "value": "ADX 20-30",
-      "n": 50,
-      "avgR": -0.546,
-      "ci": [
-        -0.772,
-        -0.278
+        -0.304
       ],
       "direction": "negative"
     },
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 62,
-      "avgR": -0.513,
+      "n": 61,
+      "avgR": -0.558,
       "ci": [
-        -0.711,
-        -0.297
+        -0.73,
+        -0.366
       ],
       "direction": "negative"
     },
@@ -79,8 +79,8 @@
       "n": 25,
       "avgR": -0.481,
       "ci": [
-        -0.815,
-        -0.121
+        -0.805,
+        -0.104
       ],
       "direction": "negative"
     },
@@ -90,19 +90,41 @@
       "n": 27,
       "avgR": -0.425,
       "ci": [
-        -0.768,
-        -0.03
+        -0.777,
+        -0.055
       ],
       "direction": "negative"
     },
     {
       "feature": "confidenceBand",
       "value": "conf 85+",
-      "n": 81,
-      "avgR": -0.375,
+      "n": 79,
+      "avgR": -0.397,
       "ci": [
-        -0.571,
-        -0.177
+        -0.577,
+        -0.2
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "adxBand",
+      "value": "ADX 30+",
+      "n": 50,
+      "avgR": -0.376,
+      "ci": [
+        -0.622,
+        -0.124
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "ICHIMOKU",
+      "n": 59,
+      "avgR": -0.351,
+      "ci": [
+        -0.576,
+        -0.107
       ],
       "direction": "negative"
     },
@@ -112,19 +134,19 @@
       "n": 38,
       "avgR": -0.335,
       "ci": [
-        -0.616,
-        -0.011
+        -0.622,
+        -0.016
       ],
       "direction": "negative"
     },
     {
-      "feature": "adxBand",
-      "value": "ADX 30+",
-      "n": 51,
-      "avgR": -0.325,
+      "feature": "strategy",
+      "value": "VWAP",
+      "n": 89,
+      "avgR": -0.295,
       "ci": [
-        -0.575,
-        -0.059
+        -0.494,
+        -0.081
       ],
       "direction": "negative"
     },
@@ -134,19 +156,41 @@
       "n": 49,
       "avgR": -0.29,
       "ci": [
-        -0.559,
-        -0.002
+        -0.544,
+        -0.013
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "killzone",
+      "value": "outside killzone",
+      "n": 108,
+      "avgR": -0.244,
+      "ci": [
+        -0.443,
+        -0.037
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "htfAlignment",
+      "value": "aligned",
+      "n": 99,
+      "avgR": -0.231,
+      "ci": [
+        -0.44,
+        -0.019
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 93,
-    "fullStopOuts": 93,
+    "total": 92,
+    "fullStopOuts": 92,
     "partial": 0,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "11 slices cleared zero, but shuffled outcomes produce 9.5 on average (up to 15). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "15 slices cleared zero, but shuffled outcomes produce 13.2 on average (up to 17). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
