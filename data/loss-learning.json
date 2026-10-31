@@ -1,21 +1,21 @@
 {
-  "ts": 1793404185185,
-  "isoTime": "2026-10-30T23:49:45.185Z",
+  "ts": 1793407155135,
+  "isoTime": "2026-10-31T00:39:15.135Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 137,
-  "won": 50,
-  "lost": 87,
+  "signalsAnalysed": 133,
+  "won": 48,
+  "lost": 85,
   "slicesClearingZero": 13,
   "chanceBaseline": {
-    "mean": 11.2,
-    "sd": 2.2,
+    "mean": 11.7,
+    "sd": 1.9,
     "range": [
-      8,
-      16
+      7,
+      15
     ],
     "shuffles": 30
   },
-  "threshold": 13.5,
+  "threshold": 13.6,
   "beatsChance": false,
   "findings": [
     {
@@ -25,51 +25,40 @@
       "avgR": -0.679,
       "ci": [
         -0.92,
-        -0.412
+        -0.389
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "MACD",
-      "n": 39,
-      "avgR": -0.649,
+      "n": 37,
+      "avgR": -0.668,
       "ci": [
-        -0.856,
-        -0.4
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "ORB",
-      "n": 20,
-      "avgR": -0.629,
-      "ci": [
-        -0.93,
-        -0.257
+        -0.886,
+        -0.411
       ],
       "direction": "negative"
     },
     {
       "feature": "direction",
       "value": "BUY",
-      "n": 56,
-      "avgR": -0.602,
+      "n": 53,
+      "avgR": -0.618,
       "ci": [
-        -0.775,
-        -0.428
+        -0.776,
+        -0.445
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 20-30",
-      "n": 45,
-      "avgR": -0.562,
+      "n": 43,
+      "avgR": -0.555,
       "ci": [
-        -0.789,
-        -0.284
+        -0.78,
+        -0.297
       ],
       "direction": "negative"
     },
@@ -79,19 +68,30 @@
       "n": 25,
       "avgR": -0.491,
       "ci": [
-        -0.832,
-        -0.067
+        -0.861,
+        -0.057
       ],
       "direction": "negative"
     },
     {
       "feature": "adxBand",
       "value": "ADX 30+",
-      "n": 45,
-      "avgR": -0.451,
+      "n": 44,
+      "avgR": -0.484,
       "ci": [
-        -0.69,
-        -0.186
+        -0.73,
+        -0.225
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "strategy",
+      "value": "ICHIMOKU",
+      "n": 49,
+      "avgR": -0.403,
+      "ci": [
+        -0.65,
+        -0.125
       ],
       "direction": "negative"
     },
@@ -102,73 +102,73 @@
       "avgR": -0.398,
       "ci": [
         -0.703,
-        -0.067
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "ICHIMOKU",
-      "n": 53,
-      "avgR": -0.384,
-      "ci": [
-        -0.622,
-        -0.121
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "independence",
-      "value": "2 independent",
-      "n": 44,
-      "avgR": -0.379,
-      "ci": [
-        -0.642,
-        -0.085
+        -0.073
       ],
       "direction": "negative"
     },
     {
       "feature": "confidenceBand",
       "value": "conf 85+",
-      "n": 75,
-      "avgR": -0.37,
+      "n": 71,
+      "avgR": -0.383,
       "ci": [
-        -0.562,
-        -0.156
+        -0.581,
+        -0.153
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "independence",
+      "value": "2 independent",
+      "n": 43,
+      "avgR": -0.364,
+      "ci": [
+        -0.649,
+        -0.09
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "VWAP",
-      "n": 81,
-      "avgR": -0.291,
+      "n": 76,
+      "avgR": -0.332,
       "ci": [
-        -0.514,
-        -0.06
+        -0.547,
+        -0.098
       ],
       "direction": "negative"
     },
     {
-      "feature": "regime",
-      "value": "MIXED",
-      "n": 74,
-      "avgR": -0.262,
+      "feature": "strategy",
+      "value": "MOMENTUM",
+      "n": 55,
+      "avgR": -0.306,
       "ci": [
-        -0.49,
-        -0.009
+        -0.583,
+        -0.003
+      ],
+      "direction": "negative"
+    },
+    {
+      "feature": "htfAlignment",
+      "value": "aligned",
+      "n": 87,
+      "avgR": -0.263,
+      "ci": [
+        -0.483,
+        -0.028
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 87,
-    "fullStopOuts": 87,
+    "total": 85,
+    "fullStopOuts": 85,
     "partial": 0,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "13 slices cleared zero, but shuffled outcomes produce 11.2 on average (up to 16). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "13 slices cleared zero, but shuffled outcomes produce 11.7 on average (up to 15). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
