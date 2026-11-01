@@ -1,6 +1,6 @@
 {
-  "ts": 1793479203141,
-  "isoTime": "2026-10-31T20:40:03.141Z",
+  "ts": 1793491212589,
+  "isoTime": "2026-11-01T00:00:12.589Z",
   "builtBy": "tools/adaptive-engine.mjs",
   "instruments": 19,
   "rules": 8,
@@ -9,22 +9,22 @@
   "absoluteBarR": 0,
   "adaptive": {
     "train": {
-      "n": 7750,
-      "avgR": -0.0627,
-      "t": -4.56,
+      "n": 7751,
+      "avgR": -0.0628,
+      "t": -4.57,
       "ci": [
-        -0.0896,
-        -0.0357
+        -0.0898,
+        -0.0358
       ],
       "winRate": 44.1
     },
     "validate": {
-      "n": 3926,
-      "avgR": -0.0092,
-      "t": -0.47,
+      "n": 3925,
+      "avgR": -0.0089,
+      "t": -0.46,
       "ci": [
-        -0.0474,
-        0.0291
+        -0.0471,
+        0.0293
       ],
       "winRate": 46.5
     },
@@ -51,27 +51,27 @@
   },
   "staticBaseline": {
     "sealed": {
-      "n": 216608,
-      "avgR": -0.0531,
-      "t": -20.37,
+      "n": 216631,
+      "avgR": -0.0532,
+      "t": -20.44,
       "ci": [
-        -0.0582,
-        -0.048
+        -0.0583,
+        -0.0481
       ],
       "winRate": 45.3
     },
     "all": {
-      "n": 909297,
+      "n": 909344,
       "avgR": -0.0422,
-      "t": -33.05,
+      "t": -33.08,
       "ci": [
-        -0.0447,
+        -0.0448,
         -0.0397
       ],
       "winRate": 45.2
     }
   },
-  "selectionGainR": -0.0291,
+  "selectionGainR": -0.029,
   "ruleUsage": {
     "momentum-60": 6732,
     "momentum-120": 1993,
@@ -83,5 +83,5 @@
     "trend-with-vol": 930
   },
   "method": "Online learning with no lookahead. At each bar a rule is traded only if its own recently RESOLVED trades (closed strictly before that bar) average above an ABSOLUTE positive bar. Non-overlapping. Compared against the same rules with no selection at all.",
-  "verdict": "Adapting does not rescue it. On the sealed quarter the adaptive engine returned -0.0822R against -0.0531R for no selection at all — a difference of -0.0291R with the interval [-0.1218, -0.0426] including zero. Choosing rules by their recent record does not predict their next trade."
+  "verdict": "Adapting does not rescue it. On the sealed quarter the adaptive engine returned -0.0822R against -0.0532R for no selection at all — a difference of -0.0290R with the interval [-0.1218, -0.0426] including zero. Choosing rules by their recent record does not predict their next trade."
 }
