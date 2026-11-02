@@ -1,13 +1,13 @@
 {
-  "ts": 1793582680223,
-  "isoTime": "2026-11-02T01:24:40.223Z",
+  "ts": 1793606801010,
+  "isoTime": "2026-11-02T08:06:41.011Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 57,
+  "survivedTrainAndValidate": 56,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -378,9 +378,9 @@
         "t": 1.58
       },
       "validate": {
-        "n": 108,
-        "avgR": 0.1016,
-        "t": 0.86
+        "n": 109,
+        "avgR": 0.0902,
+        "t": 0.77
       },
       "sealed": {
         "n": 106,
@@ -474,27 +474,6 @@
       "passes": false
     },
     {
-      "pair": "USD/JPY",
-      "tf": "15m",
-      "combo": "donchian-20 × vol-low",
-      "train": {
-        "n": 36,
-        "avgR": 0.373,
-        "t": 1.99
-      },
-      "validate": {
-        "n": 26,
-        "avgR": 0.1676,
-        "t": 0.66
-      },
-      "sealed": {
-        "n": 16,
-        "avgR": 0.1686,
-        "t": 0.59
-      },
-      "passes": false
-    },
-    {
       "pair": "EUR/USD",
       "tf": "daily",
       "combo": "rsi-trend × expanding",
@@ -512,6 +491,27 @@
         "n": 59,
         "avgR": 0.0821,
         "t": 0.53
+      },
+      "passes": false
+    },
+    {
+      "pair": "USD/JPY",
+      "tf": "15m",
+      "combo": "donchian-20 × vol-low",
+      "train": {
+        "n": 36,
+        "avgR": 0.373,
+        "t": 1.99
+      },
+      "validate": {
+        "n": 26,
+        "avgR": 0.2071,
+        "t": 0.8
+      },
+      "sealed": {
+        "n": 16,
+        "avgR": 0.1003,
+        "t": 0.37
       },
       "passes": false
     },
@@ -538,5 +538,5 @@
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 57 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 56 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
