@@ -1,56 +1,56 @@
 {
-  "ts": 1793677423644,
-  "isoTime": "2026-11-03T03:43:43.644Z",
+  "ts": 1793699848948,
+  "isoTime": "2026-11-03T09:57:28.948Z",
   "builtBy": "tools/build-ledger.mjs",
   "coverage": {
-    "total": 1397,
-    "resolved": 826,
-    "open": 571,
+    "total": 1406,
+    "resolved": 828,
+    "open": 578,
     "from": "2026-09-17T11:59:29.472Z",
-    "to": "2026-11-03T01:09:57.886Z",
-    "archived": 690,
+    "to": "2026-11-03T08:26:33.147Z",
+    "archived": 694,
     "note": "Working book plus archive, deduplicated by key. The archive exists because the book used to delete everything beyond the newest 400 outright."
   },
   "winRates": {
     "byOutcome": {
-      "wins": 367,
+      "wins": 369,
       "losses": 459,
-      "rate": 44.4,
+      "rate": 44.6,
       "definition": "closed with a positive R, including setups that timed out while ahead"
     },
     "byTarget": {
-      "hit": 262,
+      "hit": 264,
       "missed": 564,
-      "rate": 31.7,
+      "rate": 31.9,
       "definition": "actually reached TP1 or beyond"
     },
     "note": "These differ because a setup can time out slightly positive without ever reaching a target. Both are shown; quoting only the higher one would overstate the hit rate."
   },
   "returns": {
-    "avgR": -0.033,
-    "totalR": -27.28,
+    "avgR": -0.0276,
+    "totalR": -22.82,
     "ci95": [
-      -0.104,
-      0.038
+      -0.099,
+      0.044
     ],
-    "stdDev": 1.042,
-    "avgWin": 0.966,
+    "stdDev": 1.047,
+    "avgWin": 0.973,
     "avgLoss": -0.832,
-    "payoff": 1.16,
-    "expectancy": -0.0336
+    "payoff": 1.17,
+    "expectancy": -0.0269
   },
   "episodes": {
-    "count": 335,
-    "avgR": -0.1358,
+    "count": 336,
+    "avgR": -0.1287,
     "ci95": [
-      -0.237,
-      -0.034
+      -0.231,
+      -0.027
     ],
-    "inflation": 2.47,
+    "inflation": 2.46,
     "note": "Republications of the same move collapsed to one observation. This is the independent unit."
   },
   "risk": {
-    "maxDrawdownR": 94.74,
+    "maxDrawdownR": 90.28,
     "longestWinStreak": 9,
     "longestLossStreak": 21,
     "peakR": 67.46
@@ -122,6 +122,19 @@
       ]
     },
     {
+      "key": "USD/CHF",
+      "n": 72,
+      "wins": 37,
+      "losses": 35,
+      "winRate": 51.4,
+      "avgR": -0.053,
+      "totalR": -3.8,
+      "ci": [
+        -0.262,
+        0.157
+      ]
+    },
+    {
       "key": "NZD/USD",
       "n": 70,
       "wins": 39,
@@ -132,19 +145,6 @@
       "ci": [
         -0.129,
         0.274
-      ]
-    },
-    {
-      "key": "USD/CHF",
-      "n": 70,
-      "wins": 35,
-      "losses": 35,
-      "winRate": 50,
-      "avgR": -0.118,
-      "totalR": -8.26,
-      "ci": [
-        -0.313,
-        0.077
       ]
     },
     {
@@ -190,15 +190,15 @@
   "byDirection": [
     {
       "key": "SELL",
-      "n": 525,
-      "wins": 239,
+      "n": 527,
+      "wins": 241,
       "losses": 286,
-      "winRate": 45.5,
-      "avgR": -0.008,
-      "totalR": -4.04,
+      "winRate": 45.7,
+      "avgR": 0.001,
+      "totalR": 0.42,
       "ci": [
-        -0.097,
-        0.082
+        -0.089,
+        0.091
       ]
     },
     {
@@ -244,15 +244,15 @@
     },
     {
       "key": "under 60",
-      "n": 212,
-      "wins": 95,
+      "n": 214,
+      "wins": 97,
       "losses": 117,
-      "winRate": 44.8,
-      "avgR": -0.082,
-      "totalR": -17.34,
+      "winRate": 45.3,
+      "avgR": -0.06,
+      "totalR": -12.88,
       "ci": [
-        -0.221,
-        0.058
+        -0.202,
+        0.081
       ]
     },
     {
@@ -311,15 +311,15 @@
     },
     {
       "key": "BREAKOUT",
-      "n": 105,
-      "wins": 44,
+      "n": 107,
+      "wins": 46,
       "losses": 61,
-      "winRate": 41.9,
-      "avgR": -0.017,
-      "totalR": -1.78,
+      "winRate": 43,
+      "avgR": 0.025,
+      "totalR": 2.68,
       "ci": [
-        -0.218,
-        0.185
+        -0.181,
+        0.231
       ]
     },
     {
@@ -365,15 +365,15 @@
     },
     {
       "key": "won",
-      "n": 155,
-      "wins": 155,
+      "n": 157,
+      "wins": 157,
       "losses": 0,
       "winRate": 100,
-      "avgR": 1.079,
-      "totalR": 167.17,
+      "avgR": 1.093,
+      "totalR": 171.63,
       "ci": [
-        0.949,
-        1.208
+        0.964,
+        1.222
       ]
     }
   ],
@@ -646,16 +646,196 @@
     -0.08,
     -3.08,
     -6.08,
-    -6.28,
-    -9.28,
-    -12.28,
-    -15.28,
-    -18.28,
-    -21.28,
-    -24.28,
-    -27.28
+    -4.45,
+    -2.82,
+    -5.82,
+    -8.82,
+    -11.82,
+    -14.82,
+    -17.82,
+    -20.82
   ],
   "history": [
+    {
+      "key": "USD/JPY_BUY_2026-11-03T08",
+      "pair": "USD/JPY",
+      "direction": "BUY",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 89,
+      "entry": 157.865,
+      "sl": 157.447,
+      "tp1": 158.366,
+      "tp2": 158.701,
+      "tp3": 159.327,
+      "maeR": 0,
+      "mfeR": 0.7,
+      "regime": "RANGING",
+      "barsWatched": 2
+    },
+    {
+      "key": "AUD/JPY_SELL_2026-11-03T08",
+      "pair": "AUD/JPY",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 99,
+      "entry": 110.31,
+      "sl": 110.89,
+      "tp1": 109.614,
+      "tp2": 109.151,
+      "tp3": 108.281,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "TRENDING",
+      "barsWatched": null
+    },
+    {
+      "key": "GBP/JPY_BUY_2026-11-03T08",
+      "pair": "GBP/JPY",
+      "direction": "BUY",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 91,
+      "entry": 211.825,
+      "sl": 211.27,
+      "tp1": 212.491,
+      "tp2": 212.935,
+      "tp3": 213.767,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "RANGING",
+      "barsWatched": null
+    },
+    {
+      "key": "XRP/USD_BUY_2026-11-03T08",
+      "pair": "XRP/USD",
+      "direction": "BUY",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 87,
+      "entry": 1.2512,
+      "sl": 1.22895,
+      "tp1": 1.2779,
+      "tp2": 1.29569,
+      "tp3": 1.32906,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "RANGING",
+      "barsWatched": null
+    },
+    {
+      "key": "XAU/USD_SELL_2026-11-03T08",
+      "pair": "XAU/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 99,
+      "entry": 3916.3,
+      "sl": 3981.58,
+      "tp1": 3837.96,
+      "tp2": 3785.74,
+      "tp3": 3687.82,
+      "maeR": 0.04,
+      "mfeR": 0.19,
+      "regime": "MIXED",
+      "barsWatched": 2
+    },
+    {
+      "key": "USD/CAD_SELL_2026-11-03T08",
+      "pair": "USD/CAD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 99,
+      "entry": 1.39638,
+      "sl": 1.40088,
+      "tp1": 1.39098,
+      "tp2": 1.38738,
+      "tp3": 1.38063,
+      "maeR": 0.22,
+      "mfeR": 0.22,
+      "regime": "RANGING",
+      "barsWatched": 2
+    },
+    {
+      "key": "BTC/USD_SELL_2026-11-03T08",
+      "pair": "BTC/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 93,
+      "entry": 76691.96094,
+      "sl": 78205.40005,
+      "tp1": 74875.834,
+      "tp2": 73665.08271,
+      "tp3": 71394.92403,
+      "maeR": 0.16,
+      "mfeR": 0.15,
+      "regime": "MIXED",
+      "barsWatched": 2
+    },
+    {
+      "key": "XAG/USD_SELL_2026-11-03T08",
+      "pair": "XAG/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 96,
+      "entry": 49.05,
+      "sl": 50.67163,
+      "tp1": 47.10404,
+      "tp2": 45.80673,
+      "tp3": 43.37429,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "MIXED",
+      "barsWatched": null
+    },
+    {
+      "key": "NZD/USD_SELL_2026-11-03T08",
+      "pair": "NZD/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 55,
+      "entry": 0.56294,
+      "sl": 0.56519,
+      "tp1": 0.56023,
+      "tp2": 0.55843,
+      "tp3": 0.55505,
+      "maeR": 0,
+      "mfeR": 0.59,
+      "regime": "MIXED",
+      "barsWatched": 2
+    },
     {
       "key": "XAU/USD_SELL_2026-11-03T01",
       "pair": "XAU/USD",
@@ -664,7 +844,7 @@
       "resolvedAt": null,
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 47,
       "entry": 3967.8,
       "sl": 4014.98,
@@ -672,9 +852,9 @@
       "tp2": 3873.44,
       "tp3": 3802.68,
       "maeR": 0,
-      "mfeR": 0.6,
+      "mfeR": 1.35,
       "regime": "MIXED",
-      "barsWatched": 3
+      "barsWatched": 9
     },
     {
       "key": "XAG/USD_SELL_2026-11-03T01",
@@ -712,9 +892,9 @@
       "tp2": 73598.54182,
       "tp3": 71049.51655,
       "maeR": 0,
-      "mfeR": 0.34,
+      "mfeR": 0.44,
       "regime": "MIXED",
-      "barsWatched": 3
+      "barsWatched": 9
     },
     {
       "key": "XRP/USD_SELL_2026-11-03T01",
@@ -792,9 +972,9 @@
       "tp2": 0.80792,
       "tp3": 0.79994,
       "maeR": 0.27,
-      "mfeR": 0,
+      "mfeR": 0.7,
       "regime": "MIXED",
-      "barsWatched": 3
+      "barsWatched": 9
     },
     {
       "key": "NZD/USD_SELL_2026-11-02T18",
@@ -811,10 +991,10 @@
       "tp1": 0.55978,
       "tp2": 0.55782,
       "tp3": 0.55414,
-      "maeR": 0,
+      "maeR": 0.25,
       "mfeR": 0.9,
       "regime": "MIXED",
-      "barsWatched": 10
+      "barsWatched": 16
     },
     {
       "key": "USD/CHF_SELL_2026-11-02T18",
@@ -832,9 +1012,9 @@
       "tp2": 0.80645,
       "tp3": 0.79754,
       "maeR": 0.28,
-      "mfeR": 0.14,
+      "mfeR": 0.58,
       "regime": "TRENDING",
-      "barsWatched": 10
+      "barsWatched": 16
     },
     {
       "key": "AUD/JPY_SELL_2026-11-02T18",
@@ -884,7 +1064,7 @@
       "resolvedAt": null,
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 47,
       "entry": 3968.3,
       "sl": 4021.7,
@@ -892,9 +1072,9 @@
       "tp2": 3861.51,
       "tp3": 3781.41,
       "maeR": 0.12,
-      "mfeR": 0.54,
+      "mfeR": 1.2,
       "regime": "TRENDING",
-      "barsWatched": 9
+      "barsWatched": 15
     },
     {
       "key": "NAS100_SELL_2026-11-02T18",
@@ -994,7 +1174,7 @@
       "maeR": 0.54,
       "mfeR": 0,
       "regime": "MIXED",
-      "barsWatched": 10
+      "barsWatched": 16
     },
     {
       "key": "AUD/JPY_SELL_2026-11-02T08",
@@ -1104,7 +1284,7 @@
       "resolvedAt": null,
       "status": "open",
       "resultR": null,
-      "tpReached": 1,
+      "tpReached": 2,
       "confidence": 55,
       "entry": 77993.89844,
       "sl": 78841.20196,
@@ -1112,9 +1292,9 @@
       "tp2": 76299.2914,
       "tp3": 75028.33612,
       "maeR": 0.28,
-      "mfeR": 1.85,
+      "mfeR": 2.05,
       "regime": "MIXED",
-      "barsWatched": 20
+      "barsWatched": 26
     },
     {
       "key": "XAU/USD_SELL_2026-11-02T08",
@@ -1134,7 +1314,7 @@
       "maeR": 0.91,
       "mfeR": 0.14,
       "regime": "MIXED",
-      "barsWatched": 19
+      "barsWatched": 25
     },
     {
       "key": "USD/CAD_SELL_2026-11-02T08",
@@ -1154,7 +1334,7 @@
       "maeR": 0.52,
       "mfeR": 0.73,
       "regime": "RANGING",
-      "barsWatched": 20
+      "barsWatched": 26
     },
     {
       "key": "GBP/USD_BUY_2026-11-02T08",
@@ -1174,7 +1354,7 @@
       "maeR": 0.44,
       "mfeR": 0.71,
       "regime": "RANGING",
-      "barsWatched": 20
+      "barsWatched": 26
     },
     {
       "key": "AUD/USD_SELL_2026-11-02T08",
@@ -1192,9 +1372,9 @@
       "tp2": 0.69796,
       "tp3": 0.69475,
       "maeR": 0.48,
-      "mfeR": 2.04,
+      "mfeR": 2.68,
       "regime": "RANGING",
-      "barsWatched": 20
+      "barsWatched": 26
     },
     {
       "key": "XAU/USD_SELL_2026-11-02T01",
@@ -1214,7 +1394,7 @@
       "maeR": 0.91,
       "mfeR": 0.15,
       "regime": "MIXED",
-      "barsWatched": 26
+      "barsWatched": 32
     },
     {
       "key": "XAG/USD_SELL_2026-11-02T01",
@@ -1252,9 +1432,9 @@
       "tp2": 159.571,
       "tp3": 160.909,
       "maeR": 0.21,
-      "mfeR": 0.24,
+      "mfeR": 0.42,
       "regime": "MIXED",
-      "barsWatched": 27
+      "barsWatched": 33
     },
     {
       "key": "BTC/USD_SELL_2026-11-02T01",
@@ -1314,7 +1494,7 @@
       "maeR": 0.72,
       "mfeR": 0.51,
       "regime": "MIXED",
-      "barsWatched": 27
+      "barsWatched": 33
     },
     {
       "key": "EUR/GBP_SELL_2026-11-02T01",
@@ -1354,7 +1534,7 @@
       "maeR": 0.72,
       "mfeR": 0.73,
       "regime": "RANGING",
-      "barsWatched": 27
+      "barsWatched": 33
     },
     {
       "key": "BTC/USD_SELL_2026-11-01T21",
@@ -1612,9 +1792,9 @@
       "tp2": 73667.38136,
       "tp3": 71032.59511,
       "maeR": 0.88,
-      "mfeR": 0.43,
+      "mfeR": 0.53,
       "regime": "MIXED",
-      "barsWatched": 76
+      "barsWatched": 82
     },
     {
       "key": "XAG/USD_SELL_2026-10-31T00",
@@ -1994,7 +2174,7 @@
       "maeR": 0.82,
       "mfeR": 0.32,
       "regime": "BREAKOUT",
-      "barsWatched": 33
+      "barsWatched": 39
     },
     {
       "key": "ETH/USD_SELL_2026-10-30T16",
@@ -2014,7 +2194,7 @@
       "maeR": 0.77,
       "mfeR": 0.06,
       "regime": "MIXED",
-      "barsWatched": 84
+      "barsWatched": 90
     },
     {
       "key": "GBP/USD_BUY_2026-10-30T16",
@@ -2034,7 +2214,7 @@
       "maeR": 0.35,
       "mfeR": 1.09,
       "regime": "TRENDING",
-      "barsWatched": 34
+      "barsWatched": 40
     },
     {
       "key": "USD/CAD_SELL_2026-10-30T16",
@@ -2054,7 +2234,7 @@
       "maeR": 0.78,
       "mfeR": 0.29,
       "regime": "BREAKOUT",
-      "barsWatched": 36
+      "barsWatched": 42
     },
     {
       "key": "AUD/USD_SELL_2026-10-30T16",
@@ -2072,9 +2252,9 @@
       "tp2": 0.69841,
       "tp3": 0.69439,
       "maeR": 0.06,
-      "mfeR": 2.2,
+      "mfeR": 2.71,
       "regime": "BREAKOUT",
-      "barsWatched": 35
+      "barsWatched": 41
     },
     {
       "key": "EUR/GBP_SELL_2026-10-30T16",
@@ -2174,7 +2354,7 @@
       "maeR": 0,
       "mfeR": 2.55,
       "regime": "MIXED",
-      "barsWatched": 40
+      "barsWatched": 46
     },
     {
       "key": "EUR/JPY_SELL_2026-10-30T09",
@@ -2214,7 +2394,7 @@
       "maeR": 0.65,
       "mfeR": 0.52,
       "regime": "MIXED",
-      "barsWatched": 41
+      "barsWatched": 47
     },
     {
       "key": "USD/CHF_SELL_2026-10-30T09",
@@ -2232,9 +2412,9 @@
       "tp2": 0.80896,
       "tp3": 0.79948,
       "maeR": 0.62,
-      "mfeR": 0.65,
+      "mfeR": 1.07,
       "regime": "MIXED",
-      "barsWatched": 42
+      "barsWatched": 48
     },
     {
       "key": "NZD/USD_BUY_2026-10-30T09",
@@ -2294,7 +2474,7 @@
       "maeR": 0.27,
       "mfeR": 0.8,
       "regime": "MIXED",
-      "barsWatched": 48
+      "barsWatched": 54
     },
     {
       "key": "AUD/USD_SELL_2026-10-30T02",
@@ -2312,9 +2492,9 @@
       "tp2": 0.69863,
       "tp3": 0.69473,
       "maeR": 0.27,
-      "mfeR": 2.29,
+      "mfeR": 2.81,
       "regime": "MIXED",
-      "barsWatched": 49
+      "barsWatched": 55
     },
     {
       "key": "XAG/USD_SELL_2026-10-30T02",
@@ -2374,7 +2554,7 @@
       "maeR": 0.07,
       "mfeR": 2.98,
       "regime": "MIXED",
-      "barsWatched": 47
+      "barsWatched": 53
     },
     {
       "key": "BTC/USD_SELL_2026-10-30T02",
@@ -2394,7 +2574,7 @@
       "maeR": 0.66,
       "mfeR": 0.15,
       "regime": "BREAKOUT",
-      "barsWatched": 98
+      "barsWatched": 104
     },
     {
       "key": "USD/JPY_BUY_2026-10-29T23",
@@ -2454,7 +2634,7 @@
       "maeR": 0,
       "mfeR": 0.95,
       "regime": "BREAKOUT",
-      "barsWatched": 101
+      "barsWatched": 107
     },
     {
       "key": "GBP/JPY_BUY_2026-10-29T23",
@@ -2544,7 +2724,7 @@
       "resolvedAt": null,
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 85,
       "entry": 0.82242,
       "sl": 0.82805,
@@ -2552,9 +2732,9 @@
       "tp2": 0.81115,
       "tp3": 0.8027,
       "maeR": 0.56,
-      "mfeR": 0.87,
+      "mfeR": 1.34,
       "regime": "MIXED",
-      "barsWatched": 52
+      "barsWatched": 58
     },
     {
       "key": "EUR/USD_BUY_2026-10-29T23",
@@ -2574,7 +2754,7 @@
       "maeR": 0.88,
       "mfeR": 0.73,
       "regime": "RANGING",
-      "barsWatched": 51
+      "barsWatched": 57
     },
     {
       "key": "AUD/USD_SELL_2026-10-29T23",
@@ -2584,7 +2764,7 @@
       "resolvedAt": null,
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 97,
       "entry": 0.7024,
       "sl": 0.70618,
@@ -2592,9 +2772,9 @@
       "tp2": 0.69483,
       "tp3": 0.68915,
       "maeR": 0.56,
-      "mfeR": 1.19,
+      "mfeR": 1.55,
       "regime": "RANGING",
-      "barsWatched": 52
+      "barsWatched": 58
     },
     {
       "key": "GBP/USD_BUY_2026-10-29T19",
@@ -2614,7 +2794,7 @@
       "maeR": 0,
       "mfeR": 1.26,
       "regime": "MIXED",
-      "barsWatched": 55
+      "barsWatched": 61
     },
     {
       "key": "XAU/USD_SELL_2026-10-29T19",
@@ -2634,7 +2814,7 @@
       "maeR": 0.34,
       "mfeR": 2.34,
       "regime": "RANGING",
-      "barsWatched": 53
+      "barsWatched": 59
     },
     {
       "key": "XRP/USD_SELL_2026-10-29T19",
@@ -2994,7 +3174,7 @@
       "maeR": 0.26,
       "mfeR": 2.2,
       "regime": "RANGING",
-      "barsWatched": 59
+      "barsWatched": 65
     },
     {
       "key": "GBP/JPY_BUY_2026-10-29T13",
@@ -3074,7 +3254,7 @@
       "maeR": 0.23,
       "mfeR": 2.38,
       "regime": "MIXED",
-      "barsWatched": 66
+      "barsWatched": 72
     },
     {
       "key": "SOL/USD_SELL_2026-10-29T06",
@@ -3301,10 +3481,10 @@
       "pair": "USD/CHF",
       "direction": "SELL",
       "firedAt": "2026-10-29T00:15:06.360Z",
-      "resolvedAt": null,
-      "status": "open",
-      "resultR": null,
-      "tpReached": 2,
+      "resolvedAt": "2026-11-03T08:26:34.113Z",
+      "status": "won",
+      "resultR": 2.23,
+      "tpReached": 3,
       "confidence": 47,
       "entry": 0.82813,
       "sl": 0.83157,
@@ -3312,9 +3492,9 @@
       "tp2": 0.82125,
       "tp3": 0.81609,
       "maeR": 0.45,
-      "mfeR": 3.09,
+      "mfeR": 3.86,
       "regime": "BREAKOUT",
-      "barsWatched": 75
+      "barsWatched": 78
     },
     {
       "key": "EUR/GBP_SELL_2026-10-29T00",
@@ -3354,7 +3534,7 @@
       "maeR": 0.48,
       "mfeR": 3.47,
       "regime": "BREAKOUT",
-      "barsWatched": 124
+      "barsWatched": 130
     },
     {
       "key": "NZD/USD_SELL_2026-10-29T00",
@@ -3374,7 +3554,7 @@
       "maeR": 0.62,
       "mfeR": 0.4,
       "regime": "MIXED",
-      "barsWatched": 75
+      "barsWatched": 81
     },
     {
       "key": "AUD/JPY_BUY_2026-10-29T00",
@@ -3601,10 +3781,10 @@
       "pair": "USD/CHF",
       "direction": "SELL",
       "firedAt": "2026-10-28T20:29:03.946Z",
-      "resolvedAt": null,
-      "status": "open",
-      "resultR": null,
-      "tpReached": 2,
+      "resolvedAt": "2026-11-03T08:26:34.113Z",
+      "status": "won",
+      "resultR": 2.23,
+      "tpReached": 3,
       "confidence": 47,
       "entry": 0.82814,
       "sl": 0.83157,
@@ -3612,9 +3792,9 @@
       "tp2": 0.82128,
       "tp3": 0.81613,
       "maeR": 0.46,
-      "mfeR": 3.1,
+      "mfeR": 3.87,
       "regime": "BREAKOUT",
-      "barsWatched": 79
+      "barsWatched": 82
     },
     {
       "key": "NZD/USD_SELL_2026-10-28T20",
@@ -3634,7 +3814,7 @@
       "maeR": 0.52,
       "mfeR": 0.49,
       "regime": "MIXED",
-      "barsWatched": 79
+      "barsWatched": 85
     },
     {
       "key": "EUR/GBP_SELL_2026-10-28T15",
@@ -3854,7 +4034,7 @@
       "maeR": 0,
       "mfeR": 2.45,
       "regime": "BREAKOUT",
-      "barsWatched": 85
+      "barsWatched": 91
     },
     {
       "key": "USD/JPY_BUY_2026-10-28T15",
@@ -3994,7 +4174,7 @@
       "maeR": 0.8,
       "mfeR": 0.31,
       "regime": "MIXED",
-      "barsWatched": 91
+      "barsWatched": 97
     },
     {
       "key": "ETH/USD_BUY_2026-10-28T08",
@@ -4954,7 +5134,7 @@
       "maeR": 0.81,
       "mfeR": 0.88,
       "regime": "MIXED",
-      "barsWatched": 120
+      "barsWatched": 126
     },
     {
       "key": "GBP/JPY_SELL_2026-10-27T01",
@@ -5134,7 +5314,7 @@
       "maeR": 0.65,
       "mfeR": 1.07,
       "regime": "MIXED",
-      "barsWatched": 122
+      "barsWatched": 128
     },
     {
       "key": "GBP/USD_SELL_2026-10-26T23",
@@ -8517,26 +8697,6 @@
       "barsWatched": null
     },
     {
-      "key": "ETH/USD_BUY_2026-10-21T18",
-      "pair": "ETH/USD",
-      "direction": "BUY",
-      "firedAt": "2026-10-21T18:51:18.731Z",
-      "resolvedAt": "2026-10-22T05:53:59.952Z",
-      "status": "lost",
-      "resultR": -1,
-      "tpReached": 0,
-      "confidence": 85,
-      "entry": 2513.12988,
-      "sl": 2432.68122,
-      "tp1": 2609.66828,
-      "tp2": 2674.02722,
-      "tp3": 2794.70022,
-      "maeR": 1.01,
-      "mfeR": 0,
-      "regime": "TRENDING",
-      "barsWatched": 9
-    },
-    {
       "key": "XAG/USD_BUY_2026-10-21T18",
       "pair": "XAG/USD",
       "direction": "BUY",
@@ -8577,6 +8737,46 @@
       "barsWatched": null
     },
     {
+      "key": "EUR/JPY_SELL_2026-10-21T18",
+      "pair": "EUR/JPY",
+      "direction": "SELL",
+      "firedAt": "2026-10-21T18:51:18.731Z",
+      "resolvedAt": null,
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 47,
+      "entry": 177.73,
+      "sl": 178.219,
+      "tp1": 177.143,
+      "tp2": 176.751,
+      "tp3": 176.017,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "MIXED",
+      "barsWatched": null
+    },
+    {
+      "key": "ETH/USD_BUY_2026-10-21T18",
+      "pair": "ETH/USD",
+      "direction": "BUY",
+      "firedAt": "2026-10-21T18:51:18.731Z",
+      "resolvedAt": "2026-10-22T05:53:59.952Z",
+      "status": "lost",
+      "resultR": -1,
+      "tpReached": 0,
+      "confidence": 85,
+      "entry": 2513.12988,
+      "sl": 2432.68122,
+      "tp1": 2609.66828,
+      "tp2": 2674.02722,
+      "tp3": 2794.70022,
+      "maeR": 1.01,
+      "mfeR": 0,
+      "regime": "TRENDING",
+      "barsWatched": 9
+    },
+    {
       "key": "USD/JPY_SELL_2026-10-21T18",
       "pair": "USD/JPY",
       "direction": "SELL",
@@ -8615,26 +8815,6 @@
       "mfeR": 0.29,
       "regime": "TRENDING",
       "barsWatched": 17
-    },
-    {
-      "key": "EUR/JPY_SELL_2026-10-21T18",
-      "pair": "EUR/JPY",
-      "direction": "SELL",
-      "firedAt": "2026-10-21T18:51:18.731Z",
-      "resolvedAt": null,
-      "status": "open",
-      "resultR": null,
-      "tpReached": 0,
-      "confidence": 47,
-      "entry": 177.73,
-      "sl": 178.219,
-      "tp1": 177.143,
-      "tp2": 176.751,
-      "tp3": 176.017,
-      "maeR": null,
-      "mfeR": null,
-      "regime": "MIXED",
-      "barsWatched": null
     },
     {
       "key": "EUR/USD_BUY_2026-10-21T18",
@@ -28599,13 +28779,175 @@
   ],
   "recent": [
     {
+      "key": "USD/JPY_BUY_2026-11-03T08",
+      "pair": "USD/JPY",
+      "direction": "BUY",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 89,
+      "entry": 157.865,
+      "sl": 157.447,
+      "tp1": 158.366,
+      "tp2": 158.701,
+      "tp3": 159.327,
+      "maeR": 0,
+      "mfeR": 0.7,
+      "regime": "RANGING"
+    },
+    {
+      "key": "AUD/JPY_SELL_2026-11-03T08",
+      "pair": "AUD/JPY",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 99,
+      "entry": 110.31,
+      "sl": 110.89,
+      "tp1": 109.614,
+      "tp2": 109.151,
+      "tp3": 108.281,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "TRENDING"
+    },
+    {
+      "key": "GBP/JPY_BUY_2026-11-03T08",
+      "pair": "GBP/JPY",
+      "direction": "BUY",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 91,
+      "entry": 211.825,
+      "sl": 211.27,
+      "tp1": 212.491,
+      "tp2": 212.935,
+      "tp3": 213.767,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "RANGING"
+    },
+    {
+      "key": "XRP/USD_BUY_2026-11-03T08",
+      "pair": "XRP/USD",
+      "direction": "BUY",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 87,
+      "entry": 1.2512,
+      "sl": 1.22895,
+      "tp1": 1.2779,
+      "tp2": 1.29569,
+      "tp3": 1.32906,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "RANGING"
+    },
+    {
+      "key": "XAU/USD_SELL_2026-11-03T08",
+      "pair": "XAU/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 99,
+      "entry": 3916.3,
+      "sl": 3981.58,
+      "tp1": 3837.96,
+      "tp2": 3785.74,
+      "tp3": 3687.82,
+      "maeR": 0.04,
+      "mfeR": 0.19,
+      "regime": "MIXED"
+    },
+    {
+      "key": "USD/CAD_SELL_2026-11-03T08",
+      "pair": "USD/CAD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 99,
+      "entry": 1.39638,
+      "sl": 1.40088,
+      "tp1": 1.39098,
+      "tp2": 1.38738,
+      "tp3": 1.38063,
+      "maeR": 0.22,
+      "mfeR": 0.22,
+      "regime": "RANGING"
+    },
+    {
+      "key": "BTC/USD_SELL_2026-11-03T08",
+      "pair": "BTC/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 93,
+      "entry": 76691.96094,
+      "sl": 78205.40005,
+      "tp1": 74875.834,
+      "tp2": 73665.08271,
+      "tp3": 71394.92403,
+      "maeR": 0.16,
+      "mfeR": 0.15,
+      "regime": "MIXED"
+    },
+    {
+      "key": "XAG/USD_SELL_2026-11-03T08",
+      "pair": "XAG/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 96,
+      "entry": 49.05,
+      "sl": 50.67163,
+      "tp1": 47.10404,
+      "tp2": 45.80673,
+      "tp3": 43.37429,
+      "maeR": null,
+      "mfeR": null,
+      "regime": "MIXED"
+    },
+    {
+      "key": "NZD/USD_SELL_2026-11-03T08",
+      "pair": "NZD/USD",
+      "direction": "SELL",
+      "firedAt": "2026-11-03T08:26:33.147Z",
+      "status": "open",
+      "resultR": null,
+      "tpReached": 0,
+      "confidence": 55,
+      "entry": 0.56294,
+      "sl": 0.56519,
+      "tp1": 0.56023,
+      "tp2": 0.55843,
+      "tp3": 0.55505,
+      "maeR": 0,
+      "mfeR": 0.59,
+      "regime": "MIXED"
+    },
+    {
       "key": "XAU/USD_SELL_2026-11-03T01",
       "pair": "XAU/USD",
       "direction": "SELL",
       "firedAt": "2026-11-03T01:09:57.886Z",
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 47,
       "entry": 3967.8,
       "sl": 4014.98,
@@ -28613,7 +28955,7 @@
       "tp2": 3873.44,
       "tp3": 3802.68,
       "maeR": 0,
-      "mfeR": 0.6,
+      "mfeR": 1.35,
       "regime": "MIXED"
     },
     {
@@ -28649,7 +28991,7 @@
       "tp2": 73598.54182,
       "tp3": 71049.51655,
       "maeR": 0,
-      "mfeR": 0.34,
+      "mfeR": 0.44,
       "regime": "MIXED"
     },
     {
@@ -28721,7 +29063,7 @@
       "tp2": 0.80792,
       "tp3": 0.79994,
       "maeR": 0.27,
-      "mfeR": 0,
+      "mfeR": 0.7,
       "regime": "MIXED"
     },
     {
@@ -28738,7 +29080,7 @@
       "tp1": 0.55978,
       "tp2": 0.55782,
       "tp3": 0.55414,
-      "maeR": 0,
+      "maeR": 0.25,
       "mfeR": 0.9,
       "regime": "MIXED"
     },
@@ -28757,7 +29099,7 @@
       "tp2": 0.80645,
       "tp3": 0.79754,
       "maeR": 0.28,
-      "mfeR": 0.14,
+      "mfeR": 0.58,
       "regime": "TRENDING"
     },
     {
@@ -28803,7 +29145,7 @@
       "firedAt": "2026-11-02T18:12:37.168Z",
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 47,
       "entry": 3968.3,
       "sl": 4021.7,
@@ -28811,7 +29153,7 @@
       "tp2": 3861.51,
       "tp3": 3781.41,
       "maeR": 0.12,
-      "mfeR": 0.54,
+      "mfeR": 1.2,
       "regime": "TRENDING"
     },
     {
@@ -29001,7 +29343,7 @@
       "firedAt": "2026-11-02T08:06:04.147Z",
       "status": "open",
       "resultR": null,
-      "tpReached": 1,
+      "tpReached": 2,
       "confidence": 55,
       "entry": 77993.89844,
       "sl": 78841.20196,
@@ -29009,7 +29351,7 @@
       "tp2": 76299.2914,
       "tp3": 75028.33612,
       "maeR": 0.28,
-      "mfeR": 1.85,
+      "mfeR": 2.05,
       "regime": "MIXED"
     },
     {
@@ -29081,7 +29423,7 @@
       "tp2": 0.69796,
       "tp3": 0.69475,
       "maeR": 0.48,
-      "mfeR": 2.04,
+      "mfeR": 2.68,
       "regime": "RANGING"
     },
     {
@@ -29135,7 +29477,7 @@
       "tp2": 159.571,
       "tp3": 160.909,
       "maeR": 0.21,
-      "mfeR": 0.24,
+      "mfeR": 0.42,
       "regime": "MIXED"
     },
     {
@@ -29459,7 +29801,7 @@
       "tp2": 73667.38136,
       "tp3": 71032.59511,
       "maeR": 0.88,
-      "mfeR": 0.43,
+      "mfeR": 0.53,
       "regime": "MIXED"
     },
     {
@@ -29873,7 +30215,7 @@
       "tp2": 0.69841,
       "tp3": 0.69439,
       "maeR": 0.06,
-      "mfeR": 2.2,
+      "mfeR": 2.71,
       "regime": "BREAKOUT"
     },
     {
@@ -30017,7 +30359,7 @@
       "tp2": 0.80896,
       "tp3": 0.79948,
       "maeR": 0.62,
-      "mfeR": 0.65,
+      "mfeR": 1.07,
       "regime": "MIXED"
     },
     {
@@ -30089,7 +30431,7 @@
       "tp2": 0.69863,
       "tp3": 0.69473,
       "maeR": 0.27,
-      "mfeR": 2.29,
+      "mfeR": 2.81,
       "regime": "MIXED"
     },
     {
@@ -30297,7 +30639,7 @@
       "firedAt": "2026-10-29T23:30:12.358Z",
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 85,
       "entry": 0.82242,
       "sl": 0.82805,
@@ -30305,7 +30647,7 @@
       "tp2": 0.81115,
       "tp3": 0.8027,
       "maeR": 0.56,
-      "mfeR": 0.87,
+      "mfeR": 1.34,
       "regime": "MIXED"
     },
     {
@@ -30333,7 +30675,7 @@
       "firedAt": "2026-10-29T23:30:12.358Z",
       "status": "open",
       "resultR": null,
-      "tpReached": 0,
+      "tpReached": 1,
       "confidence": 97,
       "entry": 0.7024,
       "sl": 0.70618,
@@ -30341,7 +30683,7 @@
       "tp2": 0.69483,
       "tp3": 0.68915,
       "maeR": 0.56,
-      "mfeR": 1.19,
+      "mfeR": 1.55,
       "regime": "RANGING"
     },
     {
@@ -30595,169 +30937,7 @@
       "maeR": null,
       "mfeR": null,
       "regime": "MIXED"
-    },
-    {
-      "key": "XAG/USD_SELL_2026-10-29T13",
-      "pair": "XAG/USD",
-      "direction": "SELL",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "open",
-      "resultR": null,
-      "tpReached": 0,
-      "confidence": 76,
-      "entry": 52.43,
-      "sl": 54.61424,
-      "tp1": 49.80891,
-      "tp2": 48.06152,
-      "tp3": 44.78516,
-      "maeR": null,
-      "mfeR": null,
-      "regime": "MIXED"
-    },
-    {
-      "key": "XRP/USD_SELL_2026-10-29T13",
-      "pair": "XRP/USD",
-      "direction": "SELL",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "open",
-      "resultR": null,
-      "tpReached": 0,
-      "confidence": 99,
-      "entry": 1.2874,
-      "sl": 1.32768,
-      "tp1": 1.23906,
-      "tp2": 1.20684,
-      "tp3": 1.14642,
-      "maeR": null,
-      "mfeR": null,
-      "regime": "MIXED"
-    },
-    {
-      "key": "NAS100_BUY_2026-10-29T13",
-      "pair": "NAS100",
-      "direction": "BUY",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "open",
-      "resultR": null,
-      "tpReached": 0,
-      "confidence": 85,
-      "entry": 29828.29297,
-      "sl": 29275.87367,
-      "tp1": 30491.19613,
-      "tp2": 30933.13157,
-      "tp3": 31761.76052,
-      "maeR": null,
-      "mfeR": null,
-      "regime": "TRENDING"
-    },
-    {
-      "key": "NZD/USD_SELL_2026-10-29T13",
-      "pair": "NZD/USD",
-      "direction": "SELL",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "lost",
-      "resultR": -1,
-      "tpReached": 0,
-      "confidence": 94,
-      "entry": 0.5612,
-      "sl": 0.5642,
-      "tp1": 0.5576,
-      "tp2": 0.5552,
-      "tp3": 0.5507,
-      "maeR": 1.06,
-      "mfeR": 0.11,
-      "regime": "MIXED"
-    },
-    {
-      "key": "BTC/USD_SELL_2026-10-29T13",
-      "pair": "BTC/USD",
-      "direction": "SELL",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "lost",
-      "resultR": -1,
-      "tpReached": 0,
-      "confidence": 99,
-      "entry": 79947.59375,
-      "sl": 81553.6307,
-      "tp1": 78020.34941,
-      "tp2": 76735.51985,
-      "tp3": 74326.46442,
-      "maeR": 1.16,
-      "mfeR": 0,
-      "regime": "RANGING"
-    },
-    {
-      "key": "XAU/USD_SELL_2026-10-29T13",
-      "pair": "XAU/USD",
-      "direction": "SELL",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "open",
-      "resultR": null,
-      "tpReached": 2,
-      "confidence": 99,
-      "entry": 4031.9,
-      "sl": 4101.37,
-      "tp1": 3948.53,
-      "tp2": 3892.96,
-      "tp3": 3788.75,
-      "maeR": 0.26,
-      "mfeR": 2.2,
-      "regime": "RANGING"
-    },
-    {
-      "key": "GBP/JPY_BUY_2026-10-29T13",
-      "pair": "GBP/JPY",
-      "direction": "BUY",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "open",
-      "resultR": null,
-      "tpReached": 0,
-      "confidence": 93,
-      "entry": 210.515,
-      "sl": 209.806,
-      "tp1": 211.366,
-      "tp2": 211.934,
-      "tp3": 212.998,
-      "maeR": null,
-      "mfeR": null,
-      "regime": "MIXED"
-    },
-    {
-      "key": "USD/CHF_BUY_2026-10-29T13",
-      "pair": "USD/CHF",
-      "direction": "BUY",
-      "firedAt": "2026-10-29T13:33:29.805Z",
-      "status": "lost",
-      "resultR": -1,
-      "tpReached": 0,
-      "confidence": 99,
-      "entry": 0.82869,
-      "sl": 0.82554,
-      "tp1": 0.83248,
-      "tp2": 0.835,
-      "tp3": 0.83973,
-      "maeR": 1.53,
-      "mfeR": 0.08,
-      "regime": "MIXED"
-    },
-    {
-      "key": "AUD/USD_BUY_2026-10-29T06",
-      "pair": "AUD/USD",
-      "direction": "BUY",
-      "firedAt": "2026-10-29T06:17:51.827Z",
-      "status": "lost",
-      "resultR": -1,
-      "tpReached": 0,
-      "confidence": 82,
-      "entry": 0.70507,
-      "sl": 0.70249,
-      "tp1": 0.70816,
-      "tp2": 0.71022,
-      "tp3": 0.71409,
-      "maeR": 1.06,
-      "mfeR": 0,
-      "regime": "TRENDING"
     }
   ],
-  "verdict": "-0.033R per signal with interval [-0.104, 0.038], which includes zero — the record does not establish an edge in either direction. Collapsed to 335 independent episodes it reads -0.1358R."
+  "verdict": "-0.0276R per signal with interval [-0.099, 0.044], which includes zero — the record does not establish an edge in either direction. Collapsed to 336 independent episodes it reads -0.1287R."
 }
