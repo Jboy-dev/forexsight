@@ -1,12 +1,147 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-11-05T11:37:40.916Z",
+  "timestamp": "2026-11-05T15:21:31.840Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 3,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 3,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "US30",
+      "direction": "BUY",
+      "confidence": 70,
+      "strength": 79,
+      "verdict": "MODERATE LONG — 70% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 52659.9,
+      "sl": 52396.6,
+      "tp1": 53194,
+      "tp3": 54529.2,
+      "slPips": 263,
+      "tp1Pips": 534,
+      "tp3Pips": 1869,
+      "rrTP1": 2.03,
+      "rrTP3": 7.1,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 50,
+        "bear": 0,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors LONG with 70% conviction. Top drivers: Higher timeframe (4H) trend UP; Price > EMA20 > EMA50 (bullish stack); MACD histogram positive (bullish momentum). HTF up. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "SPX500",
+      "direction": "SELL",
+      "confidence": 71,
+      "strength": 68,
+      "verdict": "MODERATE SHORT — 71% conviction",
+      "timeHorizon": "2-4 hours",
+      "entry": 7509,
+      "sl": 7539.1,
+      "tp1": 7429.6,
+      "tp3": 7231,
+      "slPips": 30,
+      "tp1Pips": 79,
+      "tp3Pips": 278,
+      "rrTP1": 2.65,
+      "rrTP3": 9.26,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 34.6 — bearish momentum zone",
+          "weight": 10,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 15,
+        "bear": 60,
+        "marginPct": 60
+      },
+      "reasoning": "Weighted consensus favors SHORT with 71% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure uptrend. Manage risk with the levels below."
+    },
+    {
+      "pair": "NAS100",
+      "direction": "SELL",
+      "confidence": 61,
+      "strength": 59,
+      "verdict": "WEAK SHORT — 61% conviction",
+      "timeHorizon": "1-2 hours",
+      "entry": 27168.1,
+      "sl": 27331.1,
+      "tp1": 26680.9,
+      "tp3": 25462.9,
+      "slPips": 163,
+      "tp1Pips": 487,
+      "tp3Pips": 1705,
+      "rrTP1": 2.99,
+      "rrTP3": 10.46,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
+      "topFactors": [
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 15,
+        "bear": 50,
+        "marginPct": 54
+      },
+      "reasoning": "Weighted consensus favors SHORT with 61% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
