@@ -1,10 +1,10 @@
 {
   "ok": true,
   "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-11-05T03:42:31.904Z",
+  "timestamp": "2026-11-05T06:58:27.366Z",
   "trustScore": 100,
   "trustLabel": "System Readiness",
-  "performanceScore": 22,
+  "performanceScore": 76,
   "readiness": {
     "score": 100,
     "activeGates": 11,
@@ -87,22 +87,22 @@
   "components": {
     "filteredLive": {
       "label": "Filtered-tier WR (what you actually trade)",
-      "score": 0,
-      "weight": 0.35
+      "score": null,
+      "note": "insufficient data"
     },
     "recentAll": {
       "label": "Recent 20-signal momentum",
-      "score": 17,
-      "weight": 0.2
+      "score": null,
+      "note": "insufficient data"
     },
     "calibration": {
       "label": "Confidence calibration",
-      "score": 1,
-      "weight": 0.15
+      "score": null,
+      "note": "insufficient data"
     },
     "activeQuality": {
       "label": "Live setup quality",
-      "score": 50,
+      "score": 71,
       "weight": 0.2
     },
     "selectivity": {
@@ -113,52 +113,29 @@
   },
   "filteredTier": {
     "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 17,
-    "lifetimeWinRate": 35,
-    "recentWinRate": 33
+    "resolvedSignals": 0,
+    "lifetimeWinRate": null,
+    "recentWinRate": null
   },
   "allTier": {
     "note": "All resolved signals including lower tiers",
-    "totalResolved": 17,
-    "lifetimeWinRate": 35,
-    "recentWindowSize": 17,
-    "recentWinRate": 35
+    "totalResolved": 0,
+    "lifetimeWinRate": null,
+    "recentWindowSize": 0,
+    "recentWinRate": null
   },
   "activeQuality": {
-    "signalCount": 0,
-    "note": "No active signals — system holding cash (neutral)",
-    "score": 50
+    "signalCount": 9,
+    "avgConfidence": 88,
+    "avgStrategies": 2.6,
+    "avgRR": 3.5,
+    "score": 71
   },
   "selectivity": {
     "note": "candidate count unavailable — assuming baseline strict filter",
     "score": 85
   },
-  "calibration": {
-    "accuracyPct": 1,
-    "meanErrorPts": 49.7,
-    "buckets": {
-      "60-70": {
-        "samples": 1,
-        "note": "too few samples"
-      },
-      "70-80": {
-        "samples": 1,
-        "note": "too few samples"
-      },
-      "80-90": {
-        "samples": 5,
-        "winRate": 20,
-        "expected": 85,
-        "error": 65
-      },
-      "90+": {
-        "samples": 10,
-        "winRate": 50,
-        "expected": 92,
-        "error": 42
-      }
-    }
-  },
+  "calibration": null,
   "historicalBacktest": {
     "note": "not yet computed — running in background"
   },
