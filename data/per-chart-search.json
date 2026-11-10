@@ -1,13 +1,13 @@
 {
-  "ts": 1794293535460,
-  "isoTime": "2026-11-10T06:52:15.460Z",
+  "ts": 1794324591553,
+  "isoTime": "2026-11-10T15:29:51.553Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 53,
+  "survivedTrainAndValidate": 52,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -264,27 +264,6 @@
       "passes": false
     },
     {
-      "pair": "NAS100",
-      "tf": "1h",
-      "combo": "momentum-60 × expanding",
-      "train": {
-        "n": 173,
-        "avgR": 0.1719,
-        "t": 1.75
-      },
-      "validate": {
-        "n": 102,
-        "avgR": 0.0453,
-        "t": 0.36
-      },
-      "sealed": {
-        "n": 98,
-        "avgR": 0.1176,
-        "t": 0.92
-      },
-      "passes": false
-    },
-    {
       "pair": "XAG/USD",
       "tf": "daily",
       "combo": "rsi-trend × none",
@@ -327,6 +306,27 @@
       "passes": false
     },
     {
+      "pair": "NAS100",
+      "tf": "1h",
+      "combo": "momentum-60 × expanding",
+      "train": {
+        "n": 173,
+        "avgR": 0.1638,
+        "t": 1.66
+      },
+      "validate": {
+        "n": 102,
+        "avgR": 0.0453,
+        "t": 0.36
+      },
+      "sealed": {
+        "n": 98,
+        "avgR": 0.1033,
+        "t": 0.8
+      },
+      "passes": false
+    },
+    {
       "pair": "ETH/USD",
       "tf": "1h",
       "combo": "rsi-trend × vol-high",
@@ -341,9 +341,9 @@
         "t": 1.13
       },
       "sealed": {
-        "n": 102,
-        "avgR": 0.1104,
-        "t": 0.83
+        "n": 103,
+        "avgR": 0.0991,
+        "t": 0.75
       },
       "passes": false
     },
@@ -420,14 +420,14 @@
         "t": 1.61
       },
       "validate": {
-        "n": 26,
-        "avgR": 0.5614,
-        "t": 2.09
+        "n": 27,
+        "avgR": 0.5033,
+        "t": 1.9
       },
       "sealed": {
-        "n": 28,
-        "avgR": 0.1605,
-        "t": 0.62
+        "n": 27,
+        "avgR": 0.1519,
+        "t": 0.57
       },
       "passes": false
     },
@@ -449,27 +449,6 @@
         "n": 59,
         "avgR": 0.0771,
         "t": 0.49
-      },
-      "passes": false
-    },
-    {
-      "pair": "XRP/USD",
-      "tf": "1h",
-      "combo": "rsi-reversion × vol-high",
-      "train": {
-        "n": 157,
-        "avgR": 0.1537,
-        "t": 1.51
-      },
-      "validate": {
-        "n": 66,
-        "avgR": 0.0045,
-        "t": 0.03
-      },
-      "sealed": {
-        "n": 70,
-        "avgR": 0.0603,
-        "t": 0.41
       },
       "passes": false
     },
@@ -535,8 +514,29 @@
         "t": 0.12
       },
       "passes": false
+    },
+    {
+      "pair": "SOL/USD",
+      "tf": "daily",
+      "combo": "rsi-trend × with-200",
+      "train": {
+        "n": 44,
+        "avgR": 0.4202,
+        "t": 2.1
+      },
+      "validate": {
+        "n": 37,
+        "avgR": 0.4112,
+        "t": 1.95
+      },
+      "sealed": {
+        "n": 26,
+        "avgR": 0.0058,
+        "t": 0.02
+      },
+      "passes": false
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 53 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 52 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
