@@ -68,12 +68,16 @@ const TOPICS = [
       if (hist) {
         const by = (st) => hist.filter((r) => r.status === st).length;
         const won = by('won'), lost = by('lost'), expired = by('expired'), open = by('open');
+        // Whatever is left was not graded — the watcher could not read an honest
+        // outcome for it. Counted as a remainder so the sentence always sums to
+        // the book, whatever new status the watcher learns next.
+        const ungraded = hist.length - won - lost - expired - open;
         const settled = won + lost;
         const ep = L.episodes || {};
         const ci = ep.ci95 || ep.ci;
         out.push(`<p><strong>My record.</strong> The book holds <strong>${KB_ESC(hist.length)}</strong> signals:
           ${KB_ESC(won)} won, ${KB_ESC(lost)} lost, ${KB_ESC(expired)} expired without reaching a target or a stop,
-          and ${KB_ESC(open)} still open.
+          ${ungraded > 0 ? `${KB_ESC(open)} still open, and ${KB_ESC(ungraded)} not graded because no honest outcome could be read for ${ungraded === 1 ? 'it' : 'them'}.` : `and ${KB_ESC(open)} still open.`}
           ${settled ? `Of the ${KB_ESC(settled)} that settled either way, ${KB_ESC((won / settled * 100).toFixed(1))}% won.` : ''}
           ${kbNum(ep.count) ? `Republications of the same move collapse to <strong>${KB_ESC(ep.count)}</strong> independent episodes,
             which is the honest unit to judge me on` : ''}

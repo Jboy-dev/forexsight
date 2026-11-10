@@ -122,6 +122,24 @@ a='BUILD=\"\$(date -u +%Y%m%d-%H%M%S)'
 assert s.count(a)==1
 open(p,'w').write(s.replace(a,'BUILD=\"fixed'))"
 
+# 2026-11-10: the watcher has been able to emit a fifth status, 'unscaled', since
+# August. The renderer assumed four, threw on the first real one on 5 Nov, and
+# the publishing gate held the ledger back for five days. The guard now builds a
+# row for every status the WATCHER can emit, so this must fail even on data that
+# contains no such row.
+try "a row renderer formats a result that was never measured" v2/base.js "
+p='v2/base.js';s=open(p).read()
+i=s.index('function historyRow(x) {'); j=s.index('\\n}\\n', i)
+a='\${rowR(o)}'
+assert s[i:j].count(a)==1, s[i:j].count(a)
+open(p,'w').write(s[:i]+s[i:j].replace(a,'\${open ? \"running\" : esc(sign(R) + R.toFixed(2)) + \"R\"}')+s[j:])"
+
+try "the outcome classifier forgets a status the watcher can emit" v2/base.js "
+p='v2/base.js';s=open(p).read()
+a=\"    unscaled: { key: 'unscaled', label: 'NOT GRADED', cls: 'exp',  graded: false },\\n\"
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,''))"
+
 # ---- report, in the order the cases were declared ----
 if [ "$N" -eq 0 ]; then echo "No cases matched."; exit 0; fi
 for w in $(seq 1 1); do rm -rf "$WORK/w$w"; cp -c -R "$REPO" "$WORK/w$w" 2>/dev/null || cp -R "$REPO" "$WORK/w$w"; done

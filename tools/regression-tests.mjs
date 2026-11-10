@@ -1607,31 +1607,65 @@ t('history shows when each signal started, ended and how long it ran', () => {
   // The result word must come from the published status. Deriving it from the
   // sign labelled all 187 expired signals WON or LOST, which hides the very
   // thing this panel is asked for.
-  if (!/x\.status/.test(row)) return 'the result label ignores the published status';
-  if (!/expired/i.test(row)) return 'expired is not a distinct outcome in the row';
+  // The label comes from the shared classifier, which must itself read the
+  // published status and know expired as its own outcome. Checking for the
+  // literal text inside historyRow failed correct code once the decision moved
+  // into one place that every renderer shares.
+  if (!/rowOutcome\(x\)/.test(row)) return 'the row does not take its outcome from the shared classifier';
+  const ro = src.slice(src.indexOf('function rowOutcome('), src.indexOf('function rowR('));
+  if (!/x\.status/.test(ro)) return 'the result label ignores the published status';
+  if (!/expired:\s*\{/.test(ro)) return 'expired is not a distinct outcome';
+  if (!/unscaled:\s*\{/.test(ro)) return 'a signal the watcher refused to grade has no outcome of its own';
   return true;
 });
 
-t('the four history outcomes account for every signal', () => {
+
+/* The statuses the watcher can ASSIGN, read from its source — not the statuses
+   that happen to be in today's data. Testing against the data is what let a
+   fifth status ('unscaled', possible since August) reach production unhandled:
+   the sample simply had not produced one yet. */
+function watcherStatuses() {
+  const w = readFileSync('tools/watch-setups.mjs', 'utf8');
+  const found = new Set();
+  for (const m of w.matchAll(/status\s*[:=]\s*'([a-z]+)'/g)) found.add(m[1]);
+  for (const m of w.matchAll(/status:\s*[^,]*\?\s*'([a-z]+)'\s*:\s*'([a-z]+)'/g)) { found.add(m[1]); found.add(m[2]); }
+  return found;
+}
+
+t('every history outcome is accounted for, including ones the data has not produced yet', () => {
   const src = readFileSync('v2/base.js', 'utf8');
   const i = src.indexOf('function renderHistory()');
   const fn = src.slice(i, src.indexOf('\nfunction ', i + 10));
-  if (!/isExpired/.test(fn)) return 'renderHistory has no expired category';
-  if (!/stOf/.test(fn)) return 'the categories are not derived from the published status';
-  // Against the real file: won + lost + expired + open must equal the total, or
-  // a signal is being double counted or dropped from the breakdown.
-  if (!existsSync('data/ledger.json')) return 'skipped: ledger not built';
+  if (!/stOf = \(x\) => rowOutcome\(x\)\.key/.test(fn)) return 'the counts do not use the same classifier as the rows';
+  if (!/isUngraded/.test(fn)) return 'there is no category for signals that could not be graded';
+
+  // Run the REAL classifier, lifted out of the page.
+  const lift = (n) => { const k = src.indexOf(`function ${n}(`); if (k < 0) return null;
+    const r = src.slice(k); return r.slice(0, r.indexOf('\n}\n') + 3); };
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const rowOutcome = new Function('num', `${lift('rowOutcome')}; return rowOutcome;`)(num);
+
+  // Every status the watcher can emit must land in a category the panel shows.
+  const shown = new Set(['won', 'lost', 'expired', 'open']);
+  for (const st of watcherStatuses()) {
+    const k = rowOutcome({ status: st, resultR: st === 'open' ? null : 0.5 }).key;
+    if (!shown.has(k) && !['unscaled', 'other'].includes(k))
+      return `the watcher can emit "${st}" and the panel has nowhere to put it`;
+  }
+  // A graded status with no number must not be shown as a result.
+  if (rowOutcome({ status: 'won', resultR: null }).graded) return 'a won row with no result is treated as graded';
+
+  if (!existsSync('data/ledger.json')) return true;
   const L = JSON.parse(readFileSync('data/ledger.json', 'utf8'));
-  if (!Array.isArray(L.history)) return 'skipped: no history array';
-  const st = (x) => String(x.status || (x.resultR == null ? 'open' : x.resultR > 0 ? 'won' : 'lost')).toLowerCase();
-  const n = { won: 0, lost: 0, expired: 0, open: 0, other: 0 };
-  for (const r of L.history) (n[st(r)] !== undefined ? n[st(r)]++ : n.other++);
-  const sum = n.won + n.lost + n.expired + n.open;
-  if (n.other) return `${n.other} rows have a status outside the four the panel shows`;
+  if (!Array.isArray(L.history)) return true;
+  const n = { won: 0, lost: 0, expired: 0, open: 0, ungraded: 0 };
+  for (const r of L.history) { const k = rowOutcome(r).key; n[shown.has(k) ? k : 'ungraded']++; }
+  const sum = n.won + n.lost + n.expired + n.open + n.ungraded;
   if (sum !== L.history.length) return `categories sum to ${sum} but the book holds ${L.history.length}`;
-  // Every resolved row must carry both ends, or the panel prints a blank span.
-  const missing = L.history.filter((r) => st(r) !== 'open' && (!r.firedAt || !r.resolvedAt)).length;
-  if (missing) return `${missing} resolved signals are missing a start or end time`;
+  // Only a GRADED signal must carry both ends. An ungraded one has no end — that
+  // is what ungraded means — and requiring one failed correct data.
+  const missing = L.history.filter((r) => rowOutcome(r).graded && (!r.firedAt || !r.resolvedAt)).length;
+  if (missing) return `${missing} graded signals are missing a start or end time`;
   return true;
 });
 
@@ -1885,8 +1919,9 @@ t('every history row renderer actually runs, on every branch', () => {
   const r2 = (n) => (n == null ? null : Math.round(n * 100) / 100);
   const S = { cfg: { expand: false }, shadowTracker: null };
 
-  const helpers = lift('histTime') + lift('histDur');
+  const helpers = lift('histTime') + lift('histDur') + lift('rowOutcome') + lift('rowR') + lift('endedSentence');
   if (!helpers.includes('function histTime')) return 'histTime/histDur could not be lifted — the test cannot run';
+  if (!helpers.includes('function rowOutcome')) return 'the shared outcome classifier could not be lifted';
 
   const feed = existsSync('data/shadow-tracker.json')
     ? (JSON.parse(readFileSync('data/shadow-tracker.json', 'utf8')).feed || []) : [];
@@ -1901,6 +1936,19 @@ t('every history row renderer actually runs, on every branch', () => {
   for (const need of ['won', 'lost', 'expired', 'open']) {
     if (!seen.has(need)) return `the sample never contains a ${need} row, so that branch is untested`;
   }
+  // Any status the watcher CAN emit but today's data has not produced gets a
+  // synthetic row built from a real one, so its branch runs before it ever
+  // reaches a user. A real resolved row is copied so every other field is
+  // genuine; only the status (and, for ungraded ones, the result) changes.
+  const template = rows.find((r) => typeof r.resultR === 'number' && r.firedAt && r.resolvedAt);
+  for (const st of watcherStatuses()) {
+    if (seen.has(st) || !template) continue;
+    const graded = ['won', 'lost', 'expired'].includes(st);
+    rows.push({ ...template, status: st, resultR: graded ? template.resultR : null,
+                resolvedAt: st === 'open' ? null : template.resolvedAt, _synthetic: true });
+  }
+  // And one the watcher does not know about at all, which must degrade, not throw.
+  if (template) rows.push({ ...template, status: 'some-future-status', resultR: null, _synthetic: true });
 
   for (const name of ['histRow', 'myRow', 'historyRow']) {
     const body = lift(name);

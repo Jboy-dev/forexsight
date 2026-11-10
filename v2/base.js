@@ -463,12 +463,73 @@ function renderHist() {
   box.innerHTML = sorted.map(histRow).join('');
 }
 
+/* ─────────────── how did this signal end? — ONE answer ───────────────
+   Three renderers used to decide this for themselves, and they disagreed:
+   one labelled by the sign of the result, so every EXPIRED signal showed as a
+   win or a loss; one treated any missing result as still running; one crashed.
+
+   The watcher can emit five statuses — won, lost, expired, open, and
+   'unscaled', which it uses when a signal's entry price comes from a different
+   price series than the bars watching it, so no honest outcome exists. That
+   fifth one has been possible since August and first appeared on 5 Nov; the
+   renderer that assumed four threw on it, and the publishing gate (correctly)
+   refused to ship the ledger for five days rather than blank the History tab.
+
+   Anything unrecognised is "not graded": never a crash, and never quietly
+   counted as a win or a loss. A graded status with no number is ungraded too —
+   a result cannot be shown that was never measured.
+   ------------------------------------------------------------------- */
+function rowOutcome(x) {
+  const OUT = {
+    won:      { key: 'won',      label: 'WON',        cls: 'win',  graded: true },
+    lost:     { key: 'lost',     label: 'LOST',       cls: 'loss', graded: true },
+    expired:  { key: 'expired',  label: 'EXPIRED',    cls: 'exp',  graded: true },
+    open:     { key: 'open',     label: 'OPEN',       cls: 'open', graded: false },
+    unscaled: { key: 'unscaled', label: 'NOT GRADED', cls: 'exp',  graded: false },
+  };
+  const R = num(x && x.resultR);
+  let st = String((x && x.status) || '').toLowerCase();
+  if (st === 'running') st = 'open';
+  if (!st) st = R == null ? 'open' : R > 0 ? 'won' : 'lost';
+  const base = OUT[st] || { key: 'other', label: 'NOT GRADED', cls: 'exp', graded: false };
+  const graded = base.graded && R != null;
+  return { ...base, graded, label: base.graded && R == null ? 'NOT GRADED' : base.label,
+           cls: base.graded && R == null ? 'exp' : base.cls, R, status: st };
+}
+
+/** The result as text — never calls toFixed on a number that does not exist. */
+function rowR(o) {
+  if (o.key === 'open') return 'running';
+  if (!o.graded) return 'not graded';
+  return esc(sign(o.R) + o.R.toFixed(2)) + 'R';
+}
+
+function endedSentence(x, o, ended, dur) {
+  const R = o.R, mae = num(x.maeR), mfe = num(x.mfeR);
+  const rs = (v) => esc(sign(v) + v.toFixed(2));
+  if (o.key === 'open')
+    return 'Still running, so it counts for nothing yet. It is listed so the record cannot be read as only the resolved ones.';
+  if (!o.graded) {
+    return o.key === 'unscaled'
+      ? `Not graded. ${x.scaleProblem ? esc(x.scaleProblem) + '.' : 'Its entry price and the bars it was watched against are not the same price series.'}`
+        + ' Grading it would have invented a result, so it is kept out of every win, loss and total on this page.'
+      : `Not graded — the record carries no measured result for it (status "${esc(o.status)}"), so it is kept out of every win, loss and total on this page.`;
+  }
+  if (o.key === 'expired')
+    return `It did not fail at a stop and it did not hit a target — it simply ran out of its watch window${dur ? ` after ${esc(dur)}` : ''}, `
+      + `closing ${rs(R)}R wherever price happened to be. `
+      + (mfe != null && mfe < 1 ? `Its best moment was ${rs(mfe)}R, so it never came close.` : mfe != null ? `It reached ${rs(mfe)}R at best.` : '');
+  if (R > 0)
+    return `Closed ${rs(R)}R${ended ? ` at ${esc(ended)}` : ''}.`
+      + (mae != null && mae > 0.5 ? ` It first went ${esc(mae.toFixed(2))}R against the position, so this win was not comfortable.` : '');
+  return `Closed ${rs(R)}R${ended ? ` at ${esc(ended)}` : ''}${dur ? `, ${esc(dur)} after it fired` : ''}.`
+    + (mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${rs(mfe)}R — so this was an entry that did not work, not an exit that gave profit back.`
+       : mfe != null ? ` It reached ${rs(mfe)}R before turning.` : '');
+}
+
 function histRow(x) {
-  const R = num(x.resultR);
-  const st = String(x.status || '').toLowerCase();
-  const open = st === 'open' || st === 'running' || R == null;
-  const cls = open ? 'open' : R > 0 ? 'win' : 'loss';
-  const label = open ? 'OPEN' : R > 0 ? 'WIN' : 'LOSS';
+  const o = rowOutcome(x);
+  const R = o.R, st = o.status, open = o.key === 'open', cls = o.cls, label = o.label;
   const mae = num(x.maeR), mfe = num(x.mfeR);
 
   /* These two were USED below and never bound, so every resolved row threw
@@ -495,7 +556,7 @@ function histRow(x) {
         <span class="h-pair">${esc(x.pair || '—')}</span>
         <span class="h-when"> ${esc(String(x.direction || '').toUpperCase())} · ${esc(x.firedAt ? ago(Date.parse(x.firedAt)) : '—')}</span>
       </span>
-      <span class="h-r ${R == null ? '' : R > 0 ? 'pos' : 'neg'}">${R == null ? 'running' : esc(sign(R) + R.toFixed(2)) + 'R'}</span>
+      <span class="h-r ${!o.graded ? '' : R > 0 ? 'pos' : 'neg'}">${rowR(o)}</span>
     </summary>
     <div class="h-body">
       <dl class="kv">
@@ -508,13 +569,7 @@ function histRow(x) {
         ${x.confidence != null ? `<dt>Confidence at entry</dt><dd>${esc(x.confidence)}</dd>` : ''}
         ${x.strategies != null ? `<dt>Strategies agreeing</dt><dd>${esc(x.strategies)}</dd>` : ''}
       </dl>
-      <p style="margin-top:10px">${open
-        ? 'Still running, so it counts for nothing yet. It is listed so the record cannot be read as only the resolved ones.'
-        : st === 'expired'
-          ? `It did not fail at a stop and it did not hit a target — it simply ran out of its watch window${dur ? ` after ${esc(dur)}` : ''}, closing ${esc(sign(R) + R.toFixed(2))}R wherever price happened to be. ${mfe != null && mfe < 1 ? `Its best moment was ${esc(sign(mfe) + mfe.toFixed(2))}R, so it never came close.` : mfe != null ? `It reached ${esc(sign(mfe) + mfe.toFixed(2))}R at best.` : ''} This is how most signals here end, which is why the win rate by outcome and the win rate by target differ.`
-        : R > 0
-          ? `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}.${mae != null && mae > 0.5 ? ` It first went ${esc(mae.toFixed(2))}R against the position, so this win was not comfortable.` : ''}`
-          : `Closed ${esc(sign(R) + R.toFixed(2))}R${ended ? ` at ${esc(ended)}` : ''}${dur ? `, ${esc(dur)} after it fired` : ''}.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : mfe != null ? ` It reached ${esc(sign(mfe) + mfe.toFixed(2))}R before turning.` : ''}`}</p>
+      <p style="margin-top:10px">${endedSentence(x, o, ended, dur)}</p>
     </div>
   </details>`;
 }
@@ -1383,7 +1438,8 @@ function renderHistory() {
   // The "Closed by you" chip is only drawn when there is something in it. If you
   // were viewing it and then reopened the last one, the chip vanishes while the
   // filter stays — an empty list with no visible way back to it. Fall back.
-  if (filter === 'mine' && !Object.keys(closedBook()).length) {
+  if ((filter === 'mine' && !Object.keys(closedBook()).length)
+      || (filter === 'ungraded' && !rows.some((x) => !['won', 'lost', 'expired', 'open'].includes(rowOutcome(x).key)))) {
     filter = 'all';
     cfg.histFilter = 'all';
     if (window.FS) window.FS.save(cfg);
@@ -1393,11 +1449,17 @@ function renderHistory() {
   // result instead put every expired signal into Won or Lost, which is the
   // distinction this panel is most often asked for: did it fail, or did it just
   // never finish? Four statuses, and they sum to the total.
-  const stOf = (x) => String(x.status || (x.resultR == null ? 'open' : x.resultR > 0 ? 'won' : 'lost')).toLowerCase();
+  // The same classifier the rows use, so a row and the count it lands in can
+  // never disagree about how a signal ended.
+  const stOf = (x) => rowOutcome(x).key;
   const isWin = (x) => stOf(x) === 'won';
   const isLoss = (x) => stOf(x) === 'lost';
   const isExpired = (x) => stOf(x) === 'expired';
   const isOpen = (x) => stOf(x) === 'open';
+  // Not graded: the watcher could not read an honest outcome (a price-series
+  // mismatch, or a result that was never measured). Counted so the categories
+  // still sum to the book, and kept out of every won/lost figure.
+  const isUngraded = (x) => !['won', 'lost', 'expired', 'open'].includes(stOf(x));
 
   const counts = {
     all: rows.length,
@@ -1405,6 +1467,7 @@ function renderHistory() {
     lost: rows.filter(isLoss).length,
     expired: rows.filter(isExpired).length,
     open: rows.filter(isOpen).length,
+    ungraded: rows.filter(isUngraded).length,
     target: rows.filter(x => (x.tpReached || 0) >= 1).length,
     mine: Object.keys(closedBook()).length,
   };
@@ -1414,6 +1477,7 @@ function renderHistory() {
   else if (filter === 'lost') shown = rows.filter(isLoss);
   else if (filter === 'expired') shown = rows.filter(isExpired);
   else if (filter === 'open') shown = rows.filter(isOpen);
+  else if (filter === 'ungraded') shown = rows.filter(isUngraded);
   else if (filter === 'mine') shown = [];   // drawn from your own book, below
   else if (filter === 'target') shown = rows.filter(x => (x.tpReached || 0) >= 1);
 
@@ -1457,6 +1521,7 @@ function renderHistory() {
       ${chip('expired', 'Ran out of time', counts.expired, 'exp')}
       ${chip('target', 'Hit a target', counts.target)}
       ${chip('open', 'Still open', counts.open, 'open')}
+      ${counts.ungraded ? chip('ungraded', 'Not graded', counts.ungraded, 'exp') : ''}
       ${counts.mine ? chip('mine', 'Closed by you', counts.mine, 'exp') : ''}
     </div>
 
@@ -1554,12 +1619,8 @@ function myRow(x) {
 }
 
 function historyRow(x) {
-  const R = num(x.resultR);
-  // Trust the published status; fall back to the sign only when it is absent.
-  const st = String(x.status || (R == null ? 'open' : R > 0 ? 'won' : 'lost')).toLowerCase();
-  const open = st === 'open';
-  const cls = open ? 'open' : st === 'won' ? 'win' : st === 'expired' ? 'exp' : 'loss';
-  const label = open ? 'OPEN' : st === 'won' ? 'WON' : st === 'expired' ? 'EXPIRED' : 'LOST';
+  const o = rowOutcome(x);
+  const R = o.R, st = o.status, open = o.key === 'open', cls = o.cls, label = o.label;
   const mae = num(x.maeR), mfe = num(x.mfeR);
 
   const started = histTime(x.firedAt);
@@ -1582,7 +1643,7 @@ function historyRow(x) {
           <span class="h-when">${esc(String(x.direction || '').toUpperCase())}${x.tpReached ? ' &middot; TP' + esc(x.tpReached) : ''}</span></span>
         ${span}
       </span>
-      <span class="h-r ${open ? '' : R > 0 ? 'pos' : 'neg'}">${open ? 'running' : esc(sign(R) + R.toFixed(2)) + 'R'}</span>
+      <span class="h-r ${!o.graded ? '' : R > 0 ? 'pos' : 'neg'}">${rowR(o)}</span>
     </summary>
     <div class="h-body">
       <dl class="kv">
@@ -1601,11 +1662,7 @@ function historyRow(x) {
         ${x.confidence != null ? `<dt>Confidence</dt><dd>${esc(x.confidence)}</dd>` : ''}
         ${x.regime ? `<dt>Regime</dt><dd>${esc(x.regime)}</dd>` : ''}
       </dl>
-      <p style="margin-top:10px">${open
-        ? 'Still running, so it counts for nothing yet.'
-        : R > 0
-          ? `Closed ${esc(sign(R) + R.toFixed(2))}R.${!x.tpReached ? ' It never reached a target — it timed out while ahead, which is why the two win rates on the Ledger differ.' : ''}${mae != null && mae > 0.5 ? ` It first went ${esc(mae.toFixed(2))}R against you.` : ''}`
-          : `Closed ${esc(sign(R) + R.toFixed(2))}R.${mfe != null && mfe < 1 ? ` It never reached TP1 — peak was ${esc(sign(mfe) + mfe.toFixed(2))}R — so this was an entry that did not work, not an exit that gave profit back.` : ''}`}</p>
+      <p style="margin-top:10px">${endedSentence(x, o, ended, dur)}</p>
     </div>
   </details>`;
 }
