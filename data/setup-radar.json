@@ -1,12 +1,51 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-11-11T11:10:43.866Z",
+  "timestamp": "2026-11-11T15:38:41.049Z",
   "scanned": 15,
-  "setupsFound": 0,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 0,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
-  "radar": [],
+  "radar": [
+    {
+      "pair": "US30",
+      "direction": "SELL",
+      "confidence": 60,
+      "strength": 56,
+      "verdict": "WEAK SHORT — 60% conviction",
+      "timeHorizon": "30 min",
+      "entry": 52096,
+      "sl": 52356.5,
+      "tp1": 51666.6,
+      "tp3": 50593,
+      "slPips": 260,
+      "tp1Pips": 429,
+      "tp3Pips": 1503,
+      "rrTP1": 1.65,
+      "rrTP3": 5.77,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading)",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports SELL (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 15,
+        "bear": 40,
+        "marginPct": 45
+      },
+      "reasoning": "Weighted consensus favors SHORT with 60% conviction. Top drivers: Correlation basket supports SELL (100/100); Price < EMA20 < EMA50 (bearish stack). HTF flat. Structure range. Manage risk with the levels below."
+    }
+  ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
 }
