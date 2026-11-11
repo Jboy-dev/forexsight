@@ -1,7 +1,7 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-11-11T15:38:41.049Z",
+  "timestamp": "2026-11-11T18:44:20.269Z",
   "scanned": 15,
   "setupsFound": 1,
   "passedMainGate": 0,
@@ -10,41 +10,56 @@
   "radar": [
     {
       "pair": "US30",
-      "direction": "SELL",
-      "confidence": 60,
-      "strength": 56,
-      "verdict": "WEAK SHORT — 60% conviction",
+      "direction": "BUY",
+      "confidence": 81,
+      "strength": 87,
+      "verdict": "STRONG LONG — 81% conviction",
       "timeHorizon": "30 min",
-      "entry": 52096,
-      "sl": 52356.5,
-      "tp1": 51666.6,
-      "tp3": 50593,
-      "slPips": 260,
-      "tp1Pips": 429,
-      "tp3Pips": 1503,
-      "rrTP1": 1.65,
-      "rrTP3": 5.77,
+      "entry": 52494,
+      "sl": 52231.6,
+      "tp1": 52894.4,
+      "tp3": 53895.3,
+      "slPips": 262,
+      "tp1Pips": 400,
+      "tp3Pips": 1401,
+      "rrTP1": 1.53,
+      "rrTP3": 5.34,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading)",
+      "heldBackReason": "Not scanned by strict pipeline (or filtered before platinum gate)",
       "topFactors": [
         {
-          "name": "Correlation basket supports SELL (100/100)",
-          "weight": 25,
+          "name": "Higher timeframe (4H) trend UP",
+          "weight": 20,
           "note": ""
         },
         {
-          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "name": "Market structure — uptrend (HH+HL)",
           "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "Price > EMA20 > EMA50 (bullish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram positive (bullish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "RSI 60.3 — bullish momentum zone",
+          "weight": 10,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 15,
-        "bear": 40,
-        "marginPct": 45
+        "bull": 75,
+        "bear": 0,
+        "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 60% conviction. Top drivers: Correlation basket supports SELL (100/100); Price < EMA20 < EMA50 (bearish stack). HTF flat. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors LONG with 81% conviction. Top drivers: Higher timeframe (4H) trend UP; Market structure — uptrend (HH+HL); Price > EMA20 > EMA50 (bullish stack). HTF up. Structure uptrend. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
