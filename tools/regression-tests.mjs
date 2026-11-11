@@ -7,6 +7,7 @@
  * false confidence. Where a test could pass for the wrong reason, it asserts
  * the specific wrong value the bug produced, not merely "something sensible".
  */
+import { execSync } from 'child_process';
 import { readFileSync, readdirSync, existsSync } from 'fs';
 
 let pass = 0, fail = 0, skip = 0;
@@ -1919,7 +1920,7 @@ t('every history row renderer actually runs, on every branch', () => {
   const r2 = (n) => (n == null ? null : Math.round(n * 100) / 100);
   const S = { cfg: { expand: false }, shadowTracker: null };
 
-  const helpers = lift('histTime') + lift('histDur') + lift('rowOutcome') + lift('rowR') + lift('endedSentence');
+  const helpers = lift('histTime') + lift('histDur') + lift('rowOutcome') + lift('rowR') + lift('endedSentence') + lift('histKey');
   if (!helpers.includes('function histTime')) return 'histTime/histDur could not be lifted — the test cannot run';
   if (!helpers.includes('function rowOutcome')) return 'the shared outcome classifier could not be lifted';
 
@@ -1950,7 +1951,7 @@ t('every history row renderer actually runs, on every branch', () => {
   // And one the watcher does not know about at all, which must degrade, not throw.
   if (template) rows.push({ ...template, status: 'some-future-status', resultR: null, _synthetic: true });
 
-  for (const name of ['histRow', 'myRow', 'historyRow']) {
+  for (const name of ['histRow', 'myRow', 'historyRow', 'historyBody']) {
     const body = lift(name);
     if (!body) return `${name} could not be lifted from v2/base.js`;
     let fn;
@@ -1967,6 +1968,182 @@ t('every history row renderer actually runs, on every branch', () => {
       }
     }
   }
+  return true;
+});
+
+
+
+t('History draws a page of the book, not the whole book, and builds detail on demand', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  // Measured 11 Nov: drawing every row with its detail body made History
+  // 66,821 nodes — 94% of the page — 2.8 MB rebuilt every two minutes.
+  const page = Number((src.match(/const HIST_PAGE = (\d+)/) || [])[1]);
+  if (!(page > 0 && page <= 200)) return 'there is no bounded page size for History';
+  const rh = src.slice(src.indexOf('function renderHistory()'), src.indexOf('function renderHistory()') + 9000);
+  if (!/shown\.slice\(0, limit\)\.map\(historyRow\)/.test(rh)) return 'History draws every row instead of a page';
+  if (/shown\.map\(historyRow\)/.test(rh)) return 'History still draws the whole book somewhere';
+  if (!/sig === S\._histSig/.test(rh)) return 'History rebuilds on every cycle even when nothing changed';
+  if (!/openKeys/.test(rh)) return 'a rebuild would close every History row the reader had open';
+
+  // RUN it on the real book and measure what it would draw.
+  const lift = (n) => { const k = src.indexOf(`function ${n}(`); if (k < 0) return ''; const r = src.slice(k); return r.slice(0, r.indexOf('\n}\n') + 3); };
+  const esc = (x) => String(x ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const sign = (n) => (n == null ? '' : n > 0 ? '+' : '');
+  const cp = (v) => (v == null ? '—' : `<span>${v}</span>`);
+  const body = ['histTime', 'histDur', 'rowOutcome', 'rowR', 'endedSentence', 'histKey', 'historyRow'].map(lift).join('\n');
+  const historyRow = new Function('esc', 'num', 'sign', 'cp', `${body}; return historyRow;`)(esc, num, sign, cp);
+  if (!existsSync('data/ledger.json')) return true;
+  const rows = (JSON.parse(readFileSync('data/ledger.json', 'utf8')).history || []);
+  if (rows.length < page) return true;
+  const drawn = rows.slice(0, page).map(historyRow).join('');
+  if (/<dl/.test(drawn)) return 'the detail body is drawn up front — it must wait until the row is opened';
+  const kb = drawn.length / 1024;
+  // The whole book was 2,868 KB. A page of summaries must be a small fraction.
+  if (kb > 120) return `a page of History is ${kb.toFixed(0)} KB — the summary rows have grown heavy`;
+  if (!/data-hkey="/.test(drawn)) return 'rows carry no key, so an opened row cannot find its detail';
+
+  // What the detail SAYS, not just that it renders. A signal the watcher
+  // refused to grade has no ending — it must never be described as one.
+  const bodyFn = new Function('esc', 'num', 'sign', 'cp',
+    `${['histTime', 'histDur', 'rowOutcome', 'rowR', 'endedSentence', 'historyBody'].map(lift).join('\n')}; return historyBody;`)(esc, num, sign, cp);
+  const tpl = rows.find((r) => typeof r.resultR === 'number' && r.firedAt && r.resolvedAt);
+  if (tpl) {
+    const ungraded = bodyFn({ ...tpl, status: 'unscaled', resultR: null, resolvedAt: null });
+    if (/ran out of time/i.test(ungraded)) return 'an ungraded signal is described as having run out of time';
+    if (!/not graded/i.test(ungraded)) return 'an ungraded signal is not described as ungraded';
+    const expired = bodyFn({ ...tpl, status: 'expired' });
+    if (!/ran out of time/i.test(expired)) return 'an expired signal no longer says it ran out of time';
+  }
+  return true;
+});
+
+
+
+/* ───── 11 Nov: four guards the mutation audit had been reporting as "guarded"
+   only because it never restored its clone between cases. Once it did, all four
+   passed with their fix undone. Each checked the spelling of the code rather
+   than what it does; these RUN it. ───── */
+
+t('every ATR in the repo is Wilder, measured by running it, not by reading it', () => {
+  // Deterministic bars, so every run sees identical input.
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const bars = []; let px = 100;
+  for (let i = 0; i < 400; i++) {
+    const o = px, c = px * (1 + (rnd() - 0.5) * 0.02);
+    bars.push({ t: i, o, h: Math.max(o, c) * (1 + rnd() * 0.006), l: Math.min(o, c) * (1 - rnd() * 0.006), c });
+    px = c;
+  }
+  const ref = Array(bars.length).fill(null); { let sd = 0;
+    for (let i = 1; i < bars.length; i++) {
+      const tr = Math.max(bars[i].h - bars[i].l, Math.abs(bars[i].h - bars[i-1].c), Math.abs(bars[i].l - bars[i-1].c));
+      if (i <= 14) { sd += tr; if (i === 14) ref[i] = sd / 14; } else ref[i] = (ref[i-1] * 13 + tr) / 14;
+    } }
+  const liftAt = (src, at) => {
+    const open = src.indexOf('{', src.indexOf(')', at)); let d = 0, i = open;
+    for (; i < src.length; i++) { if (src[i] === '{') d++; else if (src[i] === '}') { d--; if (d === 0) break; } }
+    return src.slice(at, i + 1);
+  };
+  // Deliberate exceptions, each with its reason. Anything else must be Wilder.
+  const EXCLUDE = { atrSma: 'the deliberate rolling-mean arm of atr-method-test', atrControl: 'not an ATR' };
+  const files = [...readdirSync('tools').filter((f) => f.endsWith('.mjs') && f !== 'regression-tests.mjs').map((f) => 'tools/' + f),
+                 'functions/api/check-signals.js'];
+  let checked = 0;
+  for (const f of files) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/function (atr\w*)\s*\(([^)]*)\)/g)) {
+      const name = m[1]; if (EXCLUDE[name]) continue;
+      const params = m[2].split(',').map((x) => x.trim().split('=')[0].trim());
+      // Pull in any helper it calls from the same file (e.g. trueRange).
+      let body = liftAt(src, m.index), fn = null;
+      for (let tries = 0; tries < 4 && !fn; tries++) {
+        try {
+          const cand = new Function(`${body}; return ${name};`)();
+          if (params[0] === 'highs') cand(bars.map((b) => b.h), bars.map((b) => b.l), bars.map((b) => b.c), 14);
+          else if (params[1] === 'i') cand(bars, 100, 14); else cand(bars, 14);
+          fn = cand;
+        } catch (e) {
+          const miss = (e.message.match(/^(\w+) is not defined/) || [])[1];
+          // A helper may be a declaration or an arrow assigned to a const.
+          const kf = miss ? src.search(new RegExp(`function ${miss}\\s*\\(`)) : -1;
+          const ka = miss ? src.search(new RegExp(`const ${miss}\\s*=\\s*\\(`)) : -1;
+          if (kf < 0 && ka < 0) return `${f} ${name} could not be run on its own: ${e.message}`;
+          body = (kf >= 0 ? liftAt(src, kf) : liftAt(src, ka) + ';') + '\n' + body;
+        }
+      }
+      if (!fn) return `${f} ${name} could not be run`;
+      const at = [100, 250, 399];
+      let got;
+      if (params[0] === 'highs') { const r = fn(bars.map((b) => b.h), bars.map((b) => b.l), bars.map((b) => b.c), 14); got = at.map((i) => r[i]); }
+      else if (params[1] === 'i') got = at.map((i) => fn(bars, i, 14));
+      else { const r = fn(bars, 14); got = Array.isArray(r) ? at.map((i) => r[i]) : [null, null, r]; }
+      if (!got.some((g) => g != null)) return `${f} ${name} returned nothing comparable`;
+      for (let k = 0; k < at.length; k++) {
+        if (got[k] == null) continue;
+        const off = Math.abs(got[k] - ref[at[k]]) / ref[at[k]];
+        if (off > 1e-9) return `${f} ${name} is not Wilder — ${(off * 100).toFixed(2)}% away at bar ${at[k]}`;
+      }
+      checked++;
+    }
+  }
+  if (checked < 15) return `only ${checked} ATR implementations were found and run — the census is not seeing the repo`;
+  return true;
+});
+
+t('adverse movement is described as adverse, measured by rendering it', () => {
+  const src = readFileSync('v2/base.js', 'utf8');
+  // maeR is a POSITIVE magnitude. Any comparison of it against zero or below
+  // can never fire, whatever spelling it takes.
+  const dead = src.match(/\bmae\s*<=?\s*(-[\d.]+|0(\.0+)?)\b/);
+  if (dead) return `a comparison tests mae for being below zero, which it never is: "${dead[0]}"`;
+  const lift = (n) => { const k = src.indexOf(`function ${n}(`); const r = src.slice(k); return r.slice(0, r.indexOf('\n}\n') + 3); };
+  const esc = (x) => String(x ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const num = (v) => (typeof v === 'number' && isFinite(v) ? v : null);
+  const sign = (n) => (n == null ? '' : n > 0 ? '+' : '');
+  const cp = (v) => String(v);
+  const body = new Function('esc', 'num', 'sign', 'cp',
+    `${['histTime', 'histDur', 'rowOutcome', 'rowR', 'endedSentence', 'historyBody'].map(lift).join('\n')}; return historyBody;`)(esc, num, sign, cp);
+  const row = { status: 'won', resultR: 1.2, tpReached: 2, maeR: 1.07, mfeR: 2.1, pair: 'GBP/USD',
+    firedAt: '2026-11-01T10:00:00Z', resolvedAt: '2026-11-02T10:00:00Z', entry: 1, sl: 0.99, tp1: 1.01, tp2: 1.02, tp3: 1.03 };
+  const out = body(row);
+  if (/\+1\.07R/.test(out)) return 'adverse movement is printed with a plus sign, which reads as a gain';
+  if (!/1\.07R at its worst/.test(out)) return 'adverse movement is not described as the worst point';
+  if (!/not comfortable/.test(out)) return 'a win that first went 1.07R against the position is not called uncomfortable';
+  return true;
+});
+
+t('the watcher refuses to close against bars that are not current', () => {
+  const src = readFileSync('tools/watch-setups.mjs', 'utf8');
+  const m = src.match(/const STALE_BARS_MS = ([^;]+);/);
+  if (!m) return 'the staleness limit is gone';
+  // Evaluate the value, not the name. Infinity or a week would declare every
+  // bar fresh and let an outage manufacture results again.
+  let ms; try { ms = Function(`return (${m[1]});`)(); } catch { return `the staleness limit "${m[1]}" is not a plain number`; }
+  if (!Number.isFinite(ms)) return `the staleness limit is ${m[1]} — nothing would ever count as stale`;
+  if (ms <= 3600000 || ms > 24 * 3600000) return `the staleness limit is ${(ms / 3600000).toFixed(1)}h — outside the 1h–24h range that means anything`;
+  return true;
+});
+
+t('every deploy stamps a different build id, measured by running the stamp twice', () => {
+  const sh = readFileSync('tools/deploy.sh', 'utf8');
+  const line = (sh.match(/^BUILD=.*$/m) || [])[0];
+  if (!line) return 'deploy.sh no longer sets BUILD';
+  // Without a fresh id the service worker bytes never change, and an installed
+  // phone app keeps serving its old copy however often it is opened.
+  const run = () => execSync(`${line.replace(/^BUILD=/, 'printf "%s" ')}`, { shell: '/bin/bash', encoding: 'utf8' }).trim();
+  const a = run();
+  execSync('sleep 1.1');
+  const b = run();
+  if (!a) return 'the build id came out empty';
+  if (a === b) return `two deploys a second apart would both stamp "${a}" — the phone app would never update`;
+  return true;
+});
+
+t('the exit search compares against the stop the engine actually ships', () => {
+  const src = readFileSync('tools/exit-search.mjs', 'utf8');
+  if (/r\.sl === 1\.5/.test(src)) return 'the "current" scheme is a hard-coded 1.5, not what the engine ships';
+  if (!/check-signals\.js/.test(src) || !/SHIPPED_SL/.test(src)) return '"current" is not read from the engine';
+  if (!/r\.sl === SHIPPED_SL/.test(src)) return 'the shipped stop is read but not used to pick the current scheme';
   return true;
 });
 

@@ -68,12 +68,26 @@ const ci95 = a => { if (a.length < 2) return null; const se = sd(a) / Math.sqrt(
   return [+(mean(a) - 1.96 * se).toFixed(4), +(mean(a) + 1.96 * se).toFixed(4)]; };
 
 function atrAt(bars, i, p = 14) {
-  let acc = 0;
-  for (let j = i - p + 1; j <= i; j++) {
-    if (j < 1) return null;
-    acc += Math.max(bars[j].h - bars[j].l, Math.abs(bars[j].h - bars[j-1].c), Math.abs(bars[j].l - bars[j-1].c));
+  // Wilder's ATR at bar i — the definition the engine, TradingView and every
+  // other tool here use. This was a plain mean of the last 14 true ranges,
+  // which ran up to 4.24% away from Wilder on the same bars, so the 120 exit
+  // schemes were sized against a different yardstick from the one that ships.
+  // Computed once per bar set and kept on the array (non-enumerable, so it
+  // never leaks into a saved file); the function stays self-contained so the
+  // ATR census in the regression suite can lift and run it on its own.
+  const key = '_atrWilder' + p;
+  let s = bars[key];
+  if (!s) {
+    s = Array(bars.length).fill(null);
+    let seed = 0;
+    for (let j = 1; j < bars.length; j++) {
+      const tr = Math.max(bars[j].h - bars[j].l, Math.abs(bars[j].h - bars[j-1].c), Math.abs(bars[j].l - bars[j-1].c));
+      if (j <= p) { seed += tr; if (j === p) s[j] = seed / p; }
+      else s[j] = (s[j-1] * (p - 1) + tr) / p;
+    }
+    Object.defineProperty(bars, key, { value: s, enumerable: false });
   }
-  return acc / p;
+  return s[i] ?? null;
 }
 
 /**
@@ -184,8 +198,21 @@ for (const sc of schemes) {
               winRate: +(se.filter(r => r > 0).length / se.length * 100).toFixed(1) } });
 }
 
-const current = results.find(r => r.id.includes('current') && r.sl === 1.5 && r.trail === 'prev')
-             || results.find(r => r.id.includes('current'));
+// "Current" means what the live engine ships, read from the engine itself.
+// This was a literal 1.5 long after the engine moved to 3.0, so the published
+// comparison described a scheme the site does not run — at -0.1065R, t=-3.45,
+// considerably worse-looking than the one that actually does.
+const SHIPPED_SL = (() => {
+  try {
+    const eng = readFileSync('functions/api/check-signals.js', 'utf8');
+    const m = eng.match(/const atrSlDist = atrV \* ([\d.]+);/);
+    return m ? Number(m[1]) : null;
+  } catch { return null; }
+})();
+if (SHIPPED_SL == null) { console.error('cannot read the shipped stop multiple from the engine'); process.exit(1); }
+if (!SLS.includes(SHIPPED_SL)) { console.error(`the shipped stop ${SHIPPED_SL}x ATR is not in the grid, so it cannot be compared`); process.exit(1); }
+const current = results.find(r => r.id.includes('current') && r.sl === SHIPPED_SL && r.trail === 'prev');
+if (!current) { console.error(`no scheme matches what ships (SL ${SHIPPED_SL}x, current ladder, trail prev)`); process.exit(1); }
 
 results.sort((a, b) => b.sealed.avgR - a.sealed.avgR);
 console.log(`  ${HYP} exit schemes tested on the same entries, bar |t| > ${BAR_T}\n`);

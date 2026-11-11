@@ -46,15 +46,27 @@ run_case() {
   local n="$1" dir="$2" name file py
   name=$(cat "$CASES/$n.name"); file=$(cat "$CASES/$n.file"); py=$(cat "$CASES/$n.py")
   cd "$dir" || return
+  cp "$dir/$file" "$dir/.audit-orig"
   if ! python3 -c "$py" >/dev/null 2>&1; then
+    cp "$dir/.audit-orig" "$dir/$file"
     printf 'skip\t%s\tmutation no longer applies' "$name" > "$RES/$n"; return
   fi
   case "$file" in
     *.js|*.mjs) node --check "$file" >/dev/null 2>&1 || {
+        cp "$dir/.audit-orig" "$dir/$file"
         printf 'skip\t%s\tmutation produced invalid JS' "$name" > "$RES/$n"; return; } ;;
   esac
   local out code finished
   node tools/regression-tests.mjs > "$dir/.case.out" 2>&1; code=$?
+  # Put the file back exactly as it was. Without this every mutation stayed in
+  # the shared clone, so once one case turned the suite red, EVERY later case
+  # read as "guarded" whatever its own guard did — proven on 11 Nov by a canary
+  # edit to a comment no test can see, which came out "guarded, 4 failed".
+  cp "$dir/.audit-orig" "$dir/$file"
+  if ! cmp -s "$dir/$file" "$REPO/$file"; then
+    printf 'skip\t%s\tINCONCLUSIVE: the clone could not be restored after this case' "$name" > "$RES/$n"
+    RESTORE_FAILED=1; return
+  fi
   out=$(tr -d '\033' < "$dir/.case.out" | sed 's/\[[0-9;]*m//g' | grep -E '[0-9]+ passed' | tail -1 || true)
   finished=$(grep -c 'passed' "$dir/.case.out" 2>/dev/null || true); [ -z "$finished" ] && finished=0
   if [ "$code" -ne 0 ]; then
@@ -140,14 +152,80 @@ a=\"    unscaled: { key: 'unscaled', label: 'NOT GRADED', cls: 'exp',  graded: f
 assert s.count(a)==1, s.count(a)
 open(p,'w').write(s.replace(a,''))"
 
+# 2026-11-11: History drew all 1,652 rows with every detail body — 66,821 nodes,
+# 94% of the page, 2.8 MB rebuilt every two minutes and growing ~70 rows a day.
+try "History draws the whole book again" v2/base.js "
+p='v2/base.js';s=open(p).read()
+a='shown.slice(0, limit).map(historyRow)'
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,'shown.map(historyRow)'))"
+
+try "History rebuilds on every cycle again" v2/base.js "
+p='v2/base.js';s=open(p).read()
+a='if (sig === S._histSig && box.querySelector'
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,'if (false && box.querySelector'))"
+
+try "an ungraded signal is told it ran out of time" v2/base.js "
+p='v2/base.js';s=open(p).read()
+a=\"    : !o.graded ? 'not graded — no honest outcome could be read'\\n\"
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,''))"
+
+# 2026-11-11: exit-search sized its 120 schemes with a rolling-mean ATR (up to
+# 4.24% from Wilder) and called a hard-coded 1.5x stop "current" while the
+# engine shipped 3.0x — so its published comparison described a scheme the site
+# does not run.
+try "the exit search goes back to a rolling-mean ATR" tools/exit-search.mjs "
+p='tools/exit-search.mjs';s=open(p).read()
+a='else s[j] = (s[j-1] * (p - 1) + tr) / p;'
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,'else s[j] = (s[j-1] + tr) / 2;'))"
+
+try "the exit search calls a hard-coded stop current again" tools/exit-search.mjs "
+p='tools/exit-search.mjs';s=open(p).read()
+a='r.sl === SHIPPED_SL'
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,'r.sl === 1.5'))"
+
+# ---- the audit's own control ----
+# A change to a comment that no test reads. If this ever comes out "guarded",
+# the audit is reporting leftovers from other cases, not the case in front of
+# it, and NOTHING above can be believed. It is declared last on purpose: that
+# is the position where accumulated mutations would show.
+try "CANARY: a change no test looks at" v2/base.js "
+p='v2/base.js';s=open(p).read()
+a='rows drawn per page of History'
+assert s.count(a)==1, s.count(a)
+open(p,'w').write(s.replace(a,'canary - no test reads this comment'))"
+
 # ---- report, in the order the cases were declared ----
 if [ "$N" -eq 0 ]; then echo "No cases matched."; exit 0; fi
 for w in $(seq 1 1); do rm -rf "$WORK/w$w"; cp -c -R "$REPO" "$WORK/w$w" 2>/dev/null || cp -R "$REPO" "$WORK/w$w"; done
+# A red baseline makes every case "guarded" for free. Refuse to start on one.
+( cd "$WORK/w1" && node tools/regression-tests.mjs > "$WORK/baseline.out" 2>&1 ) || {
+  echo "  The suite is red BEFORE any fix is reverted — an audit now would report every case as guarded."
+  grep -A1 "FAIL" "$WORK/baseline.out" | head -6
+  exit 2
+}
+RESTORE_FAILED=0
 for n in $(seq 1 "$N"); do run_case "$n" "$WORK/w1"; done
 
 for n in $(seq 1 "$N"); do
   [ -f "$RES/$n" ] || { printf "  \033[33m  skip\033[0m  case %d produced no result\n" "$n"; SKIP=$((SKIP+1)); continue; }
   IFS=$(printf '\t') read -r verdict name detail < "$RES/$n"
+  # The canary is the one case that MUST come out unguarded. If it reads as
+  # guarded, failures are leaking between cases and no verdict here is real.
+  case "$name" in CANARY:*)
+    if [ "$verdict" = "UNGUARDED" ]; then
+      printf "  \033[32m  control\033[0m  %s — correctly unguarded, so each case is judged on its own\n" "$name"
+    else
+      printf "  \033[31mAUDIT INVALID\033[0m  %s came out %s (%s)\n" "$name" "$verdict" "$detail"
+      printf "  \033[31mA change no test can see was marked guarded: verdicts are leaking between cases.\033[0m\n"
+      CANARY_BAD=1
+    fi
+    continue ;;
+  esac
   case "$verdict" in
     guarded)   printf "  \033[32m  guarded\033[0m  %s  (%s)\n" "$name" "$detail"; PASS=$((PASS+1)) ;;
     UNGUARDED) printf "  \033[31mUNGUARDED\033[0m  %s  (%s)\n" "$name" "$detail"; MISS=$((MISS+1))
@@ -159,6 +237,8 @@ for n in $(seq 1 "$N"); do
 done
 
 echo
+if [ "${CANARY_BAD:-0}" = 1 ] || [ "${RESTORE_FAILED:-0}" = 1 ]; then
+  printf "\033[31mThe audit could not isolate its cases. Nothing above is a verdict.\033[0m\n"; exit 3; fi
 printf "guarded: %d   UNGUARDED: %d   skipped: %d" "$PASS" "$MISS" "$SKIP"
 [ "$VOID" -gt 0 ] && printf "   \033[33mINCONCLUSIVE: %d\033[0m" "$VOID"
 printf "\n"

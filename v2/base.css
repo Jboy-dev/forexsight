@@ -210,13 +210,15 @@ h2.sec::after { content: ''; flex: 1; height: 1px; background: linear-gradient(9
    did not fit 375px and wrapped to two rows, which cost more than it showed. */
 /* Four cells now that "can you still enter" leads the row; auto-fit so they sit
    two-by-two on a phone rather than being crushed into one line. */
-.c-glance { display: grid; grid-template-columns: repeat(auto-fit, minmax(74px, 1fr)); gap: 7px;
+/* Four equal cells on one line. auto-fit put three on a 375px phone and left
+   "if stopped" alone on a second row — a whole row of height for one number. */
+.c-glance { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;
   margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line-soft); }
 .c-glance > span { font: 620 13px/1 var(--mono); letter-spacing: -.03em; text-align: center;
-  padding: 8px 5px; border-radius: 5px; border: 1px solid var(--line-soft); background: #0a0e1a;
+  padding: 8px 3px; min-width: 0; border-radius: 5px; border: 1px solid var(--line-soft); background: #0a0e1a;
   overflow: hidden; text-overflow: ellipsis; }
-.c-glance i { display: block; font-style: normal; font: 500 9px var(--mono); color: var(--text-faint);
-  margin-top: 5px; letter-spacing: .04em; }
+.c-glance i { display: block; font-style: normal; font: 500 8.5px/1.25 var(--mono); color: var(--text-faint);
+  margin-top: 5px; letter-spacing: 0; white-space: normal; }
 .c-glance .g-run { color: var(--text-dim); }
 .c-glance .g-run.up { color: var(--up);   background: var(--up-soft);   border-color: #2fd98a35; }
 .c-glance .g-run.dn { color: var(--down); background: var(--down-soft); border-color: #ff5f6d35; }
@@ -1218,3 +1220,7 @@ h2.sec:active { cursor: grabbing; }
 .ch-z { border: 0; background: none; border-radius: 6px; padding: 8px 9px; }
 .ch-z.on { background: var(--accent-soft); color: var(--accent); }
 .ch-hint { font-size: 10px; }
+
+/* "Show more" at the foot of History: a full-width target, not a chip. */
+.hist-more { display: flex; width: 100%; justify-content: center; gap: 10px; margin-top: 10px; padding: 13px; }
+.hist-more span { color: var(--text-faint); }

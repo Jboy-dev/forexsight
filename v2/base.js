@@ -995,7 +995,7 @@ function glanceLine(sig) {
   if (win) {
     const label = win.state === 'open' ? 'ENTER' : win.state === 'late' ? 'LATE' : 'TOO LATE';
     bits.push(`<span class="g-ew ${esc(win.state)}">${esc(label)}`
-      + `<i>${win.rNow != null ? esc(win.rNow.toFixed(2)) + 'R to TP1 now' : 'past the level'}</i></span>`);
+      + `<i>${win.rNow != null ? esc(win.rNow.toFixed(2)) + 'R to TP1' : 'past TP1'}</i></span>`);
   }
 
   if (entry != null && sl != null && Math.abs(entry - sl) > 0) {
@@ -1424,6 +1424,8 @@ function renderTabCounts() {
    by outcome. Not a window of the most recent few — the whole book, which is
    why the archive exists.
    ----------------------------------------------------------------------- */
+const HIST_PAGE = 60;          // rows drawn per page of History
+
 function renderHistory() {
   const L = S.ledger, box = el('history');
   if (!box) return;
@@ -1491,6 +1493,21 @@ function renderHistory() {
   }
   if (cfg.direction) shown = shown.filter(x => String(x.direction || '').toUpperCase().startsWith(cfg.direction[0]));
 
+  // Newest first, a page at a time. The counts above and the filters still
+  // cover the WHOLE book — they are computed from the data, not from what is
+  // drawn — so paging changes what you scroll through, never what is reported.
+  const limit = Math.max(HIST_PAGE, Number(cfg.histLimit) || HIST_PAGE);
+
+  // The ledger is rebuilt every few hours; this ran every two minutes anyway,
+  // throwing away ~67,000 nodes and every row you had open. Rebuild only when
+  // something you could see has changed. The quarter-hour term keeps "running
+  // for 4h so far" honest on open signals without rebuilding every cycle.
+  const sig = [L.ts || 0, rows.length, filter, limit, shown.length,
+    Object.keys(closedBook()).length, Math.floor(Date.now() / 900000)].join('|');
+  if (sig === S._histSig && box.querySelector('.hist, .empty')) return;
+  S._histSig = sig;
+  const openKeys = new Set([...box.querySelectorAll('details.hrow[open][data-hkey]')].map((d) => d.dataset.hkey));
+
   const resolved = shown.filter(x => typeof x.resultR === 'number');
   const sumR = resolved.reduce((a, b) => a + b.resultR, 0);
   const wins = resolved.filter(x => x.resultR > 0).length;
@@ -1531,7 +1548,9 @@ function renderHistory() {
               .sort((a, b) => String(b.closedAt).localeCompare(String(a.closedAt)))
               .map(myRow).join('')}</div>`
           : `<div class="empty"><strong>You have not closed any signals</strong>Use the close button on a card to finish one yourself.</div>`)
-      : shown.length ? `<div class="hist">${shown.map(historyRow).join('')}</div>`
+      : shown.length ? `<div class="hist">${shown.slice(0, limit).map(historyRow).join('')}</div>
+          ${shown.length > limit ? `<button class="hf hist-more" data-hmore="1">Show ${esc(Math.min(HIST_PAGE, shown.length - limit))} more
+            <span>${esc(limit)} of ${esc(shown.length)} shown</span></button>` : ''}`
       : `<div class="empty"><strong>Nothing matches</strong>No signals in this view. Try Everything, or clear your orders.</div>`}
 
     <p style="font-size:11.5px;color:var(--text-faint);margin-top:14px;line-height:1.6">
@@ -1542,8 +1561,41 @@ function renderHistory() {
       which is how ${esc(counts.expired)} of ${esc(counts.all)} ended. Only ${esc(counts.target)} ever reached TP1
       or better, so that is the number to judge the entries by.</p>`;
 
+  // Index the rows actually drawn, so opening one can build its detail.
+  S._histIndex = new Map(shown.slice(0, limit).map((x) => [histKey(x), x]));
+  const fill = (d) => {
+    const body = d.querySelector('.h-body[data-lazy]');
+    if (!body) return;
+    const x = S._histIndex && S._histIndex.get(d.dataset.hkey);
+    if (!x) return;
+    try { body.innerHTML = historyBody(x); }
+    catch (e) { body.innerHTML = `<div class="empty"><strong>This row failed to draw</strong>${esc(e.message || String(e))}</div>`; }
+    body.removeAttribute('data-lazy');
+  };
+  for (const d of box.querySelectorAll('details.hrow[data-hkey]')) {
+    if (openKeys.has(d.dataset.hkey)) { fill(d); d.open = true; }
+  }
+  if (!box._histBound) {
+    box._histBound = true;
+    // 'toggle' does not bubble, but it does travel the capture phase, so one
+    // listener on the box covers every row however often they are rebuilt.
+    box.addEventListener('toggle', (e) => {
+      const d = e.target;
+      if (d && d.matches && d.matches('details.hrow[data-hkey]') && d.open) fill(d);
+    }, true);
+    box.addEventListener('click', (e) => {
+      const more = e.target.closest && e.target.closest('[data-hmore]');
+      if (!more) return;
+      e.preventDefault();
+      S.cfg.histLimit = (Number(S.cfg.histLimit) || HIST_PAGE) + HIST_PAGE;
+      renderHistory();
+    });
+  }
+
   for (const b of box.querySelectorAll('[data-hfilter]')) {
     b.addEventListener('click', () => {
+      // A new filter starts at the top again.
+      S.cfg.histLimit = HIST_PAGE;
       S.cfg.histFilter = b.dataset.hfilter;
       if (window.FS) window.FS.save(S.cfg);
       renderHistory();
@@ -1618,10 +1670,23 @@ function myRow(x) {
   </details>`;
 }
 
+/* ─────────────── History, built for a book that only grows ───────────────
+   Measured on 11 Nov: History was 66,821 DOM nodes — 94% of the whole page —
+   2.8 MB of HTML, rebuilt every two minutes, and 70 signals bigger every day.
+   Every row carried its full detail body even while closed, and nobody reads
+   1,652 bodies at once.
+
+   So a row is now just its summary, and the body is built the first time you
+   open it (historyBody). Rows still carry everything you need to scan the
+   book — outcome, pair, start, end, duration, result — on their face.
+   ------------------------------------------------------------------- */
+function histKey(x) {
+  return String(x.key || `${x.pair}|${x.direction}|${x.firedAt}`);
+}
+
 function historyRow(x) {
   const o = rowOutcome(x);
-  const R = o.R, st = o.status, open = o.key === 'open', cls = o.cls, label = o.label;
-  const mae = num(x.maeR), mfe = num(x.mfeR);
+  const R = o.R, open = o.key === 'open', cls = o.cls, label = o.label;
 
   const started = histTime(x.firedAt);
   const ended = histTime(x.resolvedAt);
@@ -1629,12 +1694,11 @@ function historyRow(x) {
   const span = started
     ? `<span class="h-span"><b>${esc(started)}</b>${open
         ? ` &rarr; <em>still running</em>` + (dur ? ` &middot; ${esc(dur)} so far` : '')
+        : !o.graded ? ' &rarr; <em>not graded</em>'
         : ended ? ` &rarr; <b>${esc(ended)}</b>` + (dur ? ` &middot; ran ${esc(dur)}` : '') : ' &rarr; end time not recorded'}</span>`
     : '<span class="h-span">start time not recorded</span>';
 
-  const utc = (iso) => new Date(iso).toUTCString().slice(5, 22) + ' UTC';
-
-  return `<details class="hrow">
+  return `<details class="hrow" data-hkey="${esc(histKey(x))}">
     <summary>
       <span class="h-caret">&#9656;</span>
       <span class="h-res ${cls}">${esc(label)}</span>
@@ -1645,14 +1709,30 @@ function historyRow(x) {
       </span>
       <span class="h-r ${!o.graded ? '' : R > 0 ? 'pos' : 'neg'}">${rowR(o)}</span>
     </summary>
-    <div class="h-body">
-      <dl class="kv">
+    <div class="h-body" data-lazy="1"></div>
+  </details>`;
+}
+
+/** The detail of one row — built only when the row is opened. */
+function historyBody(x) {
+  const o = rowOutcome(x);
+  const open = o.key === 'open';
+  const mae = num(x.maeR), mfe = num(x.mfeR);
+  const ended = histTime(x.resolvedAt);
+  const dur = x.firedAt ? histDur(x.firedAt, x.resolvedAt) : null;
+  const utc = (iso) => new Date(iso).toUTCString().slice(5, 22) + ' UTC';
+  // Decided from the shared classifier. This line used to fall through to "ran
+  // out of time" for anything that was not won or lost — so a signal the
+  // watcher refused to grade was told it had timed out, which it had not.
+  const how = open ? 'has not ended yet'
+    : !o.graded ? 'not graded — no honest outcome could be read'
+    : o.key === 'won' ? 'closed ahead' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)}` : '')
+    : o.key === 'lost' ? 'closed behind' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)} first` : ', without reaching a target')
+    : `ran out of time after ${dur ? esc(dur) : 'its watch window'}${x.tpReached ? `, having reached TP${esc(x.tpReached)}` : ', without reaching a target'}`;
+  return `<dl class="kv">
         <dt>Started</dt><dd>${x.firedAt ? esc(utc(x.firedAt)) : 'not recorded'}</dd>
         <dt>Ended</dt><dd>${x.resolvedAt ? esc(utc(x.resolvedAt)) : (open ? 'still running' : 'not recorded')}</dd>
-        <dt>How it ended</dt><dd>${open ? 'has not ended yet'
-          : st === 'won' ? 'closed ahead' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)}` : '')
-          : st === 'lost' ? 'closed behind' + (x.tpReached ? ` after reaching TP${esc(x.tpReached)} first` : ', without reaching a target')
-          : `ran out of time after ${dur ? esc(dur) : 'its watch window'}${x.tpReached ? `, having reached TP${esc(x.tpReached)}` : ', without reaching a target'}`}</dd>
+        <dt>How it ended</dt><dd>${how}</dd>
         <dt>Entry</dt><dd>${cp(x.entry, 'entry', x.pair)}</dd>
         <dt>Stop</dt><dd>${cp(x.sl, 'stop', x.pair)}</dd>
         <dt>TP1 / TP2 / TP3</dt><dd>${cp(x.tp1, 'TP1', x.pair)} &middot; ${cp(x.tp2, 'TP2', x.pair)} &middot; ${cp(x.tp3, 'TP3', x.pair)}</dd>
@@ -1662,9 +1742,7 @@ function historyRow(x) {
         ${x.confidence != null ? `<dt>Confidence</dt><dd>${esc(x.confidence)}</dd>` : ''}
         ${x.regime ? `<dt>Regime</dt><dd>${esc(x.regime)}</dd>` : ''}
       </dl>
-      <p style="margin-top:10px">${endedSentence(x, o, ended, dur)}</p>
-    </div>
-  </details>`;
+      <p style="margin-top:10px">${endedSentence(x, o, ended, dur)}</p>`;
 }
 
 /* ───────────────────── the signal ledger ─────────────────────
