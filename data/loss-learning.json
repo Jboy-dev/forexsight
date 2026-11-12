@@ -1,108 +1,64 @@
 {
-  "ts": 1794437882287,
-  "isoTime": "2026-11-11T22:58:02.287Z",
+  "ts": 1794445414420,
+  "isoTime": "2026-11-12T01:03:34.420Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 147,
-  "won": 57,
-  "lost": 90,
-  "slicesClearingZero": 7,
+  "signalsAnalysed": 146,
+  "won": 58,
+  "lost": 88,
+  "slicesClearingZero": 3,
   "chanceBaseline": {
-    "mean": 5,
-    "sd": 2.5,
+    "mean": 3.6,
+    "sd": 2.2,
     "range": [
-      1,
-      10
+      0,
+      8
     ],
     "shuffles": 30
   },
-  "threshold": 7.5,
+  "threshold": 5.9,
   "beatsChance": false,
   "findings": [
     {
       "feature": "strategy",
       "value": "ORB",
-      "n": 26,
-      "avgR": -0.555,
+      "n": 25,
+      "avgR": -0.537,
       "ci": [
-        -0.867,
-        -0.198
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "independence",
-      "value": "2 independent",
-      "n": 51,
-      "avgR": -0.392,
-      "ci": [
-        -0.656,
-        -0.102
+        -0.861,
+        -0.166
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "TREND",
-      "n": 78,
-      "avgR": -0.361,
+      "n": 80,
+      "avgR": -0.296,
       "ci": [
-        -0.582,
-        -0.122
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "MACD",
-      "n": 39,
-      "avgR": -0.33,
-      "ci": [
-        -0.608,
-        -0.031
+        -0.533,
+        -0.057
       ],
       "direction": "negative"
     },
     {
       "feature": "confidenceBand",
       "value": "conf 85+",
-      "n": 71,
-      "avgR": -0.277,
+      "n": 69,
+      "avgR": -0.256,
       "ci": [
-        -0.5,
-        -0.041
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "htfAlignment",
-      "value": "aligned",
-      "n": 101,
-      "avgR": -0.246,
-      "ci": [
-        -0.455,
-        -0.048
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "strategy",
-      "value": "VWAP",
-      "n": 90,
-      "avgR": -0.24,
-      "ci": [
-        -0.446,
-        -0.011
+        -0.482,
+        -0.022
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 90,
-    "fullStopOuts": 90,
+    "total": 88,
+    "fullStopOuts": 88,
     "partial": 0,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "7 slices cleared zero, but shuffled outcomes produce 5.0 on average (up to 10). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "3 slices cleared zero, but shuffled outcomes produce 3.6 on average (up to 8). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
