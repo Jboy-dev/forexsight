@@ -1,64 +1,53 @@
 {
-  "ts": 1794483724098,
-  "isoTime": "2026-11-12T11:42:04.098Z",
+  "ts": 1794486476945,
+  "isoTime": "2026-11-12T12:27:56.945Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 146,
-  "won": 59,
-  "lost": 87,
-  "slicesClearingZero": 3,
+  "signalsAnalysed": 141,
+  "won": 58,
+  "lost": 83,
+  "slicesClearingZero": 2,
   "chanceBaseline": {
-    "mean": 3.4,
-    "sd": 2.3,
+    "mean": 2.9,
+    "sd": 2.2,
     "range": [
       0,
-      13
+      8
     ],
     "shuffles": 30
   },
-  "threshold": 5.7,
+  "threshold": 5,
   "beatsChance": false,
   "findings": [
     {
       "feature": "strategy",
       "value": "ORB",
-      "n": 25,
-      "avgR": -0.537,
+      "n": 22,
+      "avgR": -0.474,
       "ci": [
-        -0.861,
-        -0.148
+        -0.842,
+        -0.044
       ],
       "direction": "negative"
     },
     {
       "feature": "strategy",
       "value": "TREND",
-      "n": 78,
-      "avgR": -0.305,
+      "n": 73,
+      "avgR": -0.285,
       "ci": [
-        -0.539,
-        -0.059
-      ],
-      "direction": "negative"
-    },
-    {
-      "feature": "confidenceBand",
-      "value": "conf 85+",
-      "n": 69,
-      "avgR": -0.256,
-      "ci": [
-        -0.481,
-        -0.022
+        -0.529,
+        -0.036
       ],
       "direction": "negative"
     }
   ],
   "positiveFindings": [],
   "lossShape": {
-    "total": 87,
-    "fullStopOuts": 87,
+    "total": 83,
+    "fullStopOuts": 83,
     "partial": 0,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices cleared zero, but shuffled outcomes produce 3.4 on average (up to 13). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "2 slices cleared zero, but shuffled outcomes produce 2.9 on average (up to 8). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
