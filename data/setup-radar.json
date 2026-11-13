@@ -1,36 +1,46 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-11-13T15:24:56.228Z",
+  "timestamp": "2026-11-13T18:09:52.533Z",
   "scanned": 15,
-  "setupsFound": 2,
+  "setupsFound": 3,
   "passedMainGate": 0,
-  "heldBackButValid": 2,
+  "heldBackButValid": 3,
   "minStrengthFilter": 30,
   "radar": [
     {
       "pair": "NAS100",
       "direction": "SELL",
-      "confidence": 73,
-      "strength": 81,
-      "verdict": "MODERATE SHORT — 73% conviction",
+      "confidence": 87,
+      "strength": 91,
+      "verdict": "STRONG SHORT — 87% conviction",
       "timeHorizon": "30 min",
-      "entry": 27681.8,
-      "sl": 27847.9,
-      "tp1": 27256.7,
-      "tp3": 26194.1,
-      "slPips": 166,
-      "tp1Pips": 425,
-      "tp3Pips": 1488,
-      "rrTP1": 2.56,
-      "rrTP3": 8.96,
+      "entry": 27799.6,
+      "sl": 27966.4,
+      "tp1": 27403.3,
+      "tp3": 26412.7,
+      "slPips": 167,
+      "tp1Pips": 396,
+      "tp3Pips": 1387,
+      "rrTP1": 2.38,
+      "rrTP3": 8.32,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · ADX 18 < 20 (choppy)",
       "topFactors": [
+        {
+          "name": "Correlation basket supports SELL (100/100)",
+          "weight": 25,
+          "note": ""
+        },
         {
           "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
           "note": ""
         },
         {
@@ -39,38 +49,43 @@
           "note": ""
         },
         {
-          "name": "RSI 39.4 — bearish momentum zone",
+          "name": "RSI 42.5 — bearish momentum zone",
           "weight": 10,
           "note": ""
         }
       ],
       "bullVsBear": {
         "bull": 0,
-        "bear": 45,
+        "bear": 85,
         "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum); RSI 39.4 — bearish momentum zone. HTF down. Structure range. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 87% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack). HTF down. Structure range. Manage risk with the levels below."
     },
     {
       "pair": "SPX500",
       "direction": "SELL",
-      "confidence": 62,
-      "strength": 58,
-      "verdict": "WEAK SHORT — 62% conviction",
+      "confidence": 78,
+      "strength": 85,
+      "verdict": "MODERATE SHORT — 78% conviction",
       "timeHorizon": "30 min",
-      "entry": 7506.8,
-      "sl": 7536.8,
-      "tp1": 7432.5,
-      "tp3": 7246.7,
+      "entry": 7534.2,
+      "sl": 7564.3,
+      "tp1": 7464.9,
+      "tp3": 7291.7,
       "slPips": 30,
-      "tp1Pips": 74,
-      "tp3Pips": 260,
-      "rrTP1": 2.47,
-      "rrTP3": 8.66,
+      "tp1Pips": 69,
+      "tp3Pips": 243,
+      "rrTP1": 2.3,
+      "rrTP3": 8.05,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 47% < 58%",
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · ADX 17 < 20 (choppy)",
       "topFactors": [
+        {
+          "name": "Correlation basket supports SELL (100/100)",
+          "weight": 25,
+          "note": ""
+        },
         {
           "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
@@ -82,17 +97,60 @@
           "note": ""
         },
         {
-          "name": "RSI 39.0 — bearish momentum zone",
+          "name": "RSI 43.6 — bearish momentum zone",
           "weight": 10,
           "note": ""
         }
       ],
       "bullVsBear": {
-        "bull": 15,
-        "bear": 45,
-        "marginPct": 50
+        "bull": 0,
+        "bear": 70,
+        "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 62% conviction. Top drivers: Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum); RSI 39.0 — bearish momentum zone. HTF down. Structure uptrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 78% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
+    },
+    {
+      "pair": "US30",
+      "direction": "SELL",
+      "confidence": 73,
+      "strength": 81,
+      "verdict": "MODERATE SHORT — 73% conviction",
+      "timeHorizon": "30 min",
+      "entry": 52218.7,
+      "sl": 52479.8,
+      "tp1": 51851.5,
+      "tp3": 50933.4,
+      "slPips": 261,
+      "tp1Pips": 367,
+      "tp3Pips": 1285,
+      "rrTP1": 1.41,
+      "rrTP3": 4.92,
+      "passedMainGate": false,
+      "mainTier": null,
+      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · 4H HTF opposed",
+      "topFactors": [
+        {
+          "name": "Correlation basket supports SELL (100/100)",
+          "weight": 25,
+          "note": ""
+        },
+        {
+          "name": "Higher timeframe (4H) trend DOWN",
+          "weight": 20,
+          "note": ""
+        },
+        {
+          "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        }
+      ],
+      "bullVsBear": {
+        "bull": 0,
+        "bear": 60,
+        "marginPct": 100
+      },
+      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
