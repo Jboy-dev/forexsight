@@ -1,13 +1,13 @@
 {
-  "ts": 1794559120396,
-  "isoTime": "2026-11-13T08:38:40.396Z",
+  "ts": 1794589439487,
+  "isoTime": "2026-11-13T17:03:59.487Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 53,
+  "survivedTrainAndValidate": 56,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -348,27 +348,6 @@
       "passes": false
     },
     {
-      "pair": "ETH/USD",
-      "tf": "1h",
-      "combo": "rsi-trend × vol-high",
-      "train": {
-        "n": 237,
-        "avgR": 0.1497,
-        "t": 1.8
-      },
-      "validate": {
-        "n": 123,
-        "avgR": 0.117,
-        "t": 1.04
-      },
-      "sealed": {
-        "n": 103,
-        "avgR": 0.1094,
-        "t": 0.84
-      },
-      "passes": false
-    },
-    {
       "pair": "SOL/USD",
       "tf": "daily",
       "combo": "donchian-20 × with-200",
@@ -407,6 +386,69 @@
         "n": 80,
         "avgR": 0.106,
         "t": 0.77
+      },
+      "passes": false
+    },
+    {
+      "pair": "NAS100",
+      "tf": "1h",
+      "combo": "momentum-60 × expanding",
+      "train": {
+        "n": 174,
+        "avgR": 0.1491,
+        "t": 1.52
+      },
+      "validate": {
+        "n": 101,
+        "avgR": 0.0314,
+        "t": 0.25
+      },
+      "sealed": {
+        "n": 100,
+        "avgR": 0.0912,
+        "t": 0.72
+      },
+      "passes": false
+    },
+    {
+      "pair": "ETH/USD",
+      "tf": "1h",
+      "combo": "rsi-trend × vol-high",
+      "train": {
+        "n": 238,
+        "avgR": 0.1584,
+        "t": 1.9
+      },
+      "validate": {
+        "n": 123,
+        "avgR": 0.1218,
+        "t": 1.1
+      },
+      "sealed": {
+        "n": 106,
+        "avgR": 0.0916,
+        "t": 0.71
+      },
+      "passes": false
+    },
+    {
+      "pair": "XRP/USD",
+      "tf": "1h",
+      "combo": "rsi-trend × with-200",
+      "train": {
+        "n": 440,
+        "avgR": 0.1235,
+        "t": 2.01
+      },
+      "validate": {
+        "n": 229,
+        "avgR": 0.0014,
+        "t": 0.02
+      },
+      "sealed": {
+        "n": 188,
+        "avgR": 0.0626,
+        "t": 0.68
       },
       "passes": false
     },
@@ -493,50 +535,8 @@
         "t": 0.26
       },
       "passes": false
-    },
-    {
-      "pair": "SOL/USD",
-      "tf": "daily",
-      "combo": "rsi-trend × none",
-      "train": {
-        "n": 52,
-        "avgR": 0.3138,
-        "t": 1.68
-      },
-      "validate": {
-        "n": 42,
-        "avgR": 0.3094,
-        "t": 1.59
-      },
-      "sealed": {
-        "n": 30,
-        "avgR": 0.025,
-        "t": 0.11
-      },
-      "passes": false
-    },
-    {
-      "pair": "EUR/USD",
-      "tf": "daily",
-      "combo": "momentum-120 × none",
-      "train": {
-        "n": 180,
-        "avgR": 0.1696,
-        "t": 1.79
-      },
-      "validate": {
-        "n": 74,
-        "avgR": 0.1009,
-        "t": 0.75
-      },
-      "sealed": {
-        "n": 96,
-        "avgR": 0.0127,
-        "t": 0.1
-      },
-      "passes": false
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 53 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 56 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
