@@ -1,12 +1,17 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-11-14T16:58:04.681Z",
+  "timestamp": "2026-11-14T20:05:58.474Z",
   "algoWindow": {
-    "utcTime": "16:58",
-    "activeWindow": null,
-    "algoIntensity": "normal",
-    "note": "No specific algo window"
+    "utcTime": "20:05",
+    "activeWindow": {
+      "name": "NY close volume spike",
+      "start": 1200,
+      "end": 1260,
+      "algo": "high"
+    },
+    "algoIntensity": "high",
+    "note": "🕒 Active: NY close volume spike (high algo activity)"
   },
   "overallBias": "net-SELL",
   "pairsScanned": 9,
@@ -54,27 +59,29 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 65327.33984375,
-      "atr": 494.00419,
+      "price": 65779.7,
+      "atr": 558.67857,
       "vwap": {
-        "vwap": 66810.47977,
-        "price": 65327.33984375,
-        "distanceATR": -3,
+        "vwap": 66584.32345,
+        "price": 65779.7,
+        "distanceATR": -1.44,
         "position": "below",
         "bias": "institutional-SELL",
-        "bars": 18
+        "bars": 21
       },
       "absorption": {
         "detected": false
       },
-      "wick": null,
+      "wick": {
+        "detected": false
+      },
       "roundNumber": {
-        "roundBelow": 65000,
-        "roundAbove": 65500,
-        "nearestLevel": 65500,
-        "distanceATR": 0.35,
+        "roundBelow": 65500,
+        "roundAbove": 66000,
+        "nearestLevel": 66000,
+        "distanceATR": 0.39,
         "isMagnetized": false,
-        "note": "Nearest round: 65500 (0.35× ATR away)"
+        "note": "Nearest round: 66000 (0.39× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "SELL",
@@ -320,6 +327,6 @@
       }
     }
   ],
-  "interpretation": "Algo footprints across 9 pairs · 2 showing institutional BUY bias, 7 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 9 pairs · 2 showing institutional BUY bias, 7 SELL. Currently in \"NY close volume spike\" window with high algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
