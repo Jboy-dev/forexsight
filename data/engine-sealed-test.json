@@ -1,74 +1,74 @@
 {
-  "ts": 1794623921115,
-  "isoTime": "2026-11-14T02:38:41.115Z",
+  "ts": 1794650392220,
+  "isoTime": "2026-11-14T09:59:52.220Z",
   "builtBy": "tools/engine-sealed-test.mjs",
   "instruments": 19,
-  "barsScanned": 286395,
-  "signalsFired": 3701,
+  "barsScanned": 287285,
+  "signalsFired": 3711,
   "fireRatePct": 1.292,
   "train": {
-    "n": 1843,
-    "avgR": 0.0186,
-    "t": 0.66,
+    "n": 1848,
+    "avgR": 0.0234,
+    "t": 0.83,
     "ci": [
-      -0.0367,
-      0.0738
-    ],
-    "winRate": 46.2
-  },
-  "validate": {
-    "n": 1011,
-    "avgR": -0.0409,
-    "t": -1.1,
-    "ci": [
-      -0.1138,
-      0.0319
-    ],
-    "winRate": 44.3
-  },
-  "sealed": {
-    "n": 847,
-    "avgR": 0.004,
-    "t": 0.1,
-    "ci": [
-      -0.076,
-      0.0839
+      -0.0318,
+      0.0787
     ],
     "winRate": 46.3
   },
-  "overall": {
-    "n": 3701,
-    "avgR": -0.001,
-    "t": -0.05,
+  "validate": {
+    "n": 1016,
+    "avgR": -0.053,
+    "t": -1.44,
     "ci": [
-      -0.0396,
-      0.0375
+      -0.1252,
+      0.0193
     ],
-    "winRate": 45.7
+    "winRate": 43.9
+  },
+  "sealed": {
+    "n": 847,
+    "avgR": 0.0216,
+    "t": 0.53,
+    "ci": [
+      -0.0588,
+      0.1021
+    ],
+    "winRate": 46.8
+  },
+  "overall": {
+    "n": 3711,
+    "avgR": 0.0021,
+    "t": 0.11,
+    "ci": [
+      -0.0364,
+      0.0407
+    ],
+    "winRate": 45.8
   },
   "confidenceSplit": {
     "low": {
-      "n": 1850,
-      "avgR": -0.0065,
+      "n": 1855,
+      "avgR": -0.0064,
       "t": -0.23,
       "ci": [
-        -0.0613,
-        0.0482
+        -0.061,
+        0.0483
       ],
-      "winRate": 44.9
+      "winRate": 45
     },
     "high": {
-      "n": 1851,
-      "avgR": 0.0045,
-      "t": 0.16,
+      "n": 1856,
+      "avgR": 0.0106,
+      "t": 0.38,
       "ci": [
-        -0.0499,
-        0.0588
+        -0.0438,
+        0.065
       ],
-      "winRate": 46.5
+      "winRate": 46.6
     },
     "separates": false
   },
   "method": "strictAnalyze replayed bar by bar over hourly history with a 300-bar rolling window. The engine never sees a bar after the one it is judging. Resolved with ITS OWN entry, stop and targets under the managed ladder, costs charged, stop checked before targets within a bar, non-overlapping. Train 0-50%, validate 50-75%, sealed 75-100%.",
-  "verdict": "The engine does not establish an edge on held-out data. Sealed: 0.004R over 847 signals, interval [-0.076, 0.0839], which includes zero."
+  "verdict": "The engine does not establish an edge on held-out data. Sealed: 0.0216R over 847 signals, interval [-0.0588, 0.1021], which includes zero."
 }
