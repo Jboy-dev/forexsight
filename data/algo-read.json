@@ -1,35 +1,30 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-11-14T08:45:20.467Z",
+  "timestamp": "2026-11-14T10:59:15.207Z",
   "algoWindow": {
-    "utcTime": "08:45",
-    "activeWindow": {
-      "name": "London morning fix",
-      "start": 495,
-      "end": 525,
-      "algo": "high"
-    },
-    "algoIntensity": "high",
-    "note": "🕒 Active: London morning fix (high algo activity)"
+    "utcTime": "10:59",
+    "activeWindow": null,
+    "algoIntensity": "normal",
+    "note": "No specific algo window"
   },
   "overallBias": "net-SELL",
   "pairsScanned": 9,
   "marketState": {
     "buyBiased": 2,
-    "sellBiased": 7,
-    "neutral": 0
+    "sellBiased": 6,
+    "neutral": 1
   },
   "pairs": [
     {
       "pair": "XAU/USD",
       "ok": true,
-      "price": 3887.60009765625,
+      "price": 3886.300048828125,
       "atr": 15.10711,
       "vwap": {
-        "vwap": 3896.27756,
-        "price": 3887.60009765625,
-        "distanceATR": -0.57,
+        "vwap": 3896.25873,
+        "price": 3886.300048828125,
+        "distanceATR": -0.66,
         "position": "below",
         "bias": "institutional-SELL",
         "bars": 24
@@ -43,10 +38,10 @@
       "roundNumber": {
         "roundBelow": 3885,
         "roundAbove": 3890,
-        "nearestLevel": 3890,
-        "distanceATR": 0.16,
+        "nearestLevel": 3885,
+        "distanceATR": 0.09,
         "isMagnetized": true,
-        "note": "⚡ Price magnetized to roundAbove 3890 (0.16× ATR away)"
+        "note": "⚡ Price magnetized to roundBelow 3885 (0.09× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "SELL",
@@ -59,15 +54,15 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 67052.9921875,
-      "atr": 512.54576,
+      "price": 67238.796875,
+      "atr": 495.78181,
       "vwap": {
-        "vwap": 67287.99336,
-        "price": 67052.9921875,
-        "distanceATR": -0.46,
-        "position": "below",
-        "bias": "institutional-SELL",
-        "bars": 10
+        "vwap": 67274.70188,
+        "price": 67238.796875,
+        "distanceATR": -0.07,
+        "position": "at",
+        "bias": "neutral",
+        "bars": 12
       },
       "absorption": {
         "detected": false
@@ -77,16 +72,16 @@
         "roundBelow": 67000,
         "roundAbove": 67500,
         "nearestLevel": 67000,
-        "distanceATR": 0.1,
-        "isMagnetized": true,
-        "note": "⚡ Price magnetized to roundBelow 67000 (0.10× ATR away)"
+        "distanceATR": 0.48,
+        "isMagnetized": false,
+        "note": "Nearest round: 67000 (0.48× ATR away)"
       },
       "rangeCompression": null,
-      "algoBias": "SELL",
-      "algoStrength": 2,
+      "algoBias": "NEUTRAL",
+      "algoStrength": 0,
       "votes": {
         "BUY": 0,
-        "SELL": 2
+        "SELL": 0
       }
     },
     {
@@ -325,6 +320,6 @@
       }
     }
   ],
-  "interpretation": "Algo footprints across 9 pairs · 2 showing institutional BUY bias, 7 SELL. Currently in \"London morning fix\" window with high algo activity.",
+  "interpretation": "Algo footprints across 9 pairs · 2 showing institutional BUY bias, 6 SELL. Currently in \"no specific\" window with normal algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
