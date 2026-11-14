@@ -1,42 +1,53 @@
 {
-  "ts": 1794691243241,
-  "isoTime": "2026-11-14T21:20:43.242Z",
+  "ts": 1794700575341,
+  "isoTime": "2026-11-14T23:56:15.341Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 128,
-  "won": 60,
+  "signalsAnalysed": 129,
+  "won": 61,
   "lost": 68,
-  "slicesClearingZero": 2,
+  "slicesClearingZero": 3,
   "chanceBaseline": {
-    "mean": 2.1,
-    "sd": 1.6,
+    "mean": 3.2,
+    "sd": 2,
     "range": [
       0,
-      7
+      8
     ],
     "shuffles": 30
   },
-  "threshold": 3.7,
+  "threshold": 5.2,
   "beatsChance": false,
   "findings": [
+    {
+      "feature": "direction",
+      "value": "SELL",
+      "n": 80,
+      "avgR": 0.325,
+      "ci": [
+        0.019,
+        0.628
+      ],
+      "direction": "positive"
+    },
     {
       "feature": "session",
       "value": "20-23 UTC",
       "n": 29,
       "avgR": 0.61,
       "ci": [
-        0.101,
-        1.113
+        0.107,
+        1.134
       ],
       "direction": "positive"
     },
     {
       "feature": "pair",
       "value": "BTC/USD",
-      "n": 21,
-      "avgR": 0.683,
+      "n": 22,
+      "avgR": 0.753,
       "ci": [
-        0.068,
-        1.33
+        0.135,
+        1.36
       ],
       "direction": "positive"
     }
@@ -45,11 +56,22 @@
     {
       "feature": "pair",
       "value": "BTC/USD",
-      "n": 21,
-      "avgR": 0.683,
+      "n": 22,
+      "avgR": 0.753,
       "ci": [
-        0.068,
-        1.33
+        0.135,
+        1.36
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "direction",
+      "value": "SELL",
+      "n": 80,
+      "avgR": 0.325,
+      "ci": [
+        0.019,
+        0.628
       ],
       "direction": "positive"
     },
@@ -59,8 +81,8 @@
       "n": 29,
       "avgR": 0.61,
       "ci": [
-        0.101,
-        1.113
+        0.107,
+        1.134
       ],
       "direction": "positive"
     }
@@ -72,5 +94,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "2 slices cleared zero, but shuffled outcomes produce 2.1 on average (up to 7). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "3 slices cleared zero, but shuffled outcomes produce 3.2 on average (up to 8). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
