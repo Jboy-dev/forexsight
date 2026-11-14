@@ -1,44 +1,66 @@
 {
-  "ts": 1794689745152,
-  "isoTime": "2026-11-14T20:55:45.152Z",
+  "ts": 1794691243241,
+  "isoTime": "2026-11-14T21:20:43.242Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 127,
-  "won": 59,
+  "signalsAnalysed": 128,
+  "won": 60,
   "lost": 68,
-  "slicesClearingZero": 1,
+  "slicesClearingZero": 2,
   "chanceBaseline": {
-    "mean": 2.2,
-    "sd": 1.7,
+    "mean": 2.1,
+    "sd": 1.6,
     "range": [
       0,
-      5
+      7
     ],
     "shuffles": 30
   },
-  "threshold": 3.9,
+  "threshold": 3.7,
   "beatsChance": false,
   "findings": [
     {
       "feature": "session",
       "value": "20-23 UTC",
-      "n": 28,
-      "avgR": 0.552,
+      "n": 29,
+      "avgR": 0.61,
       "ci": [
-        0.04,
-        1.081
+        0.101,
+        1.113
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "pair",
+      "value": "BTC/USD",
+      "n": 21,
+      "avgR": 0.683,
+      "ci": [
+        0.068,
+        1.33
       ],
       "direction": "positive"
     }
   ],
   "positiveFindings": [
     {
+      "feature": "pair",
+      "value": "BTC/USD",
+      "n": 21,
+      "avgR": 0.683,
+      "ci": [
+        0.068,
+        1.33
+      ],
+      "direction": "positive"
+    },
+    {
       "feature": "session",
       "value": "20-23 UTC",
-      "n": 28,
-      "avgR": 0.552,
+      "n": 29,
+      "avgR": 0.61,
       "ci": [
-        0.04,
-        1.081
+        0.101,
+        1.113
       ],
       "direction": "positive"
     }
@@ -50,5 +72,5 @@
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "1 slices cleared zero, but shuffled outcomes produce 2.2 on average (up to 5). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "2 slices cleared zero, but shuffled outcomes produce 2.1 on average (up to 7). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }

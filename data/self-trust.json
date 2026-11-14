@@ -1,10 +1,10 @@
 {
   "ok": true,
   "version": "v427-readiness-plus-performance",
-  "timestamp": "2026-11-14T20:05:57.918Z",
+  "timestamp": "2026-11-14T21:20:38.454Z",
   "trustScore": 100,
   "trustLabel": "System Readiness",
-  "performanceScore": 29,
+  "performanceScore": 25,
   "readiness": {
     "score": 100,
     "activeGates": 11,
@@ -97,8 +97,8 @@
     },
     "calibration": {
       "label": "Confidence calibration",
-      "score": null,
-      "note": "insufficient data"
+      "score": 0,
+      "weight": 0.15
     },
     "activeQuality": {
       "label": "Live setup quality",
@@ -113,16 +113,16 @@
   },
   "filteredTier": {
     "note": "What you actually trade — tier=best/platinum/elite or 2+ strategies",
-    "resolvedSignals": 3,
-    "lifetimeWinRate": 0,
-    "recentWinRate": 0
+    "resolvedSignals": 4,
+    "lifetimeWinRate": 25,
+    "recentWinRate": 25
   },
   "allTier": {
     "note": "All resolved signals including lower tiers",
-    "totalResolved": 3,
-    "lifetimeWinRate": 0,
-    "recentWindowSize": 3,
-    "recentWinRate": 0
+    "totalResolved": 4,
+    "lifetimeWinRate": 25,
+    "recentWindowSize": 4,
+    "recentWinRate": 25
   },
   "activeQuality": {
     "signalCount": 6,
@@ -135,7 +135,30 @@
     "note": "candidate count unavailable — assuming baseline strict filter",
     "score": 85
   },
-  "calibration": null,
+  "calibration": {
+    "accuracyPct": 0,
+    "meanErrorPts": 59,
+    "buckets": {
+      "60-70": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "70-80": {
+        "samples": 0,
+        "note": "too few samples"
+      },
+      "80-90": {
+        "samples": 1,
+        "note": "too few samples"
+      },
+      "90+": {
+        "samples": 3,
+        "winRate": 33,
+        "expected": 92,
+        "error": 59
+      }
+    }
+  },
   "historicalBacktest": {
     "note": "INFORMATIONAL ONLY — raw strategy without filters. Not in trust score.",
     "totalYearsCovered": 130,
