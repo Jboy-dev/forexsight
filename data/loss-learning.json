@@ -1,31 +1,42 @@
 {
-  "ts": 1794700575341,
-  "isoTime": "2026-11-14T23:56:15.341Z",
+  "ts": 1794704244018,
+  "isoTime": "2026-11-15T00:57:24.019Z",
   "measuredOn": "every signal, not episode averages",
-  "signalsAnalysed": 129,
+  "signalsAnalysed": 128,
   "won": 61,
-  "lost": 68,
-  "slicesClearingZero": 3,
+  "lost": 67,
+  "slicesClearingZero": 4,
   "chanceBaseline": {
-    "mean": 3.2,
-    "sd": 2,
+    "mean": 3.1,
+    "sd": 1.8,
     "range": [
       0,
-      8
+      7
     ],
     "shuffles": 30
   },
-  "threshold": 5.2,
+  "threshold": 4.9,
   "beatsChance": false,
   "findings": [
     {
       "feature": "direction",
       "value": "SELL",
-      "n": 80,
-      "avgR": 0.325,
+      "n": 79,
+      "avgR": 0.342,
       "ci": [
-        0.019,
-        0.628
+        0.032,
+        0.66
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "independence",
+      "value": "0 independent",
+      "n": 31,
+      "avgR": 0.46,
+      "ci": [
+        0.014,
+        0.928
       ],
       "direction": "positive"
     },
@@ -35,19 +46,19 @@
       "n": 29,
       "avgR": 0.61,
       "ci": [
-        0.107,
-        1.134
+        0.101,
+        1.11
       ],
       "direction": "positive"
     },
     {
       "feature": "pair",
       "value": "BTC/USD",
-      "n": 22,
-      "avgR": 0.753,
+      "n": 21,
+      "avgR": 0.837,
       "ci": [
-        0.135,
-        1.36
+        0.21,
+        1.452
       ],
       "direction": "positive"
     }
@@ -56,22 +67,22 @@
     {
       "feature": "pair",
       "value": "BTC/USD",
-      "n": 22,
-      "avgR": 0.753,
+      "n": 21,
+      "avgR": 0.837,
       "ci": [
-        0.135,
-        1.36
+        0.21,
+        1.452
       ],
       "direction": "positive"
     },
     {
       "feature": "direction",
       "value": "SELL",
-      "n": 80,
-      "avgR": 0.325,
+      "n": 79,
+      "avgR": 0.342,
       "ci": [
-        0.019,
-        0.628
+        0.032,
+        0.66
       ],
       "direction": "positive"
     },
@@ -81,18 +92,29 @@
       "n": 29,
       "avgR": 0.61,
       "ci": [
-        0.107,
-        1.134
+        0.101,
+        1.11
+      ],
+      "direction": "positive"
+    },
+    {
+      "feature": "independence",
+      "value": "0 independent",
+      "n": 31,
+      "avgR": 0.46,
+      "ci": [
+        0.014,
+        0.928
       ],
       "direction": "positive"
     }
   ],
   "lossShape": {
-    "total": 68,
-    "fullStopOuts": 68,
+    "total": 67,
+    "fullStopOuts": 67,
     "partial": 0,
     "reachedTp1First": 0,
     "note": "Losses that first reached TP1 then reversed are the ones trade management can address; full stop-outs without reaching TP1 are not."
   },
-  "verdict": "3 slices cleared zero, but shuffled outcomes produce 3.2 on average (up to 8). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
+  "verdict": "4 slices cleared zero, but shuffled outcomes produce 3.1 on average (up to 7). That is inside what chance yields, so nothing here is a reliable pattern and no rule is changed."
 }
