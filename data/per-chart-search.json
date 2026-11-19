@@ -1,13 +1,13 @@
 {
-  "ts": 1795072363606,
-  "isoTime": "2026-11-19T07:12:43.606Z",
+  "ts": 1795106664301,
+  "isoTime": "2026-11-19T16:44:24.301Z",
   "builtBy": "tools/per-chart-search.mjs",
   "chartsTested": 57,
   "combinations": 42,
   "hypotheses": 2394,
   "correctedBarT": 4.26,
   "backtestsRun": 2394,
-  "survivedTrainAndValidate": 55,
+  "survivedTrainAndValidate": 56,
   "passedSealed": 0,
   "passed": [],
   "top": [
@@ -394,19 +394,40 @@
       "tf": "1h",
       "combo": "rsi-trend × vol-high",
       "train": {
-        "n": 239,
-        "avgR": 0.1517,
-        "t": 1.84
+        "n": 240,
+        "avgR": 0.1526,
+        "t": 1.86
       },
       "validate": {
         "n": 119,
-        "avgR": 0.1242,
-        "t": 1.09
+        "avgR": 0.1125,
+        "t": 0.98
       },
       "sealed": {
         "n": 105,
         "avgR": 0.1165,
         "t": 0.88
+      },
+      "passes": false
+    },
+    {
+      "pair": "BTC/USD",
+      "tf": "1h",
+      "combo": "pullback-trend × with-200",
+      "train": {
+        "n": 51,
+        "avgR": 0.2755,
+        "t": 1.5
+      },
+      "validate": {
+        "n": 28,
+        "avgR": 0.3841,
+        "t": 1.63
+      },
+      "sealed": {
+        "n": 22,
+        "avgR": 0.2057,
+        "t": 0.79
       },
       "passes": false
     },
@@ -453,23 +474,23 @@
       "passes": false
     },
     {
-      "pair": "BTC/USD",
-      "tf": "1h",
-      "combo": "pullback-trend × with-200",
+      "pair": "USD/JPY",
+      "tf": "15m",
+      "combo": "donchian-20 × vol-low",
       "train": {
-        "n": 51,
-        "avgR": 0.2755,
-        "t": 1.5
+        "n": 41,
+        "avgR": 0.3778,
+        "t": 1.97
       },
       "validate": {
-        "n": 28,
-        "avgR": 0.3841,
-        "t": 1.63
+        "n": 19,
+        "avgR": 0.1006,
+        "t": 0.38
       },
       "sealed": {
-        "n": 21,
-        "avgR": 0.1693,
-        "t": 0.63
+        "n": 19,
+        "avgR": 0.1939,
+        "t": 0.59
       },
       "passes": false
     },
@@ -514,29 +535,8 @@
         "t": 0.43
       },
       "passes": false
-    },
-    {
-      "pair": "NAS100",
-      "tf": "1h",
-      "combo": "ma-cross-20-50 × none",
-      "train": {
-        "n": 43,
-        "avgR": 0.3228,
-        "t": 1.76
-      },
-      "validate": {
-        "n": 28,
-        "avgR": 0.5876,
-        "t": 2.34
-      },
-      "sealed": {
-        "n": 27,
-        "avgR": 0.1126,
-        "t": 0.43
-      },
-      "passes": false
     }
   ],
   "method": "Each instrument and timeframe tested on its own. Entry at next open, v442 managed ladder, costs charged, stop checked before targets within a bar, non-overlapping trades, three-way split with the newest 25% opened once. The significance bar is corrected for EVERY hypothesis in the sweep, not per chart — correcting per chart would be the same mistake as not correcting, only better disguised.",
-  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 55 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
+  "verdict": "No individual chart has a strategy that survives its own sealed test at a bar corrected for 2,394 hypotheses. 56 looked good through training and validation and then did not hold — which is what overfitting looks like when you search hard enough."
 }
