@@ -1,86 +1,86 @@
 {
-  "ts": 1795316155010,
-  "isoTime": "2026-11-22T02:55:55.010Z",
+  "ts": 1795345056216,
+  "isoTime": "2026-11-22T10:57:36.216Z",
   "builtBy": "tools/strategy-trials.mjs",
   "instruments": 19,
-  "totalDailyBars": 96484,
+  "totalDailyBars": 96566,
   "hypotheses": 288,
   "bonferroniBarT": 3.75,
   "method": "daily bars, entry at next open, v442 managed ladder, costs charged, NON-OVERLAPPING trades, three-way split with the newest 25% opened once, random-entry null at matched trade count",
   "trainTop": [
     {
       "name": "rsi-reversion × above-200 × SL4",
-      "n": 223,
-      "avgR": 0.2085,
-      "t": 2.51
+      "n": 222,
+      "avgR": 0.2094,
+      "t": 2.52
     },
     {
       "name": "rsi-reversion × above-200 × SL3",
-      "n": 290,
-      "avgR": 0.1326,
-      "t": 1.87
-    },
-    {
-      "name": "rsi-reversion × vol-high × SL1.5",
-      "n": 602,
-      "avgR": 0.0863,
-      "t": 1.68
+      "n": 287,
+      "avgR": 0.1258,
+      "t": 1.75
     },
     {
       "name": "rsi-reversion × vol-high × SL2.25",
       "n": 452,
-      "avgR": 0.0894,
+      "avgR": 0.0914,
+      "t": 1.59
+    },
+    {
+      "name": "rsi-reversion × vol-high × SL1.5",
+      "n": 603,
+      "avgR": 0.0795,
       "t": 1.55
     },
     {
       "name": "rsi-trend × vol-low × SL4",
-      "n": 445,
-      "avgR": 0.0682,
-      "t": 1.16
+      "n": 447,
+      "avgR": 0.0649,
+      "t": 1.1
     },
     {
       "name": "momentum-60 × below-200 × SL4",
-      "n": 366,
-      "avgR": 0.0694,
+      "n": 367,
+      "avgR": 0.0685,
       "t": 1.09
     },
     {
-      "name": "momentum-120 × vol-low × SL4",
-      "n": 485,
-      "avgR": 0.0568,
-      "t": 1.01
-    },
-    {
-      "name": "momentum-60 × vol-low × SL4",
-      "n": 479,
-      "avgR": 0.0555,
+      "name": "momentum-60 × none × SL4",
+      "n": 449,
+      "avgR": 0.054,
       "t": 0.97
     },
     {
-      "name": "donchian-20 × vol-low × SL4",
-      "n": 396,
-      "avgR": 0.0443,
-      "t": 0.7
+      "name": "momentum-120 × vol-low × SL4",
+      "n": 483,
+      "avgR": 0.0521,
+      "t": 0.92
     },
     {
-      "name": "momentum-60 × none × SL4",
-      "n": 446,
-      "avgR": 0.039,
-      "t": 0.69
+      "name": "inside-break × below-200 × SL3",
+      "n": 425,
+      "avgR": 0.0516,
+      "t": 0.86
+    },
+    {
+      "name": "donchian-20 × vol-low × SL4",
+      "n": 394,
+      "avgR": 0.0448,
+      "t": 0.71
     }
   ],
   "survivors": [
     {
       "name": "rsi-reversion × above-200 × SL4",
       "train": {
-        "n": 223,
-        "avgR": 0.2085,
-        "t": 2.51
+        "n": 222,
+        "avgR": 0.2094,
+        "t": 2.52
       },
       "validate": {
-        "n": 141,
-        "avgR": 0.1755,
-        "t": 1.6
+        "n": 143,
+        "avgR": 0.2249,
+        "t": 2.05
       }
     }
   ],
@@ -90,22 +90,22 @@
       "entry": "rsi-reversion",
       "filter": "above-200",
       "train": {
-        "n": 223,
-        "avgR": 0.2085,
-        "t": 2.51
+        "n": 222,
+        "avgR": 0.2094,
+        "t": 2.52
       },
       "validate": {
-        "n": 141,
-        "avgR": 0.1755,
-        "t": 1.6
+        "n": 143,
+        "avgR": 0.2249,
+        "t": 2.05
       },
       "sealed": {
-        "n": 120,
-        "avgR": 0.299,
-        "t": 2.5,
-        "nullP95": 0.19,
-        "nullMean": 0.0296,
-        "nullP05": -0.1525,
+        "n": 119,
+        "avgR": 0.2618,
+        "t": 2.19,
+        "nullP95": 0.2414,
+        "nullMean": 0.0222,
+        "nullP05": -0.1694,
         "nullTrades": 114,
         "beatsNull": true,
         "clearsBar": false,
