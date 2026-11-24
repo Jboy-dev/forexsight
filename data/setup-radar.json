@@ -1,108 +1,60 @@
 {
   "ok": true,
   "version": "v379-setup-radar",
-  "timestamp": "2026-11-24T06:06:03.896Z",
+  "timestamp": "2026-11-24T10:49:43.219Z",
   "scanned": 15,
-  "setupsFound": 2,
+  "setupsFound": 1,
   "passedMainGate": 0,
-  "heldBackButValid": 2,
+  "heldBackButValid": 1,
   "minStrengthFilter": 30,
   "radar": [
     {
       "pair": "XAU/USD",
       "direction": "SELL",
-      "confidence": 73,
-      "strength": 81,
-      "verdict": "MODERATE SHORT — 73% conviction",
+      "confidence": 75,
+      "strength": 83,
+      "verdict": "MODERATE SHORT — 75% conviction",
       "timeHorizon": "30 min",
-      "entry": 3629.5,
-      "sl": 3658.54,
-      "tp1": 3589.45,
-      "tp3": 3489.33,
+      "entry": 3624,
+      "sl": 3652.99,
+      "tp1": 3587.21,
+      "tp3": 3495.23,
       "slPips": 290,
-      "tp1Pips": 400,
-      "tp3Pips": 1402,
-      "rrTP1": 1.38,
-      "rrTP3": 4.83,
+      "tp1Pips": 368,
+      "tp3Pips": 1288,
+      "rrTP1": 1.27,
+      "rrTP3": 4.44,
       "passedMainGate": false,
       "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 52% < 58%",
+      "heldBackReason": "multi-source VETO -10 · ADX 19 < 20 (choppy)",
       "topFactors": [
-        {
-          "name": "Correlation basket supports SELL (100/100)",
-          "weight": 25,
-          "note": ""
-        },
         {
           "name": "Higher timeframe (4H) trend DOWN",
           "weight": 20,
           "note": ""
         },
         {
+          "name": "Price < EMA20 < EMA50 (bearish stack)",
+          "weight": 15,
+          "note": ""
+        },
+        {
           "name": "MACD histogram negative (bearish momentum)",
+          "weight": 15,
+          "note": ""
+        },
+        {
+          "name": "News flow bearish for XAU vs USD",
           "weight": 15,
           "note": ""
         }
       ],
       "bullVsBear": {
         "bull": 0,
-        "bear": 60,
+        "bear": 65,
         "marginPct": 100
       },
-      "reasoning": "Weighted consensus favors SHORT with 73% conviction. Top drivers: Correlation basket supports SELL (100/100); Higher timeframe (4H) trend DOWN; MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
-    },
-    {
-      "pair": "BTC/USD",
-      "direction": "SELL",
-      "confidence": 70,
-      "strength": 63,
-      "verdict": "MODERATE SHORT — 70% conviction",
-      "timeHorizon": "30 min",
-      "entry": 60381.8,
-      "sl": 61589.44,
-      "tp1": 59108.91,
-      "tp3": 55926.7,
-      "slPips": 1208,
-      "tp1Pips": 1273,
-      "tp3Pips": 4455,
-      "rrTP1": 1.05,
-      "rrTP3": 3.69,
-      "passedMainGate": false,
-      "mainTier": null,
-      "heldBackReason": "only lagging strategies fired () — no predictive edge · only 0 strategies (need ≥2 with 1 leading) · honest confidence 32% < 58%",
-      "topFactors": [
-        {
-          "name": "Higher timeframe (4H) trend DOWN",
-          "weight": 20,
-          "note": ""
-        },
-        {
-          "name": "Market structure — downtrend (LL+LH)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "MACD histogram negative (bearish momentum)",
-          "weight": 15,
-          "note": ""
-        },
-        {
-          "name": "RSI 41.6 — bearish momentum zone",
-          "weight": 10,
-          "note": ""
-        },
-        {
-          "name": "Bearish candle: strong-bear",
-          "weight": 10,
-          "note": ""
-        }
-      ],
-      "bullVsBear": {
-        "bull": 25,
-        "bear": 70,
-        "marginPct": 47
-      },
-      "reasoning": "Weighted consensus favors SHORT with 70% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Market structure — downtrend (LL+LH); MACD histogram negative (bearish momentum). HTF down. Structure downtrend. Manage risk with the levels below."
+      "reasoning": "Weighted consensus favors SHORT with 75% conviction. Top drivers: Higher timeframe (4H) trend DOWN; Price < EMA20 < EMA50 (bearish stack); MACD histogram negative (bearish momentum). HTF down. Structure range. Manage risk with the levels below."
     }
   ],
   "note": "Every pair with meaningful directional bias appears here. mainTier is set if it passed the strict signal gate. Otherwise heldBackReason explains why — the setup is still real."
