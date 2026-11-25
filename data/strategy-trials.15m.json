@@ -1,99 +1,86 @@
 {
-  "ts": 1795593283158,
-  "isoTime": "2026-11-25T07:54:43.158Z",
+  "ts": 1795631637948,
+  "isoTime": "2026-11-25T18:33:57.948Z",
   "builtBy": "tools/strategy-trials.mjs",
   "instruments": 19,
-  "totalDailyBars": 96764,
+  "totalDailyBars": 97475,
   "hypotheses": 288,
   "bonferroniBarT": 3.75,
   "method": "daily bars, entry at next open, v442 managed ladder, costs charged, NON-OVERLAPPING trades, three-way split with the newest 25% opened once, random-entry null at matched trade count",
   "trainTop": [
     {
       "name": "rsi-reversion × above-200 × SL4",
-      "n": 229,
-      "avgR": 0.2143,
-      "t": 2.53
+      "n": 230,
+      "avgR": 0.2088,
+      "t": 2.47
     },
     {
       "name": "rsi-reversion × above-200 × SL3",
-      "n": 293,
-      "avgR": 0.1679,
-      "t": 2.29
+      "n": 294,
+      "avgR": 0.1636,
+      "t": 2.24
     },
     {
       "name": "rsi-reversion × vol-high × SL4",
-      "n": 254,
+      "n": 259,
       "avgR": 0.1156,
-      "t": 1.53
-    },
-    {
-      "name": "rsi-trend × vol-low × SL4",
-      "n": 446,
-      "avgR": 0.0798,
-      "t": 1.37
+      "t": 1.54
     },
     {
       "name": "rsi-reversion × vol-high × SL3",
-      "n": 350,
-      "avgR": 0.0851,
+      "n": 354,
+      "avgR": 0.0847,
       "t": 1.3
     },
     {
+      "name": "rsi-reversion × contracting × SL4",
+      "n": 230,
+      "avgR": 0.1088,
+      "t": 1.3
+    },
+    {
+      "name": "rsi-trend × vol-low × SL4",
+      "n": 448,
+      "avgR": 0.0718,
+      "t": 1.23
+    },
+    {
       "name": "rsi-reversion × against-200 × SL3",
-      "n": 559,
-      "avgR": 0.0525,
-      "t": 1.01
+      "n": 565,
+      "avgR": 0.0543,
+      "t": 1.05
     },
     {
       "name": "momentum-60 × vol-low × SL4",
-      "n": 487,
-      "avgR": 0.0548,
-      "t": 0.97
+      "n": 486,
+      "avgR": 0.057,
+      "t": 1.01
     },
     {
       "name": "rsi-reversion × none × SL3",
-      "n": 571,
-      "avgR": 0.0491,
-      "t": 0.95
+      "n": 577,
+      "avgR": 0.0509,
+      "t": 0.99
     },
     {
-      "name": "rsi-reversion × vol-high × SL1.5",
-      "n": 592,
-      "avgR": 0.0487,
-      "t": 0.94
-    },
-    {
-      "name": "rsi-reversion × vol-high × SL2.25",
-      "n": 454,
-      "avgR": 0.0547,
-      "t": 0.94
+      "name": "rsi-reversion × none × SL4",
+      "n": 380,
+      "avgR": 0.0585,
+      "t": 0.93
     }
   ],
   "survivors": [
     {
       "name": "rsi-reversion × above-200 × SL4",
       "train": {
-        "n": 229,
-        "avgR": 0.2143,
-        "t": 2.53
+        "n": 230,
+        "avgR": 0.2088,
+        "t": 2.47
       },
       "validate": {
-        "n": 147,
-        "avgR": 0.1613,
-        "t": 1.54
-      }
-    },
-    {
-      "name": "rsi-reversion × vol-high × SL4",
-      "train": {
-        "n": 254,
-        "avgR": 0.1156,
-        "t": 1.53
-      },
-      "validate": {
-        "n": 154,
-        "avgR": 0.1804,
-        "t": 1.77
+        "n": 145,
+        "avgR": 0.1331,
+        "t": 1.28
       }
     }
   ],
@@ -103,57 +90,30 @@
       "entry": "rsi-reversion",
       "filter": "above-200",
       "train": {
-        "n": 229,
-        "avgR": 0.2143,
-        "t": 2.53
+        "n": 230,
+        "avgR": 0.2088,
+        "t": 2.47
       },
       "validate": {
-        "n": 147,
-        "avgR": 0.1613,
-        "t": 1.54
+        "n": 145,
+        "avgR": 0.1331,
+        "t": 1.28
       },
       "sealed": {
-        "n": 116,
-        "avgR": 0.4112,
-        "t": 3.25,
-        "nullP95": 0.2063,
-        "nullMean": 0.0199,
-        "nullP05": -0.1769,
+        "n": 117,
+        "avgR": 0.425,
+        "t": 3.35,
+        "nullP95": 0.2026,
+        "nullMean": 0.0294,
+        "nullP05": -0.1573,
         "nullTrades": 114,
         "beatsNull": true,
-        "clearsBar": false,
-        "passes": false
-      }
-    },
-    {
-      "name": "rsi-reversion × vol-high × SL4",
-      "entry": "rsi-reversion",
-      "filter": "vol-high",
-      "train": {
-        "n": 254,
-        "avgR": 0.1156,
-        "t": 1.53
-      },
-      "validate": {
-        "n": 154,
-        "avgR": 0.1804,
-        "t": 1.77
-      },
-      "sealed": {
-        "n": 191,
-        "avgR": -0.2825,
-        "t": -3.46,
-        "nullP95": 0.1708,
-        "nullMean": 0.0273,
-        "nullP05": -0.1189,
-        "nullTrades": 190,
-        "beatsNull": false,
         "clearsBar": false,
         "passes": false
       }
     }
   ],
   "passed": [],
-  "verdict": "Nothing cleared. 288 combinations tested, 2 repeated on validation, 2 reached the sealed set, 0 passed it. On this evidence no combination here earns a place in the signal path.",
+  "verdict": "Nothing cleared. 288 combinations tested, 1 repeated on validation, 1 reached the sealed set, 0 passed it. On this evidence no combination here earns a place in the signal path.",
   "timeframe": "15m"
 }
