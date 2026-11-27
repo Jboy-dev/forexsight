@@ -1,19 +1,24 @@
 {
   "ok": true,
   "version": "v375-algo-read",
-  "timestamp": "2026-11-27T08:06:26.573Z",
+  "timestamp": "2026-11-27T13:53:52.351Z",
   "algoWindow": {
-    "utcTime": "08:06",
-    "activeWindow": null,
-    "algoIntensity": "normal",
-    "note": "No specific algo window"
+    "utcTime": "13:53",
+    "activeWindow": {
+      "name": "London-NY overlap",
+      "start": 780,
+      "end": 960,
+      "algo": "peak"
+    },
+    "algoIntensity": "peak",
+    "note": "🕒 Active: London-NY overlap (peak algo activity)"
   },
-  "overallBias": "net-BUY",
+  "overallBias": "balanced",
   "pairsScanned": 9,
   "marketState": {
-    "buyBiased": 5,
-    "sellBiased": 0,
-    "neutral": 3
+    "buyBiased": 2,
+    "sellBiased": 2,
+    "neutral": 4
   },
   "pairs": [
     {
@@ -24,62 +29,27 @@
     {
       "pair": "BTC/USD",
       "ok": true,
-      "price": 61793.2,
-      "atr": 367.53571,
+      "price": 61465.51171875,
+      "atr": 373.0678,
       "vwap": {
-        "vwap": 61342.13642,
-        "price": 61793.2,
-        "distanceATR": 1.23,
-        "position": "above",
-        "bias": "institutional-BUY",
-        "bars": 9
-      },
-      "absorption": {
-        "detected": false
-      },
-      "wick": {
-        "detected": false
-      },
-      "roundNumber": {
-        "roundBelow": 61500,
-        "roundAbove": 62000,
-        "nearestLevel": 62000,
-        "distanceATR": 0.56,
-        "isMagnetized": false,
-        "note": "Nearest round: 62000 (0.56× ATR away)"
-      },
-      "rangeCompression": null,
-      "algoBias": "BUY",
-      "algoStrength": 2,
-      "votes": {
-        "BUY": 2,
-        "SELL": 0
-      }
-    },
-    {
-      "pair": "EUR/USD",
-      "ok": true,
-      "price": 1.0975743532180786,
-      "atr": 0.0007,
-      "vwap": {
-        "vwap": 1.09771,
-        "price": 1.0975743532180786,
-        "distanceATR": -0.2,
+        "vwap": 61406.31089,
+        "price": 61465.51171875,
+        "distanceATR": 0.16,
         "position": "at",
         "bias": "neutral",
-        "bars": 10
+        "bars": 15
       },
       "absorption": {
         "detected": false
       },
       "wick": null,
       "roundNumber": {
-        "roundBelow": 1.09,
-        "roundAbove": 1.1,
-        "nearestLevel": 1.1,
-        "distanceATR": 3.48,
-        "isMagnetized": false,
-        "note": "Nearest round: 1.1 (3.48× ATR away)"
+        "roundBelow": 61000,
+        "roundAbove": 61500,
+        "nearestLevel": 61500,
+        "distanceATR": 0.09,
+        "isMagnetized": true,
+        "note": "⚡ Price magnetized to roundAbove 61500 (0.09× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "NEUTRAL",
@@ -90,17 +60,50 @@
       }
     },
     {
+      "pair": "EUR/USD",
+      "ok": true,
+      "price": 1.0954102277755737,
+      "atr": 0.00101,
+      "vwap": {
+        "vwap": 1.0971,
+        "price": 1.0954102277755737,
+        "distanceATR": -1.68,
+        "position": "below",
+        "bias": "institutional-SELL",
+        "bars": 15
+      },
+      "absorption": {
+        "detected": false
+      },
+      "wick": null,
+      "roundNumber": {
+        "roundBelow": 1.09,
+        "roundAbove": 1.1,
+        "nearestLevel": 1.1,
+        "distanceATR": 4.56,
+        "isMagnetized": false,
+        "note": "Nearest round: 1.1 (4.56× ATR away)"
+      },
+      "rangeCompression": null,
+      "algoBias": "SELL",
+      "algoStrength": 2,
+      "votes": {
+        "BUY": 0,
+        "SELL": 2
+      }
+    },
+    {
       "pair": "GBP/USD",
       "ok": true,
-      "price": 1.3122498989105225,
-      "atr": 0.00086,
+      "price": 1.3120949268341064,
+      "atr": 0.00115,
       "vwap": {
-        "vwap": 1.31188,
-        "price": 1.3122498989105225,
-        "distanceATR": 0.43,
-        "position": "above",
-        "bias": "institutional-BUY",
-        "bars": 10
+        "vwap": 1.31213,
+        "price": 1.3120949268341064,
+        "distanceATR": -0.03,
+        "position": "at",
+        "bias": "neutral",
+        "bars": 15
       },
       "absorption": {
         "detected": false
@@ -110,42 +113,42 @@
         "roundBelow": 1.31,
         "roundAbove": 1.32,
         "nearestLevel": 1.31,
-        "distanceATR": 2.63,
+        "distanceATR": 1.82,
         "isMagnetized": false,
-        "note": "Nearest round: 1.31 (2.63× ATR away)"
+        "note": "Nearest round: 1.31 (1.82× ATR away)"
       },
       "rangeCompression": null,
-      "algoBias": "BUY",
-      "algoStrength": 2,
+      "algoBias": "NEUTRAL",
+      "algoStrength": 0,
       "votes": {
-        "BUY": 2,
+        "BUY": 0,
         "SELL": 0
       }
     },
     {
       "pair": "USD/JPY",
       "ok": true,
-      "price": 159.35800170898438,
-      "atr": 0.0835,
+      "price": 159.53799438476562,
+      "atr": 0.104,
       "vwap": {
-        "vwap": 159.28133,
-        "price": 159.35800170898438,
-        "distanceATR": 0.92,
+        "vwap": 159.36442,
+        "price": 159.53799438476562,
+        "distanceATR": 1.67,
         "position": "above",
         "bias": "institutional-BUY",
-        "bars": 10
+        "bars": 15
       },
       "absorption": {
         "detected": false
       },
       "wick": null,
       "roundNumber": {
-        "roundBelow": 159,
-        "roundAbove": 159.5,
+        "roundBelow": 159.5,
+        "roundAbove": 160,
         "nearestLevel": 159.5,
-        "distanceATR": 1.7,
+        "distanceATR": 0.37,
         "isMagnetized": false,
-        "note": "Nearest round: 159.5 (1.70× ATR away)"
+        "note": "Nearest round: 159.5 (0.37× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "BUY",
@@ -158,15 +161,15 @@
     {
       "pair": "AUD/USD",
       "ok": true,
-      "price": 0.6672894954681396,
-      "atr": 0.00076,
+      "price": 0.666400134563446,
+      "atr": 0.00097,
       "vwap": {
-        "vwap": 0.66634,
-        "price": 0.6672894954681396,
-        "distanceATR": 1.25,
-        "position": "above",
-        "bias": "institutional-BUY",
-        "bars": 10
+        "vwap": 0.66664,
+        "price": 0.666400134563446,
+        "distanceATR": -0.25,
+        "position": "at",
+        "bias": "neutral",
+        "bars": 15
       },
       "absorption": {
         "detected": false
@@ -176,42 +179,9 @@
         "roundBelow": 0.66,
         "roundAbove": 0.67,
         "nearestLevel": 0.67,
-        "distanceATR": 3.55,
+        "distanceATR": 3.69,
         "isMagnetized": false,
-        "note": "Nearest round: 0.67 (3.55× ATR away)"
-      },
-      "rangeCompression": null,
-      "algoBias": "BUY",
-      "algoStrength": 2,
-      "votes": {
-        "BUY": 2,
-        "SELL": 0
-      }
-    },
-    {
-      "pair": "NZD/USD",
-      "ok": true,
-      "price": 0.5488172769546509,
-      "atr": 0.00078,
-      "vwap": {
-        "vwap": 0.54884,
-        "price": 0.5488172769546509,
-        "distanceATR": -0.03,
-        "position": "at",
-        "bias": "neutral",
-        "bars": 10
-      },
-      "absorption": {
-        "detected": false
-      },
-      "wick": null,
-      "roundNumber": {
-        "roundBelow": 0.54,
-        "roundAbove": 0.55,
-        "nearestLevel": 0.55,
-        "distanceATR": 1.51,
-        "isMagnetized": false,
-        "note": "Nearest round: 0.55 (1.51× ATR away)"
+        "note": "Nearest round: 0.67 (3.69× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "NEUTRAL",
@@ -222,17 +192,50 @@
       }
     },
     {
+      "pair": "NZD/USD",
+      "ok": true,
+      "price": 0.5478551387786865,
+      "atr": 0.00097,
+      "vwap": {
+        "vwap": 0.54868,
+        "price": 0.5478551387786865,
+        "distanceATR": -0.85,
+        "position": "below",
+        "bias": "institutional-SELL",
+        "bars": 15
+      },
+      "absorption": {
+        "detected": false
+      },
+      "wick": null,
+      "roundNumber": {
+        "roundBelow": 0.54,
+        "roundAbove": 0.55,
+        "nearestLevel": 0.55,
+        "distanceATR": 2.21,
+        "isMagnetized": false,
+        "note": "Nearest round: 0.55 (2.21× ATR away)"
+      },
+      "rangeCompression": null,
+      "algoBias": "SELL",
+      "algoStrength": 2,
+      "votes": {
+        "BUY": 0,
+        "SELL": 2
+      }
+    },
+    {
       "pair": "USD/CAD",
       "ok": true,
-      "price": 1.4236700534820557,
-      "atr": 0.00131,
+      "price": 1.4242000579833984,
+      "atr": 0.00172,
       "vwap": {
-        "vwap": 1.42378,
-        "price": 1.4236700534820557,
-        "distanceATR": -0.08,
+        "vwap": 1.42393,
+        "price": 1.4242000579833984,
+        "distanceATR": 0.15,
         "position": "at",
         "bias": "neutral",
-        "bars": 10
+        "bars": 15
       },
       "absorption": {
         "detected": false
@@ -242,9 +245,9 @@
         "roundBelow": 1.42,
         "roundAbove": 1.43,
         "nearestLevel": 1.42,
-        "distanceATR": 2.8,
+        "distanceATR": 2.44,
         "isMagnetized": false,
-        "note": "Nearest round: 1.42 (2.80× ATR away)"
+        "note": "Nearest round: 1.42 (2.44× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "NEUTRAL",
@@ -257,15 +260,15 @@
     {
       "pair": "USD/CHF",
       "ok": true,
-      "price": 0.8349599838256836,
-      "atr": 0.0008,
+      "price": 0.8353999853134155,
+      "atr": 0.00112,
       "vwap": {
-        "vwap": 0.83425,
-        "price": 0.8349599838256836,
-        "distanceATR": 0.88,
+        "vwap": 0.8347,
+        "price": 0.8353999853134155,
+        "distanceATR": 0.63,
         "position": "above",
         "bias": "institutional-BUY",
-        "bars": 10
+        "bars": 15
       },
       "absorption": {
         "detected": false
@@ -274,10 +277,10 @@
       "roundNumber": {
         "roundBelow": 0.83,
         "roundAbove": 0.84,
-        "nearestLevel": 0.83,
-        "distanceATR": 6.17,
+        "nearestLevel": 0.84,
+        "distanceATR": 4.09,
         "isMagnetized": false,
-        "note": "Nearest round: 0.8300000000000001 (6.17× ATR away)"
+        "note": "Nearest round: 0.8400000000000001 (4.09× ATR away)"
       },
       "rangeCompression": null,
       "algoBias": "BUY",
@@ -288,6 +291,6 @@
       }
     }
   ],
-  "interpretation": "Algo footprints across 8 pairs · 5 showing institutional BUY bias, 0 SELL. Currently in \"no specific\" window with normal algo activity.",
+  "interpretation": "Algo footprints across 8 pairs · 2 showing institutional BUY bias, 2 SELL. Currently in \"London-NY overlap\" window with peak algo activity.",
   "honestNote": "These are FOOTPRINTS visible in OHLC data — approximations of real order flow (which requires L2 data we do not have). Correlated with real institutional activity but not identical. Best used as bias confirmation alongside chart pattern signals."
 }
