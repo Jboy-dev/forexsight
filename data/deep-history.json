@@ -1,94 +1,94 @@
 {
-  "ts": 1795813109359,
-  "isoTime": "2026-11-27T20:58:29.359Z",
+  "ts": 1795835557273,
+  "isoTime": "2026-11-28T03:12:37.273Z",
   "method": "daily bars, deepest available per instrument, entry at next open, cost charged, v442 managed ladder, PER SIGNAL (not episodes), 65/35 split, textbook parameters",
   "instruments": {
     "AUD/JPY": {
-      "bars": 5982,
+      "bars": 5985,
       "years": 23
     },
     "AUD/USD": {
-      "bars": 5339,
+      "bars": 5343,
       "years": 20.5
     },
     "BTC/USD": {
-      "bars": 4452,
+      "bars": 4455,
       "years": 12.2
     },
     "ETH/USD": {
-      "bars": 3303,
+      "bars": 3306,
       "years": 9.1
     },
     "EUR/GBP": {
-      "bars": 7263,
+      "bars": 7266,
       "years": 27.9
     },
     "EUR/JPY": {
-      "bars": 6188,
+      "bars": 6191,
       "years": 23.8
     },
     "EUR/USD": {
-      "bars": 5963,
+      "bars": 5966,
       "years": 23
     },
     "GBP/JPY": {
-      "bars": 5979,
+      "bars": 5982,
       "years": 23
     },
     "GBP/USD": {
-      "bars": 5975,
+      "bars": 5978,
       "years": 23
     },
     "NAS100": {
-      "bars": 10368,
+      "bars": 10370,
       "years": 41.2
     },
     "NZD/USD": {
-      "bars": 5964,
+      "bars": 5968,
       "years": 23
     },
     "SOL/USD": {
-      "bars": 2420,
+      "bars": 2423,
       "years": 6.6
     },
     "US30": {
-      "bars": 8787,
+      "bars": 8789,
       "years": 34.9
     },
     "USD/CAD": {
-      "bars": 6031,
+      "bars": 6035,
       "years": 23.2
     },
     "USD/CHF": {
-      "bars": 6029,
+      "bars": 6032,
       "years": 23.2
     },
     "USD/JPY": {
-      "bars": 7797,
+      "bars": 7800,
       "years": 30.1
     },
     "XAG/USD": {
-      "bars": 6586,
+      "bars": 6588,
       "years": 26.2
     },
     "XAU/USD": {
-      "bars": 6585,
+      "bars": 6587,
       "years": 26.2
     },
     "XRP/USD": {
-      "bars": 3303,
+      "bars": 3306,
       "years": 9.1
     }
   },
-  "totalDailyBars": 114314,
+  "totalDailyBars": 114370,
   "randomEntryNull": {
     "n": 11400,
-    "avgR": 0.0333,
+    "avgR": -0.0079,
     "ci": [
-      0.0106,
-      0.0577
+      -0.0307,
+      0.0145
     ],
-    "behavesAsNull": false
+    "behavesAsNull": true
   },
   "results": [
     {
@@ -97,21 +97,44 @@
         "n": 2536,
         "avgR": 0.1485,
         "ci": [
-          0.0997,
-          0.1975
+          0.1016,
+          0.1964
         ]
       },
       "outSample": {
-        "n": 1188,
-        "avgR": 0.0551,
+        "n": 1189,
+        "avgR": 0.0554,
         "ci": [
-          -0.0139,
+          -0.0154,
           0.1279
         ]
       },
       "pairsPositive": 12,
       "pairsTested": 19,
-      "beatsRandom": 0.0218,
+      "beatsRandom": 0.0633,
+      "passes": false
+    },
+    {
+      "name": "EMA cross 20/50",
+      "inSample": {
+        "n": 1375,
+        "avgR": -0.0023,
+        "ci": [
+          -0.0689,
+          0.0645
+        ]
+      },
+      "outSample": {
+        "n": 783,
+        "avgR": 0.0319,
+        "ci": [
+          -0.0538,
+          0.115
+        ]
+      },
+      "pairsPositive": 9,
+      "pairsTested": 19,
+      "beatsRandom": 0.0398,
       "passes": false
     },
     {
@@ -120,90 +143,67 @@
         "n": 2032,
         "avgR": 0.0466,
         "ci": [
-          -0.0086,
-          0.1036
+          -0.0064,
+          0.1017
         ]
       },
       "outSample": {
-        "n": 1275,
-        "avgR": 0.0298,
+        "n": 1277,
+        "avgR": 0.0281,
         "ci": [
-          -0.0393,
-          0.0973
+          -0.0387,
+          0.0979
         ]
       },
       "pairsPositive": 13,
       "pairsTested": 19,
-      "beatsRandom": -0.0035,
-      "passes": false
-    },
-    {
-      "name": "EMA cross 20/50",
-      "inSample": {
-        "n": 1373,
-        "avgR": -0.0018,
-        "ci": [
-          -0.0677,
-          0.0641
-        ]
-      },
-      "outSample": {
-        "n": 784,
-        "avgR": 0.0292,
-        "ci": [
-          -0.0531,
-          0.1125
-        ]
-      },
-      "pairsPositive": 9,
-      "pairsTested": 19,
-      "beatsRandom": -0.004,
+      "beatsRandom": 0.036,
       "passes": false
     },
     {
       "name": "Donchian 20 breakout",
       "inSample": {
-        "n": 8295,
-        "avgR": 0.077,
+        "n": 8298,
+        "avgR": 0.0768,
         "ci": [
-          0.0499,
+          0.0488,
           0.1037
         ]
       },
       "outSample": {
-        "n": 3550,
-        "avgR": 0.0233,
+        "n": 3555,
+        "avgR": 0.0263,
         "ci": [
-          -0.018,
-          0.0638
+          -0.0131,
+          0.0664
         ]
       },
       "pairsPositive": 12,
       "pairsTested": 19,
-      "beatsRandom": -0.0099,
+      "beatsRandom": 0.0342,
       "passes": false
     },
     {
       "name": "MACD cross",
       "inSample": {
-        "n": 2419,
-        "avgR": 0.0624,
+        "n": 2422,
+        "avgR": 0.0616,
         "ci": [
-          0.0136,
-          0.1106
+          0.0124,
+          0.1103
         ]
       },
       "outSample": {
-        "n": 1351,
-        "avgR": 0.0156,
+        "n": 1352,
+        "avgR": 0.0209,
         "ci": [
-          -0.0489,
-          0.0785
+          -0.0436,
+          0.0822
         ]
       },
       "pairsPositive": 13,
       "pairsTested": 19,
-      "beatsRandom": -0.0177,
+      "beatsRandom": 0.0287,
       "passes": false
     },
     {
@@ -212,21 +212,21 @@
         "n": 2018,
         "avgR": -0.0487,
         "ci": [
-          -0.1017,
-          0.0058
+          -0.1018,
+          0.0038
         ]
       },
       "outSample": {
-        "n": 1069,
-        "avgR": -0.0375,
+        "n": 1071,
+        "avgR": -0.0394,
         "ci": [
-          -0.1093,
-          0.0294
+          -0.1074,
+          0.0326
         ]
       },
       "pairsPositive": 5,
       "pairsTested": 19,
-      "beatsRandom": -0.0708,
+      "beatsRandom": -0.0315,
       "passes": false
     },
     {
@@ -235,44 +235,44 @@
         "n": 374,
         "avgR": -0.0727,
         "ci": [
-          -0.1905,
-          0.0568
+          -0.1863,
+          0.045
         ]
       },
       "outSample": {
-        "n": 259,
-        "avgR": -0.0517,
+        "n": 260,
+        "avgR": -0.0459,
         "ci": [
-          -0.1839,
-          0.0845
+          -0.1876,
+          0.0932
         ]
       },
       "pairsPositive": 7,
       "pairsTested": 19,
-      "beatsRandom": -0.0849,
+      "beatsRandom": -0.038,
       "passes": false
     },
     {
       "name": "Trend pullback to EMA20",
       "inSample": {
-        "n": 8452,
-        "avgR": 0.0576,
+        "n": 8456,
+        "avgR": 0.058,
         "ci": [
-          0.0309,
-          0.0828
+          0.0328,
+          0.0845
         ]
       },
       "outSample": {
-        "n": 4879,
-        "avgR": -0.071,
+        "n": 4877,
+        "avgR": -0.0716,
         "ci": [
-          -0.1036,
-          -0.0361
+          -0.1063,
+          -0.0376
         ]
       },
       "pairsPositive": 10,
       "pairsTested": 19,
-      "beatsRandom": -0.1043,
+      "beatsRandom": -0.0637,
       "passes": false
     }
   ],
